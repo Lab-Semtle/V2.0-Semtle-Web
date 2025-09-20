@@ -64,7 +64,7 @@ export default function LoginPage() {
                 <main className="flex items-center justify-center min-h-screen p-4 sm:p-6">
                     <div className="w-full max-w-sm sm:max-w-md">
                         {/* 로고 */}
-                        <div className="text-center mb-8 sm:mb-10">
+                        <div className="text-center mb-6 sm:mb-8">
                             <Link
                                 href="/"
                                 className="font-dunggeunmo flex items-center justify-center space-x-2 sm:space-x-3 text-2xl sm:text-3xl font-bold text-slate-900 mb-2 hover:opacity-80 transition-opacity duration-200 drop-shadow-lg"
@@ -81,6 +81,23 @@ export default function LoginPage() {
                                 <span>아치셈틀</span>
                             </Link>
                             <p className="text-slate-600 text-sm sm:text-base font-medium">Archi Semtle Lab</p>
+                        </div>
+
+                        {/* 네비게이션 버튼 */}
+                        <div className="mb-8 flex justify-between items-center">
+                            <Link
+                                href="/"
+                                className="inline-flex items-center space-x-2 px-4 py-2 text-slate-500 hover:text-slate-700 rounded-xl transition-all duration-200 text-sm hover:bg-slate-50/50"
+                            >
+                                <ArrowLeft className="h-4 w-4" />
+                                <span>홈으로 돌아가기</span>
+                            </Link>
+                            <Link
+                                href="/auth/register"
+                                className="group inline-flex items-center justify-center px-6 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 text-sm"
+                            >
+                                회원가입
+                            </Link>
                         </div>
 
                         {/* 로그인 폼 */}
@@ -164,30 +181,6 @@ export default function LoginPage() {
                                     <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                                 </button>
                             </form>
-
-                            {/* 회원가입 링크 */}
-                            <div className="mt-6 sm:mt-8 text-center">
-                                <p className="text-slate-600 text-xs mb-3">
-                                    아직 계정이 없으신가요?
-                                </p>
-                                <Link
-                                    href="/auth/register"
-                                    className="group inline-flex items-center justify-center px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5 text-sm"
-                                >
-                                    회원가입
-                                </Link>
-                            </div>
-
-                            {/* 홈으로 돌아가기 */}
-                            <div className="mt-6 text-center">
-                                <Link
-                                    href="/"
-                                    className="inline-flex items-center space-x-1.5 px-3 py-2 text-slate-500 hover:text-slate-700 rounded-lg transition-all duration-200 text-xs hover:bg-slate-50/50"
-                                >
-                                    <ArrowLeft className="h-3.5 w-3.5" />
-                                    <span>홈으로 돌아가기</span>
-                                </Link>
-                            </div>
                         </div>
                     </div>
                 </main>

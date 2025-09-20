@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import Navigation from "@/components/Navigation";
-import Footer from "../components/Footer";
+import Navigation from "@/components/layout/Navigation";
+import Footer from "@/components/layout/Footer";
 import { Megaphone, Trophy, FileText, User, ArrowRight, Calendar, Users, Code, BookOpen, Clock, MapPin } from "lucide-react";
 
 export default function Home() {
