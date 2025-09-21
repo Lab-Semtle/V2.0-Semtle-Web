@@ -1,37 +1,98 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Mail, Lock, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const { signIn } = useAuth();
+
+    // URL 파라미터 확인
+    useEffect(() => {
+        const verified = searchParams.get('verified');
+        if (verified === 'true') {
+            setSuccessMessage('이메일 인증이 완료되었습니다. 이제 로그인하실 수 있습니다.');
+
+            // URL에서 verified 파라미터 제거 (페이지 새로고침 시 메시지 재표시 방지)
+            const url = new URL(window.location.href);
+            url.searchParams.delete('verified');
+            window.history.replaceState({}, '', url.toString());
+
+            // 5초 후 메시지 자동 제거
+            const timer = setTimeout(() => {
+                setSuccessMessage('');
+            }, 5000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [searchParams]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError('');
+        setSuccessMessage(''); // 로그인 시도 시 성공 메시지 제거
+
+        if (!email || !password) {
+            setError('이메일과 비밀번호를 입력해주세요.');
+            setLoading(false);
+            return;
+        }
 
         try {
-            // TODO: 실제 인증 로직 구현
-            await new Promise(resolve => setTimeout(resolve, 1000)); // 임시 딜레이
+            console.log('🖱️ LoginPage: 로그인 버튼 클릭', { email });
 
-            // 임시 성공 처리
-            if (email && password) {
-                router.push('/dashboard');
+            // 타임아웃 설정 (15초)
+            const loginPromise = signIn(email, password);
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('로그인 시간이 초과되었습니다.')), 15000)
+            );
+
+            console.log('⏱️ LoginPage: 로그인 요청 시작 (15초 타임아웃)');
+            const { error } = await Promise.race([loginPromise, timeoutPromise]) as any;
+
+            console.log('📊 LoginPage: 로그인 결과 수신', {
+                hasError: !!error,
+                errorMessage: error?.message
+            });
+
+            if (error) {
+                console.error('❌ LoginPage: 로그인 실패', {
+                    message: error.message,
+                    code: error.code,
+                    status: error.status
+                });
+
+                if (error.message.includes('Email not confirmed')) {
+                    setError('이메일 인증이 필요합니다. 이메일을 확인해주세요.');
+                } else if (error.message.includes('Invalid login credentials')) {
+                    setError('이메일 또는 비밀번호가 올바르지 않습니다.');
+                } else if (error.message.includes('로그인 시간이 초과')) {
+                    setError('로그인 시간이 초과되었습니다. 다시 시도해주세요.');
+                } else {
+                    setError(error.message || '로그인 중 오류가 발생했습니다.');
+                }
             } else {
-                setError('이메일과 비밀번호를 입력해주세요.');
+                console.log('✅ LoginPage: 로그인 성공, 메인 페이지로 리다이렉트');
+                // 로그인 성공 시 메인 페이지로 이동
+                router.push('/');
             }
         } catch (error) {
+            console.error('💥 LoginPage: 예외 발생', error);
             setError('로그인 중 오류가 발생했습니다.');
-            console.error('Login error:', error);
         } finally {
+            console.log('🏁 LoginPage: 로그인 프로세스 완료, 로딩 상태 해제');
             setLoading(false);
         }
     };
@@ -144,15 +205,34 @@ export default function LoginPage() {
                                         </div>
                                         <input
                                             id="password"
-                                            type="password"
+                                            type={showPassword ? "text" : "password"}
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
                                             required
-                                            className="w-full pl-10 pr-3 py-3 bg-slate-50/70 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-200 shadow-sm hover:shadow-md text-sm"
+                                            className="w-full pl-10 pr-12 py-3 bg-slate-50/70 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-200 shadow-sm hover:shadow-md text-sm"
                                             placeholder="비밀번호를 입력하세요"
                                         />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors duration-200"
+                                        >
+                                            {showPassword ? (
+                                                <EyeOff className="h-4 w-4" />
+                                            ) : (
+                                                <Eye className="h-4 w-4" />
+                                            )}
+                                        </button>
                                     </div>
                                 </div>
+
+                                {/* 성공 메시지 */}
+                                {successMessage && (
+                                    <div className="text-green-600 text-xs bg-green-50 border border-green-200 rounded-xl p-3 flex items-center animate-fade-in-up">
+                                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full mr-2"></div>
+                                        {successMessage}
+                                    </div>
+                                )}
 
                                 {/* 에러 메시지 */}
                                 {error && (

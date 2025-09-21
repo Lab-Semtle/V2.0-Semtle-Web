@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Mail, Lock, User, ArrowLeft, Check, Eye, EyeOff, Calendar, Hash, UserCheck, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function RegisterPage() {
     const [formData, setFormData] = useState({
@@ -21,10 +22,14 @@ export default function RegisterPage() {
     const [success, setSuccess] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    // 이메일 인증 관련 상태 (제거됨 - 회원가입 후 별도 처리)
     const [currentStep, setCurrentStep] = useState(0);
     const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
     const [isTransitioning, setIsTransitioning] = useState(false);
     const router = useRouter();
+    const { signUp } = useAuth();
+
+    // 이메일 인증 관련 함수들 (제거됨 - 회원가입 후 별도 처리)
 
     // 단계별 필드 정의
     const stepFields = [
@@ -57,9 +62,8 @@ export default function RegisterPage() {
     };
 
     const validateName = (value: string) => {
-        const nameRegex = /^[가-힣a-zA-Z]+$/;
-        if (!nameRegex.test(value)) {
-            return "한글, 영어만 입력 가능합니다";
+        if (value.trim().length === 0) {
+            return "이름을 입력해주세요";
         }
         return null;
     };
@@ -139,18 +143,9 @@ export default function RegisterPage() {
 
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
-        const nameRegex = /^[가-힣a-zA-Z]*$/;
-        if (nameRegex.test(value)) {
-            setFormData(prev => ({ ...prev, name: value }));
-            const error = validateName(value);
-            setValidationErrors(prev => ({ ...prev, name: error || '' }));
-        } else {
-            // 잘못된 입력 시 일시적으로 말풍선 표시
-            setValidationErrors(prev => ({ ...prev, name: "한글, 영어만 입력 가능합니다" }));
-            setTimeout(() => {
-                setValidationErrors(prev => ({ ...prev, name: '' }));
-            }, 2000);
-        }
+        setFormData(prev => ({ ...prev, name: value }));
+        const error = validateName(value);
+        setValidationErrors(prev => ({ ...prev, name: error || '' }));
     };
 
     const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -199,7 +194,7 @@ export default function RegisterPage() {
             case 'name':
                 return !validateName(value);
             case 'email':
-                return !validateEmail(value);
+                return !validateEmail(value); // 이메일 인증 제거
             case 'password':
                 return !validatePassword(value);
             default:
@@ -268,20 +263,56 @@ export default function RegisterPage() {
             // 비밀번호 확인
             if (formData.password !== formData.confirmPassword) {
                 setError('비밀번호가 일치하지 않습니다.');
+                setLoading(false);
                 return;
             }
 
-            // TODO: 실제 회원가입 로직 구현
-            await new Promise(resolve => setTimeout(resolve, 1500)); // 임시 딜레이
+            // 모든 필수 필드 검증
+            if (!formData.studentId || !formData.nickname || !formData.name || !formData.email || !formData.password) {
+                setError('모든 필수 필드를 입력해주세요.');
+                setLoading(false);
+                return;
+            }
 
-            // 임시 성공 처리
-            if (formData.studentId && formData.nickname && formData.name && formData.email && formData.password) {
-                setSuccess(true);
-                setTimeout(() => {
-                    router.push('/auth/login');
-                }, 2000);
+            // Supabase 회원가입 (이메일 인증 포함)
+            const result = await signUp(formData.email, formData.password, {
+                student_id: formData.studentId,
+                nickname: formData.nickname,
+                name: formData.name,
+                email: formData.email,
+                birth_date: formData.birthDate || undefined,
+            });
+
+            if (result.error) {
+                if (result.error.code === 'EMAIL_ALREADY_VERIFIED') {
+                    setError('이미 인증된 이메일입니다. 로그인해주세요.');
+                } else if (result.error.code === 'STUDENT_ID_ALREADY_VERIFIED') {
+                    setError('이미 등록된 학번입니다. 로그인해주세요.');
+                } else if (result.error.message.includes('User already registered')) {
+                    setError('이미 등록된 이메일입니다.');
+                } else if (result.error.message.includes('Password should be at least')) {
+                    setError('비밀번호는 최소 6자 이상이어야 합니다.');
+                } else if (result.error.message.includes('Invalid email')) {
+                    setError('올바른 이메일 형식이 아닙니다.');
+                } else {
+                    setError(result.error.message || '회원가입 중 오류가 발생했습니다.');
+                }
+                console.error('Register error:', result.error);
             } else {
-                setError('모든 필드를 입력해주세요.');
+                setSuccess(true);
+
+                // 기존 미인증 계정 업데이트인 경우
+                if ('redirectTo' in result && typeof result.redirectTo === 'string') {
+                    setError(''); // 에러 메시지 초기화
+                    setTimeout(() => {
+                        router.push(result.redirectTo as string);
+                    }, 2000);
+                } else {
+                    // 새 계정 생성인 경우 - 이메일 인증 안내
+                    setTimeout(() => {
+                        router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`);
+                    }, 2000);
+                }
             }
         } catch (error) {
             setError('회원가입 중 오류가 발생했습니다.');
@@ -290,6 +321,8 @@ export default function RegisterPage() {
             setLoading(false);
         }
     };
+
+
 
     if (success) {
         return (

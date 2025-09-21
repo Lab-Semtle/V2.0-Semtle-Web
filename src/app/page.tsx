@@ -2,14 +2,42 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Navigation from "@/components/layout/Navigation";
 import Footer from "@/components/layout/Footer";
-import { Megaphone, Trophy, FileText, User, ArrowRight, Calendar, Users, Code, BookOpen, Clock, MapPin } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Megaphone, Trophy, FileText, ArrowRight, Calendar, Users, Code, BookOpen, Clock, MapPin, CheckCircle } from "lucide-react";
 
 export default function Home() {
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
+  const searchParams = useSearchParams();
+  const { user, profile } = useAuth();
+
+  useEffect(() => {
+    const verified = searchParams.get('verified');
+    if (verified === 'true') {
+      setShowVerificationMessage(true);
+      // 5초 후 메시지 자동 제거
+      setTimeout(() => {
+        setShowVerificationMessage(false);
+      }, 5000);
+    }
+  }, [searchParams]);
+
   return (
     <div className="min-h-screen bg-white">
       <Navigation />
+
+      {/* 이메일 인증 완료 메시지 */}
+      {showVerificationMessage && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-green-100 border border-green-400 text-green-700 px-6 py-3 rounded-lg shadow-lg flex items-center gap-2">
+          <CheckCircle className="w-5 h-5" />
+          <span className="font-medium">이메일 인증이 완료되었습니다! 이제 로그인하실 수 있습니다.</span>
+        </div>
+      )}
+
+
 
       {/* Hero Section */}
       <section className="pt-48 pb-56 px-4 sm:px-6 lg:px-8 relative overflow-hidden">

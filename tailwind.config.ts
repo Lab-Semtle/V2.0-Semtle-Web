@@ -18,16 +18,12 @@ const config: Config = {
                 moneygraphy: ['var(--font-moneygraphy)', 'var(--font-pretendard)', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
                 dunggeunmo: ['var(--font-dunggeunmo)', 'Courier New', 'Courier', 'monospace'],
             },
-            colors: {
-                background: "var(--background)",
-                foreground: "var(--foreground)",
-            },
         },
     },
-    plugins: [],
 };
 
 export default config;
+
 
 
 

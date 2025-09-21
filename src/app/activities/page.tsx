@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Pin } from 'lucide-react';
 // Removed unused imports
 import Navigation from '@/components/layout/Navigation';
@@ -91,6 +92,7 @@ const mockPosts = [
 const categories = ["전체", "공지", "세미나", "프로젝트", "스터디", "해커톤", "후기"];
 
 export default function ActivitiesPage() {
+    const router = useRouter();
     const [selectedCategory, setSelectedCategory] = useState("전체");
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState("latest");
@@ -203,8 +205,7 @@ export default function ActivitiesPage() {
                                 key={post.id}
                                 {...post}
                                 onClick={() => {
-                                    // TODO: 게시물 상세 페이지로 이동
-                                    console.log('Post clicked:', post.id);
+                                    router.push(`/activities/${post.id}`);
                                 }}
                             />
                         ))}

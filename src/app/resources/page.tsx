@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Search, Filter, Calendar, Users, MessageCircle, Eye, Heart, Share2, ChevronRight, X, ArrowUpDown, Download, FileText, Image as ImageIcon, Video, Music, Archive, Code, Presentation, BookOpen, FileSpreadsheet, File, Palette, Plus, Pin } from 'lucide-react';
 import Navigation from '@/components/layout/Navigation';
 import Footer from '@/components/layout/Footer';
@@ -174,6 +175,7 @@ const fileTypes = ["전체", "PDF", "ZIP", "PPTX", "Figma", "Unity Package", "XL
 const languages = ["전체", "한국어", "영어", "Python", "Solidity", "JavaScript"];
 
 export default function ResourcesPage() {
+    const router = useRouter();
     const [selectedCategory, setSelectedCategory] = useState("전체");
     const [selectedFileType, setSelectedFileType] = useState("전체");
     const [selectedLanguage, setSelectedLanguage] = useState("전체");
@@ -383,8 +385,7 @@ export default function ResourcesPage() {
                                 key={resource.id}
                                 {...resource}
                                 onClick={() => {
-                                    // TODO: 자료 상세 페이지로 이동
-                                    console.log('Resource clicked:', resource.id);
+                                    router.push(`/resources/${resource.id}`);
                                 }}
                             />
                         ))}

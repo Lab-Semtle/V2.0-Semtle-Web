@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Search, Filter, Calendar, Users, MessageCircle, Eye, Heart, Share2, ChevronRight, X, ArrowUpDown, UserPlus, Clock, MapPin, Code, Palette, Database, Smartphone, Globe, Plus, Pin } from 'lucide-react';
 import Navigation from '@/components/layout/Navigation';
 import Footer from '@/components/layout/Footer';
@@ -160,6 +161,7 @@ const statuses = ["전체", "모집중", "모집완료"];
 const difficulties = ["전체", "초급", "중급", "고급"];
 
 export default function ProjectsPage() {
+    const router = useRouter();
     const [selectedCategory, setSelectedCategory] = useState("전체");
     const [selectedStatus, setSelectedStatus] = useState("전체");
     const [selectedDifficulty, setSelectedDifficulty] = useState("전체");
@@ -373,8 +375,7 @@ export default function ProjectsPage() {
                                 key={project.id}
                                 {...project}
                                 onClick={() => {
-                                    // TODO: 프로젝트 상세 페이지로 이동
-                                    console.log('Project clicked:', project.id);
+                                    router.push(`/projects/${project.id}`);
                                 }}
                             />
                         ))}
