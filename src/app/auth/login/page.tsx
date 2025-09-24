@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Mail, Lock, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
-export default function LoginPage() {
+function LoginForm() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -60,7 +60,7 @@ export default function LoginPage() {
             );
 
             console.log('⏱️ LoginPage: 로그인 요청 시작 (15초 타임아웃)');
-            const { error } = await Promise.race([loginPromise, timeoutPromise]) as any;
+            const { error } = await Promise.race([loginPromise, timeoutPromise]) as { error: Error | null };
 
             console.log('📊 LoginPage: 로그인 결과 수신', {
                 hasError: !!error,
@@ -70,8 +70,8 @@ export default function LoginPage() {
             if (error) {
                 console.error('❌ LoginPage: 로그인 실패', {
                     message: error.message,
-                    code: error.code,
-                    status: error.status
+                    code: (error as { code?: string }).code,
+                    status: (error as { status?: number }).status
                 });
 
                 if (error.message.includes('Email not confirmed')) {
@@ -261,10 +261,32 @@ export default function LoginPage() {
                                     <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                                 </button>
                             </form>
+
+                            {/* 추가 링크 */}
+                            <div className="mt-6 text-center">
+                                <Link
+                                    href="/auth/register"
+                                    className="font-medium text-blue-600 hover:text-blue-500 text-sm"
+                                >
+                                    계정이 없으신가요? 회원가입
+                                </Link>
+                            </div>
                         </div>
                     </div>
                 </main>
             </div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+            </div>
+        }>
+            <LoginForm />
+        </Suspense>
     );
 }

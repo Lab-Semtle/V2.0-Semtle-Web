@@ -23,7 +23,7 @@ export default function SortDropdown({
 
     // 외부 클릭 시 드롭다운 닫기
     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
+        const handleClickOutside = () => {
             if (showOptions) {
                 setShowOptions(false);
             }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Users, MessageCircle, Eye, Heart, ChevronRight, Pin } from 'lucide-react';
+import { Calendar, MessageCircle, Eye, Heart, ChevronRight, Pin } from 'lucide-react';
 
 interface PostCardProps {
     id: number;
@@ -18,7 +18,6 @@ interface PostCardProps {
 }
 
 export default function PostCard({
-    id,
     title,
     content,
     author,

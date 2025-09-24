@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -212,7 +212,7 @@ export default function RegisterPage() {
             }, 300);
         } else if (currentStep === stepFields.length - 1 && isCurrentStepValid() && arePasswordsValid()) {
             // 마지막 단계에서 비밀번호가 모두 유효하면 회원가입 실행
-            handleRegister(new Event('submit') as any);
+            handleRegister(new Event('submit') as unknown as React.FormEvent<HTMLFormElement>);
         }
     };
 
@@ -232,10 +232,7 @@ export default function RegisterPage() {
         return !validatePassword(formData.password) && !validateConfirmPassword(formData.confirmPassword);
     };
 
-    // 회원가입 버튼 활성화 조건
-    const isRegisterButtonEnabled = () => {
-        return arePasswordsValid() && formData.password && formData.confirmPassword;
-    };
+    // 회원가입 버튼 활성화 조건 (사용되지 않음 - 제거됨)
 
     // 말풍선 컴포넌트
     const Tooltip = ({ message, show }: { message: string; show: boolean }) => {
@@ -275,27 +272,29 @@ export default function RegisterPage() {
             }
 
             // Supabase 회원가입 (이메일 인증 포함)
-            const result = await signUp(formData.email, formData.password, {
+            const result = await signUp({
+                email: formData.email,
+                password: formData.password,
                 student_id: formData.studentId,
                 nickname: formData.nickname,
                 name: formData.name,
-                email: formData.email,
                 birth_date: formData.birthDate || undefined,
             });
 
             if (result.error) {
-                if (result.error.code === 'EMAIL_ALREADY_VERIFIED') {
+                const error = result.error as Error & { code?: string };
+                if (error.code === 'EMAIL_ALREADY_VERIFIED') {
                     setError('이미 인증된 이메일입니다. 로그인해주세요.');
-                } else if (result.error.code === 'STUDENT_ID_ALREADY_VERIFIED') {
+                } else if (error.code === 'STUDENT_ID_ALREADY_VERIFIED') {
                     setError('이미 등록된 학번입니다. 로그인해주세요.');
-                } else if (result.error.message.includes('User already registered')) {
+                } else if (error.message.includes('User already registered')) {
                     setError('이미 등록된 이메일입니다.');
-                } else if (result.error.message.includes('Password should be at least')) {
+                } else if (error.message.includes('Password should be at least')) {
                     setError('비밀번호는 최소 6자 이상이어야 합니다.');
-                } else if (result.error.message.includes('Invalid email')) {
+                } else if (error.message.includes('Invalid email')) {
                     setError('올바른 이메일 형식이 아닙니다.');
                 } else {
-                    setError(result.error.message || '회원가입 중 오류가 발생했습니다.');
+                    setError(error.message || '회원가입 중 오류가 발생했습니다.');
                 }
                 console.error('Register error:', result.error);
             } else {

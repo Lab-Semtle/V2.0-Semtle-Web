@@ -1,9 +1,8 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Mail, Shield, Bell, Globe, Eye, EyeOff, Save, ArrowLeft, Settings } from 'lucide-react';
+import { User, Shield, Bell, Globe, Eye, EyeOff, Save, ArrowLeft, Settings } from 'lucide-react';
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export default function SettingsPage() {
@@ -30,13 +29,13 @@ export default function SettingsPage() {
         }
     });
 
-    const handleInputChange = (field: string, value: any) => {
+    const handleInputChange = (field: string, value: string | boolean) => {
         if (field.includes('.')) {
             const [parent, child] = field.split('.');
             setFormData(prev => ({
                 ...prev,
                 [parent]: {
-                    ...prev[parent as keyof typeof prev],
+                    ...(prev[parent as keyof typeof prev] as Record<string, unknown>),
                     [child]: value
                 }
             }));

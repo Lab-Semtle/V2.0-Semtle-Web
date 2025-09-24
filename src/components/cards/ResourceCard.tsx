@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, MessageCircle, Eye, Heart, ChevronRight, Download, FileText, File, Archive, Presentation, Palette, Code, FileSpreadsheet, Pin } from 'lucide-react';
+import { Calendar, Eye, ChevronRight, Download, FileText, File, Archive, Presentation, Palette, Code, FileSpreadsheet, Pin, LucideIcon } from 'lucide-react';
 
 interface ResourceCardProps {
     id: number;
@@ -23,7 +23,6 @@ interface ResourceCardProps {
 }
 
 export default function ResourceCard({
-    id,
     title,
     description,
     category,
@@ -31,8 +30,6 @@ export default function ResourceCard({
     fileSize,
     downloads,
     views,
-    likes,
-    comments,
     author,
     authorRole,
     date,
@@ -56,7 +53,7 @@ export default function ResourceCard({
     };
 
     const getFileTypeIcon = (fileType: string) => {
-        const icons: { [key: string]: any } = {
+        const icons: { [key: string]: LucideIcon } = {
             "PDF": File,
             "ZIP": Archive,
             "PPTX": Presentation,

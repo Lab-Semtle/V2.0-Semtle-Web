@@ -2,14 +2,12 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Home, Megaphone, Trophy, FileText, User, LogOut, Settings } from "lucide-react";
-import { useState } from "react";
+import { Home, Megaphone, Trophy, FileText } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import UserDropdownShadcn from "./UserDropdownShadcn";
 
 export default function Navigation() {
-    const [isExpanded, setIsExpanded] = useState(false);
-    const { user, profile } = useAuth();
+    const { user } = useAuth();
 
 
     return (

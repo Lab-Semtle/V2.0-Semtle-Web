@@ -1,27 +1,68 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Mail, Check, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
-export default function VerifyEmailPage() {
-    const router = useRouter();
+function VerifyEmailForm() {
     const searchParams = useSearchParams();
     const email = searchParams.get('email') || '';
     const isExistingAccount = searchParams.get('existing') === 'true';
     const conflictType = searchParams.get('conflict') || '';
 
-    const [isLoading, setIsLoading] = useState(false);
-    const [isVerified, setIsVerified] = useState(false);
-    const [error, setError] = useState('');
+    const [isVerified] = useState(false);
+    const [error] = useState('');
+    const [isResending, setIsResending] = useState(false);
+    const [resendMessage, setResendMessage] = useState('');
 
     // 페이지 로드 시 이메일 확인 안내
     useEffect(() => {
         if (email) {
-            console.log('이메일 인증 대기 중:', email);
+            console.log('📧 이메일 인증 대기 중:', email);
+            console.log('🔍 다음을 확인해주세요:');
+            console.log('1. 이메일 수신함 확인');
+            console.log('2. 스팸 폴더 확인');
+            console.log('3. Supabase 대시보드 > Authentication > Logs에서 이메일 전송 로그 확인');
         }
     }, [email]);
+
+    // 이메일 재전송 함수
+    const handleResendEmail = async () => {
+        if (!email) return;
+
+        console.log('🔄 이메일 재전송 시작:', email);
+        setIsResending(true);
+        setResendMessage('');
+
+        try {
+            console.log('📡 API 요청 전송 중...');
+            const response = await fetch('/api/test-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email }),
+            });
+
+            console.log('📡 API 응답 상태:', response.status);
+            const data = await response.json();
+            console.log('📡 API 응답 데이터:', data);
+
+            if (data.success) {
+                setResendMessage('이메일이 재전송되었습니다. 수신함을 확인해주세요.');
+                console.log('✅ 이메일 재전송 성공');
+            } else {
+                setResendMessage(`오류: ${data.error}`);
+                console.error('❌ 이메일 재전송 실패:', data.error);
+            }
+        } catch (error) {
+            setResendMessage('이메일 재전송 중 오류가 발생했습니다.');
+            console.error('❌ 이메일 재전송 예외:', error);
+        } finally {
+            setIsResending(false);
+        }
+    };
 
     if (isVerified) {
         return (
@@ -110,9 +151,28 @@ export default function VerifyEmailPage() {
                             <p className="text-sm text-slate-600 mb-4">
                                 {email}로 발송된 인증 이메일의 링크를 클릭하여 계정을 활성화해주세요.
                             </p>
-                            <div className="text-xs text-slate-500">
+                            <div className="text-xs text-slate-500 mb-4">
                                 이메일이 보이지 않는다면 스팸 폴더를 확인해보세요.
                             </div>
+
+                            {/* 이메일 재전송 버튼 */}
+                            <button
+                                onClick={handleResendEmail}
+                                disabled={isResending}
+                                className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-lg transition-colors"
+                            >
+                                {isResending ? '재전송 중...' : '이메일 재전송'}
+                            </button>
+
+                            {/* 재전송 메시지 */}
+                            {resendMessage && (
+                                <div className={`text-sm p-3 rounded-lg mt-4 ${resendMessage.includes('오류')
+                                    ? 'bg-red-50 text-red-700 border border-red-200'
+                                    : 'bg-green-50 text-green-700 border border-green-200'
+                                    }`}>
+                                    {resendMessage}
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -138,5 +198,17 @@ export default function VerifyEmailPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function VerifyEmailPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+        }>
+            <VerifyEmailForm />
+        </Suspense>
     );
 }

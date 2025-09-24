@@ -30,6 +30,6 @@ export async function GET(request: NextRequest) {
         }
     }
 
-    // 이메일 인증 후 메인 페이지로 리다이렉트
-    return NextResponse.redirect(`${requestUrl.origin}/?verified=true`)
+    // 이메일 인증 후 로그인 페이지로 리다이렉트
+    return NextResponse.redirect(`${requestUrl.origin}/auth/login?verified=true`)
 }

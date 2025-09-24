@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
         }
 
         // 기존 프로필 확인 (중복 생성 방지)
-        const { data: existingProfile, error: checkError } = await supabase
+        const { data: existingProfile } = await supabase
             .from('user_profiles')
             .select('id')
             .eq('id', userId)
@@ -33,15 +33,32 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        // 사용자 프로필 생성
-        const { error: profileError } = await supabase
+        // 사용자 프로필 생성 데이터 준비
+        const profileInsertData = {
+            id: userId,
+            student_id: profileData.student_id || '',
+            nickname: profileData.nickname || '',
+            name: profileData.name || '',
+            email: profileData.email,
+            birth_date: profileData.birth_date || null,
+            major: profileData.major || '',
+            grade: profileData.grade || null,
+            status: true, // 첫 회원가입 시 활성 상태
+            email_verified: false, // 이메일 인증 전까지는 false
+            role: 'member', // 기본 역할
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+
+        console.log('🔧 프로필 생성 데이터:', profileInsertData);
+
+        // 사용자 프로필 생성 (외래 키 제약 조건 없이)
+        const { data: insertData, error: profileError } = await supabase
             .from('user_profiles')
-            .insert({
-                id: userId,
-                ...profileData,
-                status: true, // 첫 회원가입 시 활성 상태
-                email_verified: false, // 이메일 인증 전까지는 false
-            });
+            .insert(profileInsertData)
+            .select();
+
+        console.log('📝 프로필 생성 결과:', { insertData, profileError });
 
         if (profileError) {
             console.error('Error creating user profile:', profileError);

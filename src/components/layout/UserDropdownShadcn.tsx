@@ -11,13 +11,17 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
-import { User, Settings, LogOut, ChevronDown, ChevronUp, UserCircle, Cog } from "lucide-react";
+import { User, LogOut, ChevronDown, ChevronUp, UserCircle, Cog, Shield } from "lucide-react";
 
 export default function UserDropdownShadcn() {
-    const { profile, signOut } = useAuth();
+    const { profile, signOut, isAdmin } = useAuth();
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
+
+    // 디버깅용 로그
+    console.log('🔍 UserDropdownShadcn - Profile:', profile);
+    console.log('🔍 UserDropdownShadcn - isAdmin():', isAdmin());
+    console.log('🔍 UserDropdownShadcn - Role:', profile?.role);
 
     const handleMyPageClick = () => {
         console.log('🖱️ 마이페이지 클릭됨!');
@@ -27,6 +31,11 @@ export default function UserDropdownShadcn() {
     const handleSettingsClick = () => {
         console.log('🖱️ 개인설정 클릭됨!');
         router.push('/settings');
+    };
+
+    const handleAdminDashboardClick = () => {
+        console.log('🖱️ 관리자 대시보드 클릭됨!');
+        router.push('/admin');
     };
 
     const handleLogoutClick = async () => {
@@ -106,6 +115,20 @@ export default function UserDropdownShadcn() {
                         <p className="text-xs text-slate-500">계정 설정</p>
                     </div>
                 </DropdownMenuItem>
+
+                {/* 관리자 대시보드 메뉴 (관리자만 표시) */}
+                {profile && (profile.role === 'admin' || profile.role === 'super_admin') && (
+                    <DropdownMenuItem onClick={handleAdminDashboardClick}
+                        className="cursor-pointer px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 transition-all duration-200 group">
+                        <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-200">
+                            <Shield className="h-4 w-4 text-orange-600" />
+                        </div>
+                        <div className="flex-1">
+                            <span className="font-semibold text-slate-900">관리자 대시보드</span>
+                            <p className="text-xs text-slate-500">사용자 관리</p>
+                        </div>
+                    </DropdownMenuItem>
+                )}
 
                 <DropdownMenuSeparator className="bg-slate-200/50" />
 

@@ -41,7 +41,7 @@ export async function getVerificationCode(email: string): Promise<VerificationDa
 
         console.log('인증번호 조회:', { email, code: verificationData.code, expires: new Date(verificationData.expires) });
         return verificationData;
-    } catch (error) {
+    } catch {
         console.log('인증번호 조회 실패:', email);
         return null;
     }

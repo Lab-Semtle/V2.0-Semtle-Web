@@ -2,17 +2,14 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Navigation from "@/components/layout/Navigation";
-import Footer from "@/components/layout/Footer";
-import { useAuth } from "@/contexts/AuthContext";
-import { Megaphone, Trophy, FileText, ArrowRight, Calendar, Users, Code, BookOpen, Clock, MapPin, CheckCircle } from "lucide-react";
+import { Megaphone, Trophy, FileText, ArrowRight, CheckCircle } from "lucide-react";
 
-export default function Home() {
+function HomeContent() {
   const [showVerificationMessage, setShowVerificationMessage] = useState(false);
   const searchParams = useSearchParams();
-  const { user, profile } = useAuth();
 
   useEffect(() => {
     const verified = searchParams.get('verified');
@@ -289,12 +286,18 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-
-
-      <Footer />
     </div>
   );
 }
 
-
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
+  );
+}

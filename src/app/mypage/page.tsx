@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Bell, Trophy, Code, FileText, Clock, ArrowLeft } from 'lucide-react';
+import { User, Bell, Code, FileText, Clock, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
