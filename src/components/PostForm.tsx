@@ -7,26 +7,41 @@ import { defaultEditorContent } from '@/lib/content';
 
 interface PostFormData {
     title: string;
-    slug: string;
     description: string;
     category: string;
     thumbnail: string;
     status?: string;
+    // 활동 전용 필드들
+    activity_type_id?: number;
+    location?: string;
+    start_date?: string;
+    end_date?: string;
+    max_participants?: number;
+    participation_fee?: number;
+    contact_info?: string;
+    has_voting?: boolean;
     // 프로젝트 전용 필드들
-    project_type?: string;
+    project_type_id?: number;
     team_size?: number;
     needed_skills?: string[];
-    duration?: string;
-    start_date?: string;
     deadline?: string;
     difficulty?: string;
-    location?: string;
-    tech_stack?: string[];
-    tools?: string[];
     project_goals?: string;
-    deliverables?: string;
-    requirements?: string;
-    benefits?: string;
+    tech_stack?: string[];
+    github_url?: string;
+    demo_url?: string;
+    // 자료실 전용 필드들
+    resource_type_id?: number;
+    subject?: string;
+    professor?: string;
+    semester?: string;
+    year?: number;
+    difficulty_level?: string;
+    file_extension?: string;
+    original_filename?: string;
+    downloads_count?: number;
+    rating?: number;
+    rating_count?: number;
 }
 
 interface PostFormProps {
@@ -40,48 +55,90 @@ interface PostFormProps {
         category?: string;
         thumbnail?: string;
         content?: unknown;
+        status?: string;
+        // 활동 전용 필드들
+        activity_type_id?: number;
+        location?: string;
+        start_date?: string;
+        end_date?: string;
+        max_participants?: number;
+        participation_fee?: number;
+        contact_info?: string;
+        has_voting?: boolean;
+        // 프로젝트 전용 필드들
+        project_type_id?: number;
+        team_size?: number;
+        needed_skills?: string[];
+        deadline?: string;
+        difficulty?: string;
+        project_goals?: string;
+        tech_stack?: string[];
+        github_url?: string;
+        demo_url?: string;
+        // 자료실 전용 필드들
+        resource_type_id?: number;
+        subject?: string;
+        professor?: string;
+        semester?: string;
+        year?: number;
+        difficulty_level?: string;
+        file_extension?: string;
+        original_filename?: string;
+        downloads_count?: number;
+        rating?: number;
+        rating_count?: number;
     };
+    initialContent?: unknown;
 }
 
-export default function PostForm({ onSave, isEditing = false, loading = false, boardType = 'projects', initialData }: PostFormProps) {
+export default function PostForm({ onSave, isEditing = false, loading = false, boardType = 'projects', initialData, initialContent }: PostFormProps) {
     const router = useRouter();
     const [formData, setFormData] = useState<PostFormData>({
         title: initialData?.title || '',
-        slug: '',
         description: initialData?.description || '',
         category: initialData?.category || '',
         thumbnail: initialData?.thumbnail || '',
+        status: initialData?.status || 'draft',
+        // 활동 전용 필드들
+        activity_type_id: initialData?.activity_type_id || undefined,
+        location: initialData?.location || '',
+        start_date: initialData?.start_date || '',
+        end_date: initialData?.end_date || '',
+        max_participants: initialData?.max_participants || undefined,
+        participation_fee: initialData?.participation_fee || 0,
+        contact_info: initialData?.contact_info || '',
+        has_voting: initialData?.has_voting || false,
         // 프로젝트 전용 필드들
-        project_type: '',
-        team_size: 1,
-        needed_skills: [],
-        duration: '',
-        start_date: '',
-        deadline: '',
-        difficulty: '',
-        location: '',
-        tech_stack: [],
-        tools: [],
-        project_goals: '',
-        deliverables: '',
-        requirements: '',
-        benefits: ''
+        project_type_id: initialData?.project_type_id || undefined,
+        team_size: initialData?.team_size || 1,
+        needed_skills: initialData?.needed_skills || [],
+        deadline: initialData?.deadline || '',
+        difficulty: initialData?.difficulty || '',
+        project_goals: initialData?.project_goals || '',
+        tech_stack: initialData?.tech_stack || [],
+        github_url: initialData?.github_url || '',
+        demo_url: initialData?.demo_url || '',
+        // 자료실 전용 필드들
+        resource_type_id: initialData?.resource_type_id || undefined,
+        subject: initialData?.subject || '',
+        professor: initialData?.professor || '',
+        semester: initialData?.semester || '',
+        year: initialData?.year || new Date().getFullYear(),
+        difficulty_level: initialData?.difficulty_level || 'intermediate',
+        file_extension: initialData?.file_extension || '',
+        original_filename: initialData?.original_filename || '',
+        downloads_count: initialData?.downloads_count || 0,
+        rating: initialData?.rating || 0,
+        rating_count: initialData?.rating_count || 0
     });
-    const [content, setContent] = useState(initialData?.content || defaultEditorContent);
+    const [content, setContent] = useState(initialContent || initialData?.content || defaultEditorContent);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState('');
     const [uploadingImage, setUploadingImage] = useState(false);
 
     const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const title = e.target.value;
-        const slug = title
-            .toLowerCase()
-            .replace(/[^a-z0-9\s-]/g, '')
-            .trim()
-            .replace(/\s+/g, '-')
-            .replace(/-+/g, '-');
-
-        setFormData(prev => ({ ...prev, title, slug }));
+        setFormData(prev => ({ ...prev, title }));
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -165,20 +222,18 @@ export default function PostForm({ onSave, isEditing = false, loading = false, b
                 <main className="p-6">
                     <div className="max-w-6xl mx-auto">
                         {/* 헤더 */}
-                        <header className="mb-8">
+                        <header className="mb-8 pt-20">
                             <div className="max-w-4xl mx-auto">
-                                <div className="flex items-center justify-between mb-6">
-                                    <div className="flex items-center space-x-2 text-2xl font-bold text-slate-900">
-                                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                                            <span className="text-white font-bold text-sm">S</span>
-                                        </div>
-                                        <span>SEMTLE</span>
-                                    </div>
-
-                                    <h1 className="text-lg font-medium text-slate-600">
-                                        {isEditing ? '게시물 수정' : '새 프로젝트 작성'}
-                                    </h1>
-                                </div>
+                                <h1 className="text-2xl font-bold text-slate-900 mb-6">
+                                    {isEditing
+                                        ? '게시물 수정하기'
+                                        : boardType === 'projects'
+                                            ? '새 프로젝트 등록하기'
+                                            : boardType === 'activities'
+                                                ? '새 활동 등록하기'
+                                                : '새 자료 등록하기'
+                                    }
+                                </h1>
                             </div>
                         </header>
 
@@ -291,23 +346,6 @@ export default function PostForm({ onSave, isEditing = false, loading = false, b
                         <div className="mb-8">
                             <div className="max-w-4xl mx-auto">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    {/* 슬러그 */}
-                                    <div>
-                                        <input
-                                            id="slug"
-                                            type="text"
-                                            value={formData.slug}
-                                            onChange={(e) => {
-                                                setFormData(prev => ({ ...prev, slug: e.target.value }));
-                                            }}
-                                            className="w-full text-lg bg-transparent border-none outline-none text-slate-600 placeholder-slate-400 resize-none font-mono"
-                                            placeholder="URL 슬러그를 입력하세요"
-                                        />
-                                        <div className="text-xs text-slate-400 mt-1">
-                                            영문 소문자, 숫자, 하이픈(-)만 사용 가능합니다. (예: my-post-title)
-                                        </div>
-                                    </div>
-
                                     {/* 카테고리 */}
                                     <select
                                         value={formData.category}
@@ -338,19 +376,23 @@ export default function PostForm({ onSave, isEditing = false, loading = false, b
                                                     프로젝트 타입 *
                                                 </label>
                                                 <select
-                                                    id="project_type"
-                                                    name="project_type"
-                                                    value={formData.project_type}
-                                                    onChange={handleInputChange}
+                                                    id="project_type_id"
+                                                    name="project_type_id"
+                                                    value={formData.project_type_id || ''}
+                                                    onChange={(e) => {
+                                                        setFormData(prev => ({ ...prev, project_type_id: parseInt(e.target.value) }));
+                                                    }}
                                                     className="w-full text-lg bg-transparent border-none outline-none text-slate-900 placeholder-slate-400"
                                                     required
                                                 >
                                                     <option value="">프로젝트 타입을 선택하세요</option>
-                                                    <option value="development">개발</option>
-                                                    <option value="competition">공모전</option>
-                                                    <option value="hackathon">해커톤</option>
-                                                    <option value="research">연구</option>
-                                                    <option value="side_project">사이드프로젝트</option>
+                                                    <option value="1">개인프로젝트</option>
+                                                    <option value="2">팀프로젝트</option>
+                                                    <option value="3">해커톤</option>
+                                                    <option value="4">공모전</option>
+                                                    <option value="5">연구프로젝트</option>
+                                                    <option value="6">상업프로젝트</option>
+                                                    <option value="7">오픈소스</option>
                                                 </select>
                                             </div>
 
@@ -468,6 +510,278 @@ export default function PostForm({ onSave, isEditing = false, loading = false, b
                             </div>
                         )}
 
+                        {/* 활동 전용 필드들 */}
+                        {boardType === 'activities' && (
+                            <div className="mb-8">
+                                <div className="max-w-4xl mx-auto">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        {/* 활동 타입과 장소 */}
+                                        <div className="space-y-6">
+                                            <div>
+                                                <label htmlFor="activity_type_id" className="block text-sm font-medium text-slate-600 mb-2">
+                                                    활동 타입 *
+                                                </label>
+                                                <select
+                                                    id="activity_type_id"
+                                                    name="activity_type_id"
+                                                    value={formData.activity_type_id || ''}
+                                                    onChange={(e) => {
+                                                        setFormData(prev => ({ ...prev, activity_type_id: parseInt(e.target.value) }));
+                                                    }}
+                                                    className="w-full text-lg bg-transparent border-none outline-none text-slate-900 placeholder-slate-400"
+                                                    required
+                                                >
+                                                    <option value="">활동 타입을 선택하세요</option>
+                                                    <option value="1">학회행사</option>
+                                                    <option value="2">세미나</option>
+                                                    <option value="3">워크샵</option>
+                                                    <option value="4">해커톤</option>
+                                                    <option value="5">공모전</option>
+                                                    <option value="6">기타</option>
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label htmlFor="location" className="block text-sm font-medium text-slate-600 mb-2">
+                                                    장소
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    id="location"
+                                                    name="location"
+                                                    value={formData.location || ''}
+                                                    onChange={(e) => {
+                                                        setFormData(prev => ({ ...prev, location: e.target.value }));
+                                                    }}
+                                                    className="w-full text-lg bg-transparent border-none outline-none text-slate-900 placeholder-slate-400"
+                                                    placeholder="예: 서울대학교 공과대학"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label htmlFor="max_participants" className="block text-sm font-medium text-slate-600 mb-2">
+                                                    최대 참가자 수
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    id="max_participants"
+                                                    name="max_participants"
+                                                    value={formData.max_participants || ''}
+                                                    onChange={(e) => {
+                                                        setFormData(prev => ({ ...prev, max_participants: parseInt(e.target.value) }));
+                                                    }}
+                                                    min="1"
+                                                    className="w-full text-lg bg-transparent border-none outline-none text-slate-900 placeholder-slate-400"
+                                                    placeholder="예: 50"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* 일정과 참가비 */}
+                                        <div className="space-y-6">
+                                            <div>
+                                                <label htmlFor="start_date" className="block text-sm font-medium text-slate-600 mb-2">
+                                                    시작일시
+                                                </label>
+                                                <input
+                                                    type="datetime-local"
+                                                    id="start_date"
+                                                    name="start_date"
+                                                    value={formData.start_date || ''}
+                                                    onChange={(e) => {
+                                                        setFormData(prev => ({ ...prev, start_date: e.target.value }));
+                                                    }}
+                                                    className="w-full text-lg bg-transparent border-none outline-none text-slate-900 placeholder-slate-400"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label htmlFor="end_date" className="block text-sm font-medium text-slate-600 mb-2">
+                                                    종료일시
+                                                </label>
+                                                <input
+                                                    type="datetime-local"
+                                                    id="end_date"
+                                                    name="end_date"
+                                                    value={formData.end_date || ''}
+                                                    onChange={(e) => {
+                                                        setFormData(prev => ({ ...prev, end_date: e.target.value }));
+                                                    }}
+                                                    className="w-full text-lg bg-transparent border-none outline-none text-slate-900 placeholder-slate-400"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label htmlFor="participation_fee" className="block text-sm font-medium text-slate-600 mb-2">
+                                                    참가비 (원)
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    id="participation_fee"
+                                                    name="participation_fee"
+                                                    value={formData.participation_fee || 0}
+                                                    onChange={(e) => {
+                                                        setFormData(prev => ({ ...prev, participation_fee: parseInt(e.target.value) }));
+                                                    }}
+                                                    min="0"
+                                                    className="w-full text-lg bg-transparent border-none outline-none text-slate-900 placeholder-slate-400"
+                                                    placeholder="0"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label htmlFor="contact_info" className="block text-sm font-medium text-slate-600 mb-2">
+                                                    연락처 정보
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    id="contact_info"
+                                                    name="contact_info"
+                                                    value={formData.contact_info || ''}
+                                                    onChange={(e) => {
+                                                        setFormData(prev => ({ ...prev, contact_info: e.target.value }));
+                                                    }}
+                                                    className="w-full text-lg bg-transparent border-none outline-none text-slate-900 placeholder-slate-400"
+                                                    placeholder="예: 010-1234-5678 또는 admin@semtle.org"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 자료실 전용 필드들 */}
+                        {boardType === 'resources' && (
+                            <div className="mb-8">
+                                <div className="max-w-4xl mx-auto">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        {/* 자료 타입과 학과 정보 */}
+                                        <div className="space-y-6">
+                                            <div>
+                                                <label htmlFor="resource_type_id" className="block text-sm font-medium text-slate-600 mb-2">
+                                                    자료 타입 *
+                                                </label>
+                                                <select
+                                                    id="resource_type_id"
+                                                    name="resource_type_id"
+                                                    value={formData.resource_type_id || ''}
+                                                    onChange={(e) => {
+                                                        setFormData(prev => ({ ...prev, resource_type_id: parseInt(e.target.value) }));
+                                                    }}
+                                                    className="w-full text-lg bg-transparent border-none outline-none text-slate-900 placeholder-slate-400"
+                                                    required
+                                                >
+                                                    <option value="">자료 타입을 선택하세요</option>
+                                                    <option value="1">문서</option>
+                                                    <option value="2">코드</option>
+                                                    <option value="3">이미지</option>
+                                                    <option value="4">동영상</option>
+                                                    <option value="5">프레젠테이션</option>
+                                                    <option value="6">압축파일</option>
+                                                    <option value="7">기타</option>
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label htmlFor="subject" className="block text-sm font-medium text-slate-600 mb-2">
+                                                    과목명
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    id="subject"
+                                                    name="subject"
+                                                    value={formData.subject || ''}
+                                                    onChange={(e) => {
+                                                        setFormData(prev => ({ ...prev, subject: e.target.value }));
+                                                    }}
+                                                    className="w-full text-lg bg-transparent border-none outline-none text-slate-900 placeholder-slate-400"
+                                                    placeholder="예: 데이터베이스시스템"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label htmlFor="professor" className="block text-sm font-medium text-slate-600 mb-2">
+                                                    교수명
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    id="professor"
+                                                    name="professor"
+                                                    value={formData.professor || ''}
+                                                    onChange={(e) => {
+                                                        setFormData(prev => ({ ...prev, professor: e.target.value }));
+                                                    }}
+                                                    className="w-full text-lg bg-transparent border-none outline-none text-slate-900 placeholder-slate-400"
+                                                    placeholder="예: 홍길동 교수"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* 학기와 난이도 */}
+                                        <div className="space-y-6">
+                                            <div>
+                                                <label htmlFor="semester" className="block text-sm font-medium text-slate-600 mb-2">
+                                                    학기
+                                                </label>
+                                                <select
+                                                    id="semester"
+                                                    name="semester"
+                                                    value={formData.semester || ''}
+                                                    onChange={(e) => {
+                                                        setFormData(prev => ({ ...prev, semester: e.target.value }));
+                                                    }}
+                                                    className="w-full text-lg bg-transparent border-none outline-none text-slate-900 placeholder-slate-400"
+                                                >
+                                                    <option value="">학기를 선택하세요</option>
+                                                    <option value="1학기">1학기</option>
+                                                    <option value="2학기">2학기</option>
+                                                    <option value="여름학기">여름학기</option>
+                                                    <option value="겨울학기">겨울학기</option>
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label htmlFor="year" className="block text-sm font-medium text-slate-600 mb-2">
+                                                    연도
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    id="year"
+                                                    name="year"
+                                                    value={formData.year || new Date().getFullYear()}
+                                                    onChange={(e) => {
+                                                        setFormData(prev => ({ ...prev, year: parseInt(e.target.value) }));
+                                                    }}
+                                                    min="2020"
+                                                    max={new Date().getFullYear() + 1}
+                                                    className="w-full text-lg bg-transparent border-none outline-none text-slate-900 placeholder-slate-400"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label htmlFor="difficulty_level" className="block text-sm font-medium text-slate-600 mb-2">
+                                                    난이도
+                                                </label>
+                                                <select
+                                                    id="difficulty_level"
+                                                    name="difficulty_level"
+                                                    value={formData.difficulty_level || 'intermediate'}
+                                                    onChange={(e) => {
+                                                        setFormData(prev => ({ ...prev, difficulty_level: e.target.value }));
+                                                    }}
+                                                    className="w-full text-lg bg-transparent border-none outline-none text-slate-900 placeholder-slate-400"
+                                                >
+                                                    <option value="beginner">초급</option>
+                                                    <option value="intermediate">중급</option>
+                                                    <option value="advanced">고급</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* 게시물 내용 작성 */}
                         <div className="mb-8">
@@ -489,16 +803,17 @@ export default function PostForm({ onSave, isEditing = false, loading = false, b
                         </div>
 
                         {/* 하단 여백 (고정 메뉴바 공간 확보) */}
-                        <div className="h-24"></div>
+                        <div className="h-20 sm:h-24"></div>
                     </div>
                 </main>
             </div>
 
             {/* 하단 고정 액션 메뉴바 */}
-            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-2xl shadow-2xl border-t border-slate-200">
-                <div className="max-w-6xl mx-auto px-6 py-5">
-                    <div className="flex items-center justify-between">
-                        {/* 왼쪽: 뒤로가기 버튼 */}
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-2xl shadow-2xl border-t border-slate-200">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+                    {/* 데스크톱 레이아웃 */}
+                    <div className="hidden sm:flex items-center justify-between">
+                        {/* 왼쪽: 취소 버튼 */}
                         <button
                             onClick={() => router.back()}
                             className="flex items-center space-x-2 px-4 py-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all duration-300 font-medium group"
@@ -506,19 +821,11 @@ export default function PostForm({ onSave, isEditing = false, loading = false, b
                             <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                             </svg>
-                            <span>뒤로가기</span>
+                            <span>취소</span>
                         </button>
 
                         {/* 오른쪽: 액션 버튼들 */}
                         <div className="flex items-center space-x-3">
-                            {/* 취소 버튼 */}
-                            <button
-                                onClick={() => router.back()}
-                                className="px-5 py-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all duration-300 font-medium"
-                            >
-                                취소
-                            </button>
-
                             {/* 임시저장 버튼 */}
                             <button
                                 onClick={() => handleSave(true)}
@@ -544,10 +851,60 @@ export default function PostForm({ onSave, isEditing = false, loading = false, b
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                         </svg>
-                                        <span>{isEditing ? '게시물 수정' : '게시물 저장'}</span>
+                                        <span>{isEditing ? '게시물 수정하기' : '게시물 저장하기'}</span>
                                     </>
                                 )}
                             </button>
+                        </div>
+                    </div>
+
+                    {/* 모바일 레이아웃 */}
+                    <div className="sm:hidden">
+                        {/* 취소는 왼쪽, 임시저장/저장은 오른쪽에 배치 */}
+                        <div className="flex items-center justify-between">
+                            {/* 왼쪽: 취소 버튼 */}
+                            <button
+                                onClick={() => router.back()}
+                                className="flex items-center space-x-1 px-3 py-2.5 text-sm text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all duration-300 font-medium"
+                            >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                                <span>취소</span>
+                            </button>
+
+                            {/* 오른쪽: 임시저장과 저장 버튼 */}
+                            <div className="flex items-center space-x-2">
+                                {/* 임시저장 버튼 */}
+                                <button
+                                    onClick={() => handleSave(true)}
+                                    disabled={isSaving || loading}
+                                    className="px-4 py-2.5 text-sm text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    임시저장
+                                </button>
+
+                                {/* 저장 버튼 */}
+                                <button
+                                    onClick={() => handleSave(false)}
+                                    disabled={isSaving || loading}
+                                    className="flex items-center space-x-1 px-4 py-2.5 text-sm bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-lg transition-all duration-300 font-medium disabled:cursor-not-allowed shadow-lg"
+                                >
+                                    {isSaving ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-3 w-3 border-2 border-white/30 border-t-white"></div>
+                                            <span>저장 중...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            <span>{isEditing ? '수정하기' : '저장하기'}</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -26,6 +26,9 @@ export default function RegisterPage() {
     const [currentStep, setCurrentStep] = useState(0);
     const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
     const [isTransitioning, setIsTransitioning] = useState(false);
+    const [nicknameChecking, setNicknameChecking] = useState(false);
+    const [nicknameAvailable, setNicknameAvailable] = useState<boolean | null>(null);
+    const [nicknameTimeout, setNicknameTimeout] = useState<NodeJS.Timeout | null>(null);
     const router = useRouter();
     const { signUp } = useAuth();
 
@@ -54,9 +57,15 @@ export default function RegisterPage() {
     };
 
     const validateNickname = (value: string) => {
-        const nicknameRegex = /^[a-z0-9._-]+$/;
+        if (value.trim().length === 0) {
+            return "닉네임을 입력해주세요";
+        }
+        if (value.length < 2 || value.length > 50) {
+            return "닉네임은 2자 이상 50자 이하로 입력해주세요";
+        }
+        const nicknameRegex = /^[가-힣a-zA-Z0-9_-]+$/;
         if (!nicknameRegex.test(value)) {
-            return "영어소문자, 숫자, '_', '-', '.' 만 사용 가능합니다";
+            return "한글, 영문, 숫자, 언더스코어(_), 하이픈(-)만 사용 가능합니다";
         }
         return null;
     };
@@ -134,11 +143,68 @@ export default function RegisterPage() {
         }
     };
 
+    const checkNicknameAvailability = async (nickname: string) => {
+        if (!nickname || nickname.trim().length === 0) {
+            setNicknameAvailable(null);
+            return;
+        }
+
+        const error = validateNickname(nickname);
+        if (error) {
+            setNicknameAvailable(false);
+            return;
+        }
+
+        setNicknameChecking(true);
+        try {
+            const response = await fetch('/api/auth/check-nickname', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ nickname: nickname.trim() })
+            });
+
+            const data = await response.json();
+            setNicknameAvailable(data.available);
+
+            if (!data.available) {
+                setValidationErrors(prev => ({ ...prev, nickname: data.message }));
+            } else {
+                setValidationErrors(prev => ({ ...prev, nickname: '' }));
+            }
+        } catch (error) {
+            console.error('닉네임 중복 확인 오류:', error);
+            setNicknameAvailable(false);
+            setValidationErrors(prev => ({ ...prev, nickname: '닉네임 확인 중 오류가 발생했습니다.' }));
+        } finally {
+            setNicknameChecking(false);
+        }
+    };
+
     const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value.toLowerCase(); // 소문자로 변환
+        const value = e.target.value;
         setFormData(prev => ({ ...prev, nickname: value }));
+
+        // 기존 타이머 클리어
+        if (nicknameTimeout) {
+            clearTimeout(nicknameTimeout);
+        }
+
+        // 실시간 검증
         const error = validateNickname(value);
-        setValidationErrors(prev => ({ ...prev, nickname: error || '' }));
+        if (error) {
+            setValidationErrors(prev => ({ ...prev, nickname: error }));
+            setNicknameAvailable(false);
+            return;
+        }
+
+        // 디바운스된 중복 검증
+        const timeoutId = setTimeout(() => {
+            checkNicknameAvailability(value);
+        }, 500);
+
+        setNicknameTimeout(timeoutId);
     };
 
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -190,7 +256,7 @@ export default function RegisterPage() {
             case 'studentId':
                 return !validateStudentId(value);
             case 'nickname':
-                return !validateNickname(value);
+                return !validateNickname(value) && nicknameAvailable === true;
             case 'name':
                 return !validateName(value);
             case 'email':
@@ -267,6 +333,13 @@ export default function RegisterPage() {
             // 모든 필수 필드 검증
             if (!formData.studentId || !formData.nickname || !formData.name || !formData.email || !formData.password) {
                 setError('모든 필수 필드를 입력해주세요.');
+                setLoading(false);
+                return;
+            }
+
+            // 닉네임 중복 최종 검증
+            if (nicknameAvailable !== true) {
+                setError('닉네임 중복 확인을 완료해주세요.');
                 setLoading(false);
                 return;
             }
@@ -505,9 +578,23 @@ export default function RegisterPage() {
                                                     onChange={handleNicknameChange}
                                                     onKeyDown={handleNicknameKeyDown}
                                                     required
-                                                    className="w-full pl-12 pr-4 py-4 bg-slate-50/70 border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all duration-300 shadow-sm hover:shadow-md text-sm"
-                                                    placeholder="닉네임을 입력하세요"
+                                                    className={`w-full pl-12 pr-12 py-4 bg-slate-50/70 border rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 transition-all duration-300 shadow-sm hover:shadow-md text-sm ${nicknameAvailable === true
+                                                            ? 'border-green-500 focus:ring-green-500/30 focus:border-green-500'
+                                                            : nicknameAvailable === false
+                                                                ? 'border-red-500 focus:ring-red-500/30 focus:border-red-500'
+                                                                : 'border-slate-200 focus:ring-emerald-500/30 focus:border-emerald-500'
+                                                        }`}
+                                                    placeholder="닉네임을 입력하세요 (2-50자, 한글/영문/숫자/_,-)"
                                                 />
+                                                <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
+                                                    {nicknameChecking ? (
+                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                                                    ) : nicknameAvailable === true ? (
+                                                        <Check className="h-4 w-4 text-green-500" />
+                                                    ) : nicknameAvailable === false ? (
+                                                        <AlertCircle className="h-4 w-4 text-red-500" />
+                                                    ) : null}
+                                                </div>
                                                 <Tooltip
                                                     message={validationErrors.nickname || ''}
                                                     show={!!validationErrors.nickname}

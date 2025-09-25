@@ -13,6 +13,8 @@ import { ResourcePost } from '@/types/resource';
 
 export default function ResourcesPage() {
     const [resources, setResources] = useState<ResourcePost[]>([]);
+    const [categories, setCategories] = useState<any[]>([]);
+    const [types, setTypes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedCategory, setSelectedCategory] = useState("전체");
@@ -38,6 +40,8 @@ export default function ResourcesPage() {
                 } else {
                     // 데이터가 없어도 정상적으로 처리
                     setResources(data.resources || []);
+                    setCategories(data.categories || []);
+                    setTypes(data.types || []);
                 }
             } catch (err) {
                 console.warn('자료 데이터 로드 오류, 빈 배열로 처리:', err);
@@ -94,8 +98,6 @@ export default function ResourcesPage() {
 
     // 에러 상태 렌더링 제거 - API 오류 시에도 정상 화면 표시
 
-    const categories = ["전체", "시험지", "강의자료", "코드", "프레젠테이션", "이미지", "동영상", "기타"];
-
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
             <Navigation />
@@ -125,7 +127,7 @@ export default function ResourcesPage() {
                         {/* Filter Buttons */}
                         <div className="w-full">
                             <FilterButtons
-                                filters={categories}
+                                filters={["전체", ...categories.map(cat => cat.name)]}
                                 selectedFilter={selectedCategory}
                                 onFilterChange={setSelectedCategory}
                             />

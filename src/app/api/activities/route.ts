@@ -17,12 +17,13 @@ export async function GET(request: NextRequest) {
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '20');
 
-        // 활동 게시물 조회 (새로운 분리된 구조)
+        // 활동 게시물 조회 (최적화된 구조)
         let query = supabase
             .from('activities')
             .select(`
         *,
-        category:board_categories(*),
+        category:activity_categories(*),
+        activity_type:activity_types(*),
         author:user_profiles!activities_author_id_fkey(
           id,
           nickname,
@@ -33,9 +34,9 @@ export async function GET(request: NextRequest) {
       `)
             .eq('status', 'published');
 
-        // 필터 적용 (새로운 구조에 맞게)
+        // 필터 적용 (최적화된 구조에 맞게)
         if (activity_type) {
-            query = query.eq('activity_type', activity_type);
+            query = query.eq('activity_type_id', activity_type);
         }
 
         if (location) {
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
         }
 
         if (has_voting === 'true') {
-            query = query.not('vote_options', 'is', null);
+            query = query.eq('has_voting', true);
         }
 
         // 정렬 (시작일 기준)
@@ -69,13 +70,19 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: '활동 목록을 불러올 수 없습니다.' }, { status: 500 });
         }
 
-        // 카테고리 목록 조회
-        const { data: categories } = await supabase
-            .from('board_categories')
-            .select('*')
-            .eq('board_type', 'activities')
-            .eq('is_active', true)
-            .order('sort_order');
+        // 카테고리 및 타입 목록 조회
+        const [categoriesResult, typesResult] = await Promise.all([
+            supabase
+                .from('activity_categories')
+                .select('*')
+                .eq('is_active', true)
+                .order('sort_order'),
+            supabase
+                .from('activity_types')
+                .select('*')
+                .eq('is_active', true)
+                .order('sort_order')
+        ]);
 
         return NextResponse.json({
             activities: activities || [],
@@ -85,7 +92,8 @@ export async function GET(request: NextRequest) {
                 total: count || 0,
                 totalPages: Math.ceil((count || 0) / limit)
             },
-            categories: categories || []
+            categories: categoriesResult.data || [],
+            types: typesResult.data || []
         });
     } catch (error) {
         console.error('활동 목록 조회 중 오류:', error);
@@ -122,29 +130,24 @@ export async function POST(request: NextRequest) {
             content,
             thumbnail,
             category_id,
+            activity_type_id,
             status = 'draft',
             tags = [],
-            activity_type,
             location,
             start_date,
             end_date,
             max_participants,
+            participation_fee = 0,
+            contact_info,
+            has_voting = false,
             vote_options,
-            vote_deadline,
-            allow_multiple_votes = false
+            vote_deadline
         } = activityData;
 
         // 필수 필드 검증
-        if (!title || !content || !activity_type) {
+        if (!title || !content || !activity_type_id) {
             return NextResponse.json({ error: '필수 필드가 누락되었습니다.' }, { status: 400 });
         }
-
-        // 슬러그 생성
-        const slug = title.toLowerCase()
-            .replace(/[^a-z0-9\s-]/g, '')
-            .trim()
-            .replace(/\s+/g, '-')
-            .replace(/-+/g, '-') + '-' + Date.now();
 
         // 트랜잭션으로 게시물과 활동 데이터 생성
         const { data: newActivity, error: activityError } = await supabase
@@ -154,20 +157,21 @@ export async function POST(request: NextRequest) {
                 subtitle,
                 content,
                 thumbnail,
-                slug,
                 category_id,
+                activity_type_id,
                 author_id: user.id,
                 status,
                 tags,
-                activity_type,
                 location,
                 start_date,
                 end_date,
                 max_participants,
                 current_participants: 0,
+                participation_fee,
+                contact_info,
+                has_voting,
                 vote_options: vote_options || [],
                 vote_deadline,
-                allow_multiple_votes,
                 published_at: status === 'published' ? new Date().toISOString() : null
             })
             .select()
@@ -183,7 +187,8 @@ export async function POST(request: NextRequest) {
             .from('activities')
             .select(`
         *,
-        category:board_categories(*),
+        category:activity_categories(*),
+        activity_type:activity_types(*),
         author:user_profiles!activities_author_id_fkey(
           id,
           nickname,

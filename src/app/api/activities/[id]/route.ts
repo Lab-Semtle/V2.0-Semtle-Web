@@ -89,16 +89,18 @@ export async function PUT(
             content,
             thumbnail,
             category_id,
+            activity_type_id,
             status,
             tags,
-            activity_type,
             location,
             start_date,
             end_date,
             max_participants,
+            participation_fee,
+            contact_info,
+            has_voting,
             vote_options,
-            vote_deadline,
-            allow_multiple_votes
+            vote_deadline
         } = updateData;
 
         // 활동 수정
@@ -110,16 +112,18 @@ export async function PUT(
                 content,
                 thumbnail,
                 category_id,
+                activity_type_id,
                 status,
                 tags,
-                activity_type,
                 location,
                 start_date,
                 end_date,
                 max_participants,
+                participation_fee,
+                contact_info,
+                has_voting,
                 vote_options,
                 vote_deadline,
-                allow_multiple_votes,
                 updated_at: new Date().toISOString(),
                 published_at: status === 'published' ? new Date().toISOString() : null
             })
@@ -187,3 +191,4 @@ export async function DELETE(
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
+

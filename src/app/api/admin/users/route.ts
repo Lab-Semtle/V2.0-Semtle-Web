@@ -4,11 +4,20 @@ import { createServerSupabase } from '@/lib/supabase/server';
 // 관리자용 사용자 목록 조회
 export async function GET(request: NextRequest) {
     try {
+        // Authorization 헤더에서 토큰 확인
+        const authHeader = request.headers.get('Authorization');
+        const token = authHeader?.replace('Bearer ', '');
+
+        if (!token) {
+            return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
+        }
+
         const supabase = await createServerSupabase();
 
-        // 현재 사용자 확인
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) {
+        // 토큰으로 사용자 확인
+        const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+
+        if (userError || !user) {
             return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
         }
 
@@ -92,3 +101,4 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
+

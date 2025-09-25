@@ -10,22 +10,25 @@ export interface ResourcePost extends Post {
 
 export interface ResourceData {
     post_id: number;
-    file_type: 'document' | 'code' | 'presentation' | 'image' | 'video' | 'other';
+    resource_type_id: number;
+    resource_type?: {
+        id: number;
+        name: string;
+        description?: string;
+        icon?: string;
+        file_extensions?: string[];
+    };
     file_extension?: string;
+    original_filename?: string;
     file_size?: number;
     file_url?: string;
-    file_name?: string;
     subject?: string;
     professor?: string;
     semester?: string;
     year?: number;
-    version: string;
-    language?: string;
-    license: string;
-    resource_status: 'active' | 'outdated' | 'removed';
-    is_verified: boolean;
-    verified_by?: string;
-    verified_at?: string;
+    difficulty_level: 'beginner' | 'intermediate' | 'advanced';
+    rating: number;
+    rating_count: number;
     downloads_count: number;
     last_downloaded?: string;
 }
@@ -50,18 +53,18 @@ export interface ResourceCreateData {
     tags?: string[];
 
     // 자료 특화 정보
-    file_type: 'document' | 'code' | 'presentation' | 'image' | 'video' | 'other';
+    resource_type_id: number;
     file_extension?: string;
+    original_filename?: string;
     file_size?: number;
     file_url?: string;
-    file_name?: string;
     subject?: string;
     professor?: string;
     semester?: string;
     year?: number;
-    version?: string;
-    language?: string;
-    license?: string;
+    difficulty_level: 'beginner' | 'intermediate' | 'advanced';
+    rating: number;
+    rating_count: number;
 }
 
 export interface ResourceUpdateData {
@@ -75,29 +78,28 @@ export interface ResourceUpdateData {
     tags?: string[];
 
     // 자료 특화 정보
-    file_type?: 'document' | 'code' | 'presentation' | 'image' | 'video' | 'other';
+    resource_type_id?: number;
     file_extension?: string;
+    original_filename?: string;
     file_size?: number;
     file_url?: string;
-    file_name?: string;
     subject?: string;
     professor?: string;
     semester?: string;
     year?: number;
-    version?: string;
-    language?: string;
-    license?: string;
-    resource_status?: 'active' | 'outdated' | 'removed';
+    difficulty_level?: 'beginner' | 'intermediate' | 'advanced';
+    rating?: number;
+    rating_count?: number;
 }
 
 export interface ResourceFilters {
-    file_type?: string;
+    resource_type_id?: number;
     subject?: string;
     professor?: string;
     semester?: string;
     year?: number;
-    language?: string;
-    is_verified?: boolean;
+    difficulty_level?: string;
+    file_extension?: string;
     downloads_min?: number;
     downloads_max?: number;
     uploaded_from?: string;

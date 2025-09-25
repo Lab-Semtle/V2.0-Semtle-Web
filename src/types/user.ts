@@ -80,3 +80,4 @@ export interface UserStats {
     join_date: string;
     last_activity?: string;
 }
+

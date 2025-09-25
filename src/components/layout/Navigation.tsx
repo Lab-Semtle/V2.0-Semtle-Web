@@ -18,13 +18,13 @@ export default function Navigation() {
                     {/* Left - Logo */}
                     <div className="absolute left-6 top-1/2 transform -translate-y-1/2">
                         <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity duration-200">
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden">
+                            <div className="w-10 h-10 rounded-lg bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm border border-gray-200/50">
                                 <Image
-                                    src="/logo/semtle-logo-bg-circle-v2022.png"
+                                    src="/logo/semtle-logo-bg-square-v2022.png"
                                     alt="SEMTLE Logo"
-                                    width={40}
-                                    height={40}
-                                    className="w-full h-full object-contain"
+                                    width={32}
+                                    height={32}
+                                    className="w-8 h-8 object-contain"
                                 />
                             </div>
                             <span className="text-xl font-bold text-gray-900 font-dunggeunmo drop-shadow-lg">아치셈틀</span>
@@ -90,14 +90,14 @@ export default function Navigation() {
                 ) : (
                     <Link
                         href="/auth/login"
-                        className="group flex items-center justify-center w-10 h-10 bg-white/95 backdrop-blur-sm rounded-full shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 border border-slate-200/40 hover:border-slate-300/60"
+                        className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/90 backdrop-blur-sm shadow-sm border border-gray-200/50 hover:opacity-80 transition-opacity duration-200"
                     >
                         <Image
-                            src="/logo/semtle-logo-bg-circle-v2022.png"
+                            src="/logo/semtle-logo-bg-square-v2022.png"
                             alt="SEMTLE Logo"
                             width={24}
                             height={24}
-                            className="w-6 h-6 object-contain group-hover:scale-105 transition-transform duration-200"
+                            className="w-6 h-6 object-contain"
                         />
                     </Link>
                 )}

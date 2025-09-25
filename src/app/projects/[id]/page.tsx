@@ -110,7 +110,7 @@ export default function ProjectDetailPage() {
                             <h2 className="text-xl font-semibold mb-4">프로젝트 정보</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <span className="font-medium">프로젝트 타입:</span> {post.project_data.project_type}
+                                    <span className="font-medium">프로젝트 타입:</span> {post.project_type?.name || 'N/A'}
                                 </div>
                                 <div>
                                     <span className="font-medium">팀 크기:</span> {post.project_data.current_members}/{post.project_data.team_size}명

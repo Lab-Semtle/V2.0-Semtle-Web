@@ -11,10 +11,11 @@ import ActivityCard from '@/components/activities/ActivityCard';
 import EmptyState from '@/components/common/EmptyState';
 import { ActivityPost } from '@/types/activity';
 
-const categories = ["전체", "공지사항", "이벤트", "세미나", "워크샵", "투표", "행사기록"];
 
 export default function ActivitiesPage() {
     const [activities, setActivities] = useState<ActivityPost[]>([]);
+    const [categories, setCategories] = useState<any[]>([]);
+    const [types, setTypes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedCategory, setSelectedCategory] = useState("전체");
@@ -40,6 +41,8 @@ export default function ActivitiesPage() {
                 } else {
                     // 데이터가 없어도 정상적으로 처리
                     setActivities(data.activities || []);
+                    setCategories(data.categories || []);
+                    setTypes(data.types || []);
                 }
             } catch (err) {
                 console.warn('활동 데이터 로드 오류, 빈 배열로 처리:', err);
@@ -125,7 +128,7 @@ export default function ActivitiesPage() {
                         {/* Filter Buttons */}
                         <div className="w-full">
                             <FilterButtons
-                                filters={categories}
+                                filters={["전체", ...categories.map(cat => cat.name)]}
                                 selectedFilter={selectedCategory}
                                 onFilterChange={setSelectedCategory}
                             />

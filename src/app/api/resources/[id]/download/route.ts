@@ -39,10 +39,6 @@ export async function POST(
             return NextResponse.json({ error: '자료를 찾을 수 없습니다.' }, { status: 404 });
         }
 
-        // 자료 상태 확인
-        if (resource.resource_status !== 'active') {
-            return NextResponse.json({ error: '현재 다운로드할 수 없는 자료입니다.' }, { status: 400 });
-        }
 
         if (!resource.file_url) {
             return NextResponse.json({ error: '파일이 존재하지 않습니다.' }, { status: 404 });
@@ -95,7 +91,7 @@ export async function POST(
 
         return NextResponse.json({
             download_url: resource.file_url,
-            file_name: resource.file_name || resource.post.title,
+            file_name: resource.original_filename || resource.post.title,
             file_size: resource.file_size,
             message: '다운로드가 시작됩니다.'
         });

@@ -6,11 +6,20 @@ import PostForm from '@/components/PostForm';
 
 interface PostFormData {
   title: string;
-  slug: string;
   description: string;
   category: string;
   thumbnail: string;
   status?: string;
+  project_type_id?: number;
+  team_size?: number;
+  needed_skills?: string[];
+  deadline?: string;
+  difficulty?: string;
+  location?: string;
+  project_goals?: string;
+  tech_stack?: string[];
+  github_url?: string;
+  demo_url?: string;
 }
 
 export default function WriteProjectPage() {
@@ -41,8 +50,13 @@ export default function WriteProjectPage() {
       const result = await response.json();
       console.log('Project post saved:', result);
 
-      alert('프로젝트가 성공적으로 등록되었습니다!');
-      router.push('/projects');
+      // 상태에 따라 다른 메시지 표시
+      if (formData.status === 'draft') {
+        alert('프로젝트가 임시저장되었습니다!');
+      } else {
+        alert('프로젝트가 성공적으로 등록되었습니다!');
+        router.push('/projects');
+      }
     } catch (error) {
       console.error('게시물 저장 중 오류:', error);
       throw error;

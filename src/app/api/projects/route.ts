@@ -19,12 +19,13 @@ export async function GET(request: NextRequest) {
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '20');
 
-        // 프로젝트 게시물 조회 (새로운 분리된 구조)
+        // 프로젝트 게시물 조회 (최적화된 구조)
         let query = supabase
             .from('projects')
             .select(`
         *,
-        category:board_categories(*),
+        category:project_categories(*),
+        project_type:project_types(*),
         author:user_profiles!projects_author_id_fkey(
           id,
           nickname,
@@ -35,9 +36,9 @@ export async function GET(request: NextRequest) {
       `)
             .eq('status', 'published');
 
-        // 필터 적용 (새로운 구조에 맞게)
+        // 필터 적용 (최적화된 구조에 맞게)
         if (project_type) {
-            query = query.eq('project_type', project_type);
+            query = query.eq('project_type_id', project_type);
         }
 
         if (difficulty) {
@@ -79,13 +80,19 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: '프로젝트 목록을 불러올 수 없습니다.' }, { status: 500 });
         }
 
-        // 카테고리 목록 조회
-        const { data: categories } = await supabase
-            .from('board_categories')
-            .select('*')
-            .eq('board_type', 'projects')
-            .eq('is_active', true)
-            .order('sort_order');
+        // 카테고리 및 타입 목록 조회
+        const [categoriesResult, typesResult] = await Promise.all([
+            supabase
+                .from('project_categories')
+                .select('*')
+                .eq('is_active', true)
+                .order('sort_order'),
+            supabase
+                .from('project_types')
+                .select('*')
+                .eq('is_active', true)
+                .order('sort_order')
+        ]);
 
         return NextResponse.json({
             projects: projects || [],
@@ -95,7 +102,8 @@ export async function GET(request: NextRequest) {
                 total: count || 0,
                 totalPages: Math.ceil((count || 0) / limit)
             },
-            categories: categories || []
+            categories: categoriesResult.data || [],
+            types: typesResult.data || []
         });
     } catch (error) {
         console.error('프로젝트 목록 조회 중 오류:', error);
@@ -123,8 +131,8 @@ export async function POST(request: NextRequest) {
             content,
             thumbnail,
             category,
+            project_type_id,
             status = 'draft',
-            project_type,
             team_size,
             needed_skills,
             deadline,
@@ -134,30 +142,22 @@ export async function POST(request: NextRequest) {
         } = projectData;
 
         // 필수 필드 검증
-        if (!title || !project_type || !team_size || !deadline || !difficulty || !location) {
+        if (!title || !project_type_id || !team_size || !deadline || !difficulty || !location) {
             return NextResponse.json({ error: '필수 필드가 누락되었습니다.' }, { status: 400 });
         }
-
-        // 슬러그 생성
-        const slug = title.toLowerCase()
-            .replace(/[^a-z0-9\s-]/g, '')
-            .trim()
-            .replace(/\s+/g, '-')
-            .replace(/-+/g, '-') + '-' + Date.now();
 
         // 카테고리 ID 찾기
         let category_id = null;
         if (category) {
             const { data: categoryData } = await supabase
-                .from('board_categories')
+                .from('project_categories')
                 .select('id')
                 .eq('name', category)
-                .eq('board_type', 'projects')
                 .single();
             category_id = categoryData?.id;
         }
 
-        // 프로젝트 데이터 생성 (새로운 분리된 구조)
+        // 프로젝트 데이터 생성 (최적화된 구조)
         const { data: newProject, error: projectError } = await supabase
             .from('projects')
             .insert({
@@ -165,12 +165,11 @@ export async function POST(request: NextRequest) {
                 subtitle: description || '',
                 content: content || null,
                 thumbnail,
-                slug,
                 category_id,
+                project_type_id,
                 author_id: user.id,
                 status: status === 'published' ? 'published' : 'draft',
                 tags: [],
-                project_type,
                 team_size: parseInt(team_size),
                 current_members: 1, // 작성자 포함
                 needed_skills: needed_skills || [],
@@ -178,13 +177,8 @@ export async function POST(request: NextRequest) {
                 difficulty,
                 location,
                 project_status: 'recruiting',
-                progress_percentage: 0,
                 tech_stack: [],
-                tools: [],
                 project_goals: project_goals || '',
-                deliverables: '',
-                requirements: '',
-                benefits: '',
                 published_at: status === 'published' ? new Date().toISOString() : null
             })
             .select()
@@ -210,7 +204,8 @@ export async function POST(request: NextRequest) {
             .from('projects')
             .select(`
         *,
-        category:board_categories(*),
+        category:project_categories(*),
+        project_type:project_types(*),
         author:user_profiles!projects_author_id_fkey(
           id,
           nickname,

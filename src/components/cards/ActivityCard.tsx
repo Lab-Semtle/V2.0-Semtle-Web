@@ -105,7 +105,7 @@ export default function ActivityCard({ activity, className = '' }: ActivityCardP
                     ) : (
                         <div className="w-full h-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
                             <span className="text-blue-400 text-4xl font-bold">
-                                {getActivityTypeLabel(activity.activity_data?.activity_type || 'activity').charAt(0)}
+                                {getActivityTypeLabel(activity.activity_type?.name || 'activity').charAt(0)}
                             </span>
                         </div>
                     )}
@@ -128,8 +128,8 @@ export default function ActivityCard({ activity, className = '' }: ActivityCardP
 
                     {/* 활동 타입 및 상태 */}
                     <div className="absolute top-3 right-3 flex flex-col gap-2">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${getActivityTypeColor(activity.activity_data?.activity_type || 'activity')}`}>
-                            {getActivityTypeLabel(activity.activity_data?.activity_type || 'activity')}
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${getActivityTypeColor(activity.activity_type?.name || 'activity')}`}>
+                            {getActivityTypeLabel(activity.activity_type?.name || 'activity')}
                         </span>
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${StatusInfo.color}`}>
                             <StatusIcon className="w-3 h-3 mr-1" />
@@ -196,7 +196,7 @@ export default function ActivityCard({ activity, className = '' }: ActivityCardP
                                 </div>
                             )}
 
-                            {activity.activity_data.activity_type === 'vote' && activity.activity_data.vote_options && (
+                            {activity.has_voting && activity.vote_options && (
                                 <div className="flex items-center gap-2 text-sm text-slate-600">
                                     <Vote className="w-4 h-4" />
                                     <span>{activity.activity_data.vote_options.length}개 옵션</span>

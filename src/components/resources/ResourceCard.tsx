@@ -90,26 +90,12 @@ export default function ResourceCard({ resource, className = '' }: ResourceCardP
             return { label: '알 수 없음', color: 'bg-gray-100 text-gray-800', icon: AlertCircle };
         }
 
-        const { resource_status, is_verified } = resource.resource_data;
-
-        if (resource_status === 'removed') {
-            return { label: '삭제됨', color: 'bg-red-100 text-red-800', icon: AlertCircle };
-        }
-
-        if (resource_status === 'outdated') {
-            return { label: '구버전', color: 'bg-yellow-100 text-yellow-800', icon: AlertCircle };
-        }
-
-        if (is_verified) {
-            return { label: '검증됨', color: 'bg-green-100 text-green-800', icon: CheckCircle };
-        }
-
         return { label: '활성', color: 'bg-blue-100 text-blue-800', icon: CheckCircle };
     };
 
     const StatusInfo = getStatusInfo(resource);
     const StatusIcon = StatusInfo.icon;
-    const FileTypeIcon = getFileTypeIcon(resource.resource_data?.file_type || 'other');
+    const FileTypeIcon = getFileTypeIcon(resource.resource_type?.name || 'other');
 
     return (
         <Link href={`/resources/${resource.id}`}>
@@ -148,8 +134,8 @@ export default function ResourceCard({ resource, className = '' }: ResourceCardP
 
                     {/* 파일 타입 및 상태 */}
                     <div className="absolute top-3 right-3 flex flex-col gap-2">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${getFileTypeColor(resource.resource_data?.file_type || 'other')}`}>
-                            {getFileTypeLabel(resource.resource_data?.file_type || 'other')}
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${getFileTypeColor(resource.resource_type?.name || 'other')}`}>
+                            {getFileTypeLabel(resource.resource_type?.name || 'other')}
                         </span>
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${StatusInfo.color}`}>
                             <StatusIcon className="w-3 h-3 mr-1" />
@@ -214,25 +200,12 @@ export default function ResourceCard({ resource, className = '' }: ResourceCardP
                             <div className="flex items-center gap-2 text-sm text-slate-600">
                                 <FileTypeIcon className="w-4 h-4" />
                                 <span>
-                                    {resource.resource_data.file_name || '파일'}
+                                    {resource.resource_data.original_filename || '파일'}
                                     {resource.resource_data.file_size && ` (${formatFileSize(resource.resource_data.file_size)})`}
                                 </span>
                             </div>
 
-                            {resource.resource_data.language && (
-                                <div className="flex items-center gap-2 text-sm text-slate-600">
-                                    <Code className="w-4 h-4" />
-                                    <span>{resource.resource_data.language}</span>
-                                </div>
-                            )}
 
-                            {resource.resource_data.version && (
-                                <div className="flex items-center gap-2 text-sm text-slate-600">
-                                    <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium">
-                                        {resource.resource_data.version}
-                                    </span>
-                                </div>
-                            )}
                         </div>
                     )}
 
@@ -258,7 +231,7 @@ export default function ResourceCard({ resource, className = '' }: ResourceCardP
                     {/* 작성자 정보 */}
                     {resource.author && (
                         <div className="flex items-center gap-3 mb-4">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center">
+                            <Link href={`/profile/${resource.author.nickname}`} className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center hover:scale-105 transition-transform duration-200">
                                 {resource.author.profile_image ? (
                                     <Image
                                         src={resource.author.profile_image}
@@ -272,9 +245,14 @@ export default function ResourceCard({ resource, className = '' }: ResourceCardP
                                         {resource.author.nickname.charAt(0).toUpperCase()}
                                     </span>
                                 )}
-                            </div>
+                            </Link>
                             <div>
-                                <p className="text-sm font-medium text-slate-900">{resource.author.nickname}</p>
+                                <Link
+                                    href={`/profile/${resource.author.nickname}`}
+                                    className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors duration-200"
+                                >
+                                    {resource.author.nickname}
+                                </Link>
                                 <p className="text-xs text-slate-500">{resource.author.name}</p>
                             </div>
                         </div>
@@ -306,7 +284,7 @@ export default function ResourceCard({ resource, className = '' }: ResourceCardP
                     </div>
 
                     {/* 다운로드 가능 표시 */}
-                    {resource.resource_data?.resource_status === 'active' && resource.resource_data?.file_url && (
+                    {resource.resource_data?.file_url && (
                         <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
                             <div className="flex items-center gap-2 text-purple-700">
                                 <Download className="w-4 h-4" />
@@ -319,3 +297,4 @@ export default function ResourceCard({ resource, className = '' }: ResourceCardP
         </Link>
     );
 }
+

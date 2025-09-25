@@ -10,15 +10,23 @@ export interface ActivityPost extends Post {
 
 export interface ActivityData {
     post_id: number;
-    activity_type: 'announcement' | 'event' | 'seminar' | 'workshop' | 'vote' | 'record';
+    activity_type_id: number;
+    activity_type?: {
+        id: number;
+        name: string;
+        description?: string;
+        icon?: string;
+    };
     location?: string;
     start_date?: string;
     end_date?: string;
     max_participants?: number;
     current_participants: number;
+    participation_fee?: number;
+    contact_info?: string;
+    has_voting: boolean;
     vote_options?: VoteOption[];
     vote_deadline?: string;
-    allow_multiple_votes: boolean;
     event_photos?: string[];
     event_summary?: string;
     participants_list?: ActivityParticipant[];
@@ -60,18 +68,20 @@ export interface ActivityCreateData {
     content: unknown;
     thumbnail?: string;
     category_id: number;
+    activity_type_id: number;
     status?: 'draft' | 'published';
     tags?: string[];
 
     // 활동 특화 정보
-    activity_type: 'announcement' | 'event' | 'seminar' | 'workshop' | 'vote' | 'record';
     location?: string;
     start_date?: string;
     end_date?: string;
     max_participants?: number;
+    participation_fee?: number;
+    contact_info?: string;
+    has_voting?: boolean;
     vote_options?: VoteOption[];
     vote_deadline?: string;
-    allow_multiple_votes?: boolean;
 }
 
 export interface ActivityUpdateData {
@@ -81,18 +91,20 @@ export interface ActivityUpdateData {
     content?: unknown;
     thumbnail?: string;
     category_id?: number;
+    activity_type_id?: number;
     status?: 'draft' | 'published' | 'hidden';
     tags?: string[];
 
     // 활동 특화 정보
-    activity_type?: 'announcement' | 'event' | 'seminar' | 'workshop' | 'vote' | 'record';
     location?: string;
     start_date?: string;
     end_date?: string;
     max_participants?: number;
+    participation_fee?: number;
+    contact_info?: string;
+    has_voting?: boolean;
     vote_options?: VoteOption[];
     vote_deadline?: string;
-    allow_multiple_votes?: boolean;
     event_photos?: string[];
     event_summary?: string;
 }

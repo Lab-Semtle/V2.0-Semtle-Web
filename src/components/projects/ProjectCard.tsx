@@ -143,7 +143,7 @@ export default function ProjectCard({ project, className = '' }: ProjectCardProp
                     ) : (
                         <div className="w-full h-full bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
                             <span className="text-green-400 text-4xl font-bold">
-                                {getProjectTypeLabel(project.project_data?.project_type || 'project').charAt(0)}
+                                {getProjectTypeLabel(project.project_type?.name || 'project').charAt(0)}
                             </span>
                         </div>
                     )}
@@ -166,8 +166,8 @@ export default function ProjectCard({ project, className = '' }: ProjectCardProp
 
                     {/* 프로젝트 타입 및 상태 */}
                     <div className="absolute top-3 right-3 flex flex-col gap-2">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${getProjectTypeColor(project.project_data?.project_type || 'project')}`}>
-                            {getProjectTypeLabel(project.project_data?.project_type || 'project')}
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${getProjectTypeColor(project.project_type?.name || 'project')}`}>
+                            {getProjectTypeLabel(project.project_type?.name || 'project')}
                         </span>
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${StatusInfo.color}`}>
                             <StatusIcon className="w-3 h-3 mr-1" />
@@ -230,7 +230,7 @@ export default function ProjectCard({ project, className = '' }: ProjectCardProp
 
                             <div className="flex items-center gap-2 text-sm text-slate-600">
                                 <Clock className="w-4 h-4" />
-                                <span>{project.project_data.duration}</span>
+                                <span>{project.project_data.deadline}</span>
                             </div>
 
                             {project.project_data.tech_stack && project.project_data.tech_stack.length > 0 && (
@@ -267,7 +267,7 @@ export default function ProjectCard({ project, className = '' }: ProjectCardProp
                     {/* 작성자 정보 */}
                     {project.author && (
                         <div className="flex items-center gap-3 mb-4">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
+                            <Link href={`/profile/${project.author.nickname}`} className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center hover:scale-105 transition-transform duration-200">
                                 {project.author.profile_image ? (
                                     <Image
                                         src={project.author.profile_image}
@@ -281,9 +281,14 @@ export default function ProjectCard({ project, className = '' }: ProjectCardProp
                                         {project.author.nickname.charAt(0).toUpperCase()}
                                     </span>
                                 )}
-                            </div>
+                            </Link>
                             <div>
-                                <p className="text-sm font-medium text-slate-900">{project.author.nickname}</p>
+                                <Link
+                                    href={`/profile/${project.author.nickname}`}
+                                    className="text-sm font-medium text-slate-900 hover:text-blue-600 transition-colors duration-200"
+                                >
+                                    {project.author.nickname}
+                                </Link>
                                 <p className="text-xs text-slate-500">{project.author.name}</p>
                             </div>
                         </div>
@@ -328,3 +333,4 @@ export default function ProjectCard({ project, className = '' }: ProjectCardProp
         </Link>
     );
 }
+

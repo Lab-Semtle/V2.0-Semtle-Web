@@ -12,7 +12,6 @@ import { JSONContent } from 'novel';
 interface Post {
     id: string;
     title: string;
-    slug: string;
     thumbnail?: string;
     category?: {
         name: string;
@@ -109,6 +108,7 @@ export default function ResourceDetailPage() {
                                 <div className="flex items-center gap-4 text-sm text-gray-400">
                                     <span>{post.date}</span>
                                     {post.category && <span>• {post.category.name}</span>}
+                                    {post.resource_type && <span>• {post.resource_type.name}</span>}
                                 </div>
                             </div>
 

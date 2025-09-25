@@ -20,7 +20,6 @@ export interface Post {
     id: number;
     title: string;
     subtitle?: string;
-    slug: string;
     content: JSONContent;
     thumbnail?: string;
     board_type: 'activities' | 'projects' | 'resources';

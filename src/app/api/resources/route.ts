@@ -9,24 +9,23 @@ export async function GET(request: NextRequest) {
 
         // 쿼리 파라미터
         const { searchParams } = new URL(request.url);
-        const file_type = searchParams.get('file_type');
+        const resource_type_id = searchParams.get('resource_type_id');
         const subject = searchParams.get('subject');
         const professor = searchParams.get('professor');
         const semester = searchParams.get('semester');
         const year = searchParams.get('year');
-        const language = searchParams.get('language');
-        const is_verified = searchParams.get('is_verified');
         const downloads_min = searchParams.get('downloads_min');
         const downloads_max = searchParams.get('downloads_max');
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '20');
 
-        // 자료실 게시물 조회 (새로운 분리된 구조)
+        // 자료실 게시물 조회 (최적화된 구조)
         let query = supabase
             .from('resources')
             .select(`
         *,
-        category:board_categories(*),
+        category:resource_categories(*),
+        resource_type:resource_types(*),
         author:user_profiles!resources_author_id_fkey(
           id,
           nickname,
@@ -37,9 +36,9 @@ export async function GET(request: NextRequest) {
       `)
             .eq('status', 'published');
 
-        // 필터 적용
-        if (file_type) {
-            query = query.eq('file_type', file_type);
+        // 필터 적용 (최적화된 구조에 맞게)
+        if (resource_type_id) {
+            query = query.eq('resource_type_id', resource_type_id);
         }
 
         if (subject) {
@@ -58,13 +57,7 @@ export async function GET(request: NextRequest) {
             query = query.eq('year', parseInt(year));
         }
 
-        if (language) {
-            query = query.eq('language', language);
-        }
 
-        if (is_verified !== null) {
-            query = query.eq('is_verified', is_verified === 'true');
-        }
 
         if (downloads_min) {
             query = query.gte('downloads_count', parseInt(downloads_min));
@@ -89,13 +82,19 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: '자료 목록을 불러올 수 없습니다.' }, { status: 500 });
         }
 
-        // 카테고리 목록 조회
-        const { data: categories } = await supabase
-            .from('board_categories')
-            .select('*')
-            .eq('board_type', 'resources')
-            .eq('is_active', true)
-            .order('sort_order');
+        // 카테고리 및 타입 목록 조회
+        const [categoriesResult, typesResult] = await Promise.all([
+            supabase
+                .from('resource_categories')
+                .select('*')
+                .eq('is_active', true)
+                .order('sort_order'),
+            supabase
+                .from('resource_types')
+                .select('*')
+                .eq('is_active', true)
+                .order('sort_order')
+        ]);
 
         return NextResponse.json({
             resources: resources || [],
@@ -105,7 +104,8 @@ export async function GET(request: NextRequest) {
                 total: count || 0,
                 totalPages: Math.ceil((count || 0) / limit)
             },
-            categories: categories || []
+            categories: categoriesResult.data || [],
+            types: typesResult.data || []
         });
     } catch (error) {
         console.error('자료 목록 조회 중 오류:', error);
@@ -133,40 +133,32 @@ export async function POST(request: NextRequest) {
             content,
             thumbnail,
             category,
+            resource_type_id,
             status = 'draft',
-            file_type,
             subject,
             professor,
             semester,
             year,
-            language
+            difficulty_level = 'intermediate'
         } = resourceData;
 
         // 필수 필드 검증
-        if (!title || !file_type) {
+        if (!title || !resource_type_id) {
             return NextResponse.json({ error: '필수 필드가 누락되었습니다.' }, { status: 400 });
         }
-
-        // 슬러그 생성
-        const slug = title.toLowerCase()
-            .replace(/[^a-z0-9\s-]/g, '')
-            .trim()
-            .replace(/\s+/g, '-')
-            .replace(/-+/g, '-') + '-' + Date.now();
 
         // 카테고리 ID 찾기
         let category_id = null;
         if (category) {
             const { data: categoryData } = await supabase
-                .from('board_categories')
+                .from('resource_categories')
                 .select('id')
                 .eq('name', category)
-                .eq('board_type', 'resources')
                 .single();
             category_id = categoryData?.id;
         }
 
-        // 자료 데이터 생성 (새로운 분리된 구조)
+        // 자료 데이터 생성 (최적화된 구조)
         const { data: newResource, error: resourceError } = await supabase
             .from('resources')
             .insert({
@@ -174,25 +166,22 @@ export async function POST(request: NextRequest) {
                 subtitle: description || '',
                 content: content || null,
                 thumbnail,
-                slug,
                 category_id,
+                resource_type_id,
                 author_id: user.id,
                 status: status === 'published' ? 'published' : 'draft',
                 tags: [],
-                file_type,
-                file_extension: '',
-                file_size: 0,
                 file_url: '',
-                file_name: '',
+                file_size: 0,
+                file_extension: '',
+                original_filename: '',
                 subject: subject || '',
                 professor: professor || '',
                 semester: semester || '',
                 year: year ? parseInt(year) : new Date().getFullYear(),
-                version: 'v1.0',
-                language: language || 'ko',
-                license: 'MIT',
-                resource_status: 'active',
-                is_verified: false,
+                difficulty_level,
+                rating: 0.0,
+                rating_count: 0,
                 downloads_count: 0,
                 published_at: status === 'published' ? new Date().toISOString() : null
             })
@@ -209,7 +198,8 @@ export async function POST(request: NextRequest) {
             .from('resources')
             .select(`
         *,
-        category:board_categories(*),
+        category:resource_categories(*),
+        resource_type:resource_types(*),
         author:user_profiles!resources_author_id_fkey(
           id,
           nickname,

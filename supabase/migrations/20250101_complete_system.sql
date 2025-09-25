@@ -8,68 +8,13 @@
 -- =============================================
 
 -- =============================================
--- 0. 완전 초기화 (개발 환경용)
+-- 0. 초기화 안내
 -- =============================================
 
--- ⚠️ 주의: 이 섹션은 개발 환경에서만 사용하세요
--- 프로덕션 환경에서는 절대 실행하지 마세요
--- Supabase 대시보드에서 사용자를 먼저 삭제한 후 실행하세요
-
--- 모든 사용자 관련 데이터 삭제 (auth.users는 Supabase 대시보드에서 삭제)
-DELETE FROM user_profiles;
-DELETE FROM activities;
-DELETE FROM projects;
-DELETE FROM resources;
-DELETE FROM activity_likes;
-DELETE FROM project_likes;
-DELETE FROM resource_likes;
-DELETE FROM activity_bookmarks;
-DELETE FROM project_bookmarks;
-DELETE FROM resource_bookmarks;
-DELETE FROM activity_comments;
-DELETE FROM project_comments;
-DELETE FROM resource_comments;
-DELETE FROM activity_participants;
-DELETE FROM activity_votes;
-DELETE FROM project_applications;
-DELETE FROM project_team_members;
-DELETE FROM resource_downloads;
-DELETE FROM notifications;
-
--- 카테고리 데이터만 유지 (선택사항)
--- DELETE FROM board_categories;
-
--- 시퀀스 리셋 (선택사항)
--- ALTER SEQUENCE board_categories_id_seq RESTART WITH 1;
-
--- 기존 테이블들 삭제 (초기화) - 외래키 제약조건 고려한 순서
-DROP TABLE IF EXISTS activity_comment_likes CASCADE;
-DROP TABLE IF EXISTS project_comment_likes CASCADE;
-DROP TABLE IF EXISTS resource_comment_likes CASCADE;
-DROP TABLE IF EXISTS activity_comments CASCADE;
-DROP TABLE IF EXISTS project_comments CASCADE;
-DROP TABLE IF EXISTS resource_comments CASCADE;
-DROP TABLE IF EXISTS activity_likes CASCADE;
-DROP TABLE IF EXISTS project_likes CASCADE;
-DROP TABLE IF EXISTS resource_likes CASCADE;
-DROP TABLE IF EXISTS activity_bookmarks CASCADE;
-DROP TABLE IF EXISTS project_bookmarks CASCADE;
-DROP TABLE IF EXISTS resource_bookmarks CASCADE;
-DROP TABLE IF EXISTS activity_participants CASCADE;
-DROP TABLE IF EXISTS activity_votes CASCADE;
-DROP TABLE IF EXISTS project_applications CASCADE;
-DROP TABLE IF EXISTS project_team_members CASCADE;
-DROP TABLE IF EXISTS resource_downloads CASCADE;
-DROP TABLE IF EXISTS notifications CASCADE;
-DROP TABLE IF EXISTS activity_posts CASCADE;
-DROP TABLE IF EXISTS project_posts CASCADE;
-DROP TABLE IF EXISTS resource_posts CASCADE;
-DROP TABLE IF EXISTS activities CASCADE;
-DROP TABLE IF EXISTS projects CASCADE;
-DROP TABLE IF EXISTS resources CASCADE;
-DROP TABLE IF EXISTS posts CASCADE;
-DROP TABLE IF EXISTS board_categories CASCADE;
-DROP TABLE IF EXISTS user_profiles CASCADE;
+-- ⚠️ 이 SQL을 실행하기 전에 Supabase 대시보드에서 다음을 수행하세요:
+-- 1. Settings → Database → Reset database (권장)
+-- 2. 또는 SQL Editor에서: DROP SCHEMA public CASCADE; CREATE SCHEMA public;
+-- 3. 그 후 이 SQL 파일을 실행하세요
 
 -- =============================================
 -- 1. 사용자 관리 시스템
@@ -129,77 +74,105 @@ CREATE TABLE user_profiles (
 -- 4. 생성된 사용자 ID를 복사하여 아래 INSERT 문에서 사용
 -- 5. 아래 INSERT 문의 UUID를 실제 생성된 사용자 ID로 변경 후 실행
 
-/*
--- 관리자 프로필 생성 (사용자 ID는 실제 생성된 UUID로 변경)
-INSERT INTO user_profiles (
-    id,
-    student_id,
-    nickname,
-    name,
-    email,
-    birth_date,
-    major,
-    grade,
-    student_status,
-    role,
-    status,
-    email_verified,
-    total_posts,
-    total_likes_received,
-    total_comments,
-    created_at,
-    updated_at
-) VALUES (
-    'YOUR_ADMIN_USER_ID_HERE', -- 실제 UUID로 변경 필요
-    '20240001',
-    'admin',
-    '시스템 관리자',
-    'admin@semtle.com',
-    '1995-01-01',
-    '컴퓨터공학과',
-    4,
-    'active',
-    'super_admin',
-    'active',
-    true,
-    0,
-    0,
-    0,
-    NOW(),
-    NOW()
-);
-*/
+
 
 -- 게시판 카테고리 테이블
-CREATE TABLE board_categories (
+-- =============================================
+-- 2. 게시판별 카테고리 테이블 (분리)
+-- =============================================
+
+-- 활동 게시판 카테고리
+CREATE TABLE activity_categories (
     id SERIAL PRIMARY KEY,
     name VARCHAR(50) UNIQUE NOT NULL,
     description TEXT,
     color VARCHAR(7) DEFAULT '#3B82F6',
     icon VARCHAR(50),
-    board_type VARCHAR(20) NOT NULL, -- 'activities', 'projects', 'resources'
     is_active BOOLEAN DEFAULT true,
     sort_order INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 활동 게시물 테이블 (독립적)
+-- 활동 타입 (별도 테이블로 분리)
+CREATE TABLE activity_types (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT,
+    icon VARCHAR(50),
+    is_active BOOLEAN DEFAULT true,
+    sort_order INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 프로젝트 게시판 카테고리
+CREATE TABLE project_categories (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT,
+    color VARCHAR(7) DEFAULT '#10B981',
+    icon VARCHAR(50),
+    is_active BOOLEAN DEFAULT true,
+    sort_order INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 프로젝트 타입 (별도 테이블로 분리)
+CREATE TABLE project_types (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT,
+    icon VARCHAR(50),
+    is_active BOOLEAN DEFAULT true,
+    sort_order INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 자료실 게시판 카테고리
+CREATE TABLE resource_categories (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT,
+    color VARCHAR(7) DEFAULT '#F59E0B',
+    icon VARCHAR(50),
+    is_active BOOLEAN DEFAULT true,
+    sort_order INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 자료 타입 (별도 테이블로 분리)
+CREATE TABLE resource_types (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT,
+    icon VARCHAR(50),
+    file_extensions TEXT[] DEFAULT '{}',
+    is_active BOOLEAN DEFAULT true,
+    sort_order INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- =============================================
+-- 3. 게시판별 게시물 테이블 (분리 및 최적화)
+-- =============================================
+
+-- 활동 게시물 테이블 (활동 특화 - 최적화)
 CREATE TABLE activities (
     id SERIAL PRIMARY KEY,
     title VARCHAR(200) NOT NULL,
     subtitle TEXT,
-    slug VARCHAR(200) UNIQUE NOT NULL,
     content JSONB NOT NULL DEFAULT '{}',
     thumbnail VARCHAR(500),
     
-    -- 카테고리 정보
-    category_id INTEGER REFERENCES board_categories(id),
+    -- 카테고리 및 타입
+    category_id INTEGER REFERENCES activity_categories(id),
+    activity_type_id INTEGER REFERENCES activity_types(id),
     
     -- 작성자 정보
     author_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     
     -- 상태 관리
     status VARCHAR(20) DEFAULT 'draft',
+    activity_status VARCHAR(20) DEFAULT 'upcoming', -- upcoming, ongoing, completed, cancelled
     is_pinned BOOLEAN DEFAULT false,
     is_featured BOOLEAN DEFAULT false,
     
@@ -211,21 +184,20 @@ CREATE TABLE activities (
     
     -- 메타데이터
     tags TEXT[] DEFAULT '{}',
-    attachments JSONB DEFAULT '[]',
     
-    -- 활동 특화 정보
-    activity_type VARCHAR(50),
+    -- 활동 특화 정보 (최적화)
     location VARCHAR(200),
     start_date TIMESTAMP WITH TIME ZONE,
     end_date TIMESTAMP WITH TIME ZONE,
     max_participants INTEGER,
     current_participants INTEGER DEFAULT 0,
+    participation_fee INTEGER DEFAULT 0, -- 참가비 (원)
+    contact_info VARCHAR(200), -- 연락처 정보
+    
+    -- 투표 시스템 (간소화)
+    has_voting BOOLEAN DEFAULT false,
     vote_options JSONB DEFAULT '[]',
     vote_deadline TIMESTAMP WITH TIME ZONE,
-    allow_multiple_votes BOOLEAN DEFAULT false,
-    event_photos TEXT[] DEFAULT '{}',
-    event_summary TEXT,
-    participants_list JSONB DEFAULT '[]',
     
     -- 타임스탬프
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -233,23 +205,24 @@ CREATE TABLE activities (
     published_at TIMESTAMP WITH TIME ZONE
 );
 
--- 프로젝트 게시물 테이블 (독립적)
+-- 프로젝트 게시물 테이블 (프로젝트 특화 - 최적화)
 CREATE TABLE projects (
     id SERIAL PRIMARY KEY,
     title VARCHAR(200) NOT NULL,
     subtitle TEXT,
-    slug VARCHAR(200) UNIQUE NOT NULL,
     content JSONB NOT NULL DEFAULT '{}',
     thumbnail VARCHAR(500),
     
-    -- 카테고리 정보
-    category_id INTEGER REFERENCES board_categories(id),
+    -- 카테고리 및 타입
+    category_id INTEGER REFERENCES project_categories(id),
+    project_type_id INTEGER REFERENCES project_types(id),
     
     -- 작성자 정보
     author_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     
     -- 상태 관리
     status VARCHAR(20) DEFAULT 'draft',
+    project_status VARCHAR(20) DEFAULT 'recruiting', -- recruiting, active, completed, cancelled
     is_pinned BOOLEAN DEFAULT false,
     is_featured BOOLEAN DEFAULT false,
     
@@ -261,22 +234,23 @@ CREATE TABLE projects (
     
     -- 메타데이터
     tags TEXT[] DEFAULT '{}',
-    attachments JSONB DEFAULT '[]',
     
-    -- 프로젝트 특화 정보
-    project_type VARCHAR(50),
+    -- 프로젝트 특화 정보 (최적화)
     team_size INTEGER NOT NULL,
     current_members INTEGER DEFAULT 1,
-    difficulty VARCHAR(20),
+    difficulty VARCHAR(20), -- beginner, intermediate, advanced
     location VARCHAR(50),
     deadline DATE,
-    project_status VARCHAR(20) DEFAULT 'recruiting',
+    progress_percentage INTEGER DEFAULT 0, -- 진행률 (0-100)
+    
+    -- 기술 및 목표
     needed_skills TEXT[] DEFAULT '{}',
-    project_goals TEXT,
     tech_stack TEXT[] DEFAULT '{}',
+    project_goals TEXT,
+    
+    -- 외부 링크
     github_url VARCHAR(500),
     demo_url VARCHAR(500),
-    project_timeline JSONB DEFAULT '{}',
     
     -- 타임스탬프
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -284,17 +258,17 @@ CREATE TABLE projects (
     published_at TIMESTAMP WITH TIME ZONE
 );
 
--- 자료 게시물 테이블 (독립적)
+-- 자료실 게시물 테이블 (자료 특화 - 최적화)
 CREATE TABLE resources (
     id SERIAL PRIMARY KEY,
     title VARCHAR(200) NOT NULL,
     subtitle TEXT,
-    slug VARCHAR(200) UNIQUE NOT NULL,
     content JSONB NOT NULL DEFAULT '{}',
     thumbnail VARCHAR(500),
     
-    -- 카테고리 정보
-    category_id INTEGER REFERENCES board_categories(id),
+    -- 카테고리 및 타입
+    category_id INTEGER REFERENCES resource_categories(id),
+    resource_type_id INTEGER REFERENCES resource_types(id),
     
     -- 작성자 정보
     author_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
@@ -303,30 +277,34 @@ CREATE TABLE resources (
     status VARCHAR(20) DEFAULT 'draft',
     is_pinned BOOLEAN DEFAULT false,
     is_featured BOOLEAN DEFAULT false,
+    is_verified BOOLEAN DEFAULT false, -- 검증된 자료 여부
     
     -- 통계
     views INTEGER DEFAULT 0,
     likes_count INTEGER DEFAULT 0,
     bookmarks_count INTEGER DEFAULT 0,
     comments_count INTEGER DEFAULT 0,
+    downloads_count INTEGER DEFAULT 0,
     
     -- 메타데이터
     tags TEXT[] DEFAULT '{}',
-    attachments JSONB DEFAULT '[]',
     
-    -- 자료 특화 정보
-    resource_type VARCHAR(50),
+    -- 자료 특화 정보 (최적화)
     file_url VARCHAR(500),
     file_size BIGINT,
-    file_type VARCHAR(100),
-    download_count INTEGER DEFAULT 0,
+    file_extension VARCHAR(10),
+    original_filename VARCHAR(200),
+    
+    -- 학과 정보
     year INTEGER,
-    semester VARCHAR(20),
+    semester VARCHAR(20), -- 1학기, 2학기, 여름학기, 겨울학기
     subject VARCHAR(100),
     professor VARCHAR(100),
-    difficulty_level VARCHAR(20),
+    
+    -- 품질 정보
+    difficulty_level VARCHAR(20), -- beginner, intermediate, advanced
     rating DECIMAL(3,2) DEFAULT 0.0,
-    downloads_count INTEGER DEFAULT 0,
+    rating_count INTEGER DEFAULT 0,
     
     -- 타임스탬프
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -568,7 +546,6 @@ CREATE TABLE notifications (
 
 -- RLS 활성화 (새로운 분리된 구조)
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE board_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE resources ENABLE ROW LEVEL SECURITY;
@@ -591,8 +568,80 @@ ALTER TABLE project_comment_likes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE resource_comment_likes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
+-- 카테고리 및 타입 테이블들에 RLS 활성화
+ALTER TABLE activity_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE activity_types ENABLE ROW LEVEL SECURITY;
+ALTER TABLE project_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE project_types ENABLE ROW LEVEL SECURITY;
+ALTER TABLE resource_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE resource_types ENABLE ROW LEVEL SECURITY;
+
 -- =============================================
--- 8.5. 외래 키 제약 조건 제거
+-- 8.5. 카테고리 및 타입 테이블 RLS 정책
+-- =============================================
+
+-- 활동 카테고리 정책
+CREATE POLICY "Anyone can read activity categories" ON activity_categories FOR SELECT USING (true);
+CREATE POLICY "Only admins can modify activity categories" ON activity_categories FOR ALL USING (
+    EXISTS (
+        SELECT 1 FROM user_profiles 
+        WHERE user_profiles.id = auth.uid() 
+        AND user_profiles.role IN ('admin', 'super_admin')
+    )
+);
+
+-- 활동 타입 정책
+CREATE POLICY "Anyone can read activity types" ON activity_types FOR SELECT USING (true);
+CREATE POLICY "Only admins can modify activity types" ON activity_types FOR ALL USING (
+    EXISTS (
+        SELECT 1 FROM user_profiles 
+        WHERE user_profiles.id = auth.uid() 
+        AND user_profiles.role IN ('admin', 'super_admin')
+    )
+);
+
+-- 프로젝트 카테고리 정책
+CREATE POLICY "Anyone can read project categories" ON project_categories FOR SELECT USING (true);
+CREATE POLICY "Only admins can modify project categories" ON project_categories FOR ALL USING (
+    EXISTS (
+        SELECT 1 FROM user_profiles 
+        WHERE user_profiles.id = auth.uid() 
+        AND user_profiles.role IN ('admin', 'super_admin')
+    )
+);
+
+-- 프로젝트 타입 정책
+CREATE POLICY "Anyone can read project types" ON project_types FOR SELECT USING (true);
+CREATE POLICY "Only admins can modify project types" ON project_types FOR ALL USING (
+    EXISTS (
+        SELECT 1 FROM user_profiles 
+        WHERE user_profiles.id = auth.uid() 
+        AND user_profiles.role IN ('admin', 'super_admin')
+    )
+);
+
+-- 자료실 카테고리 정책
+CREATE POLICY "Anyone can read resource categories" ON resource_categories FOR SELECT USING (true);
+CREATE POLICY "Only admins can modify resource categories" ON resource_categories FOR ALL USING (
+    EXISTS (
+        SELECT 1 FROM user_profiles 
+        WHERE user_profiles.id = auth.uid() 
+        AND user_profiles.role IN ('admin', 'super_admin')
+    )
+);
+
+-- 자료실 타입 정책
+CREATE POLICY "Anyone can read resource types" ON resource_types FOR SELECT USING (true);
+CREATE POLICY "Only admins can modify resource types" ON resource_types FOR ALL USING (
+    EXISTS (
+        SELECT 1 FROM user_profiles 
+        WHERE user_profiles.id = auth.uid() 
+        AND user_profiles.role IN ('admin', 'super_admin')
+    )
+);
+
+-- =============================================
+-- 8.6. 외래 키 제약 조건 제거
 -- =============================================
 
 -- user_profiles 테이블의 외래 키 제약 조건 제거 (auth.users 참조)
@@ -856,7 +905,6 @@ CREATE INDEX idx_user_profiles_role ON user_profiles (role);
 CREATE INDEX idx_user_profiles_status ON user_profiles (status);
 
 -- 활동 게시물 인덱스 (새로운 분리된 구조)
-CREATE INDEX idx_activities_slug ON activities (slug);
 CREATE INDEX idx_activities_category_id ON activities (category_id);
 CREATE INDEX idx_activities_author_id ON activities (author_id);
 CREATE INDEX idx_activities_status ON activities (status);
@@ -865,13 +913,12 @@ CREATE INDEX idx_activities_created_at ON activities (created_at);
 CREATE INDEX idx_activities_views ON activities (views DESC);
 CREATE INDEX idx_activities_likes_count ON activities (likes_count DESC);
 CREATE INDEX idx_activities_start_date ON activities (start_date);
-CREATE INDEX idx_activities_activity_type ON activities (activity_type);
+CREATE INDEX idx_activities_activity_type_id ON activities (activity_type_id);
 CREATE INDEX idx_activity_participants_activity_id ON activity_participants (activity_id);
 CREATE INDEX idx_activity_participants_user_id ON activity_participants (user_id);
 CREATE INDEX idx_activity_votes_activity_id ON activity_votes (activity_id);
 
 -- 프로젝트 게시물 인덱스 (새로운 분리된 구조)
-CREATE INDEX idx_projects_slug ON projects (slug);
 CREATE INDEX idx_projects_category_id ON projects (category_id);
 CREATE INDEX idx_projects_author_id ON projects (author_id);
 CREATE INDEX idx_projects_status ON projects (status);
@@ -879,7 +926,7 @@ CREATE INDEX idx_projects_is_pinned ON projects (is_pinned);
 CREATE INDEX idx_projects_created_at ON projects (created_at);
 CREATE INDEX idx_projects_views ON projects (views DESC);
 CREATE INDEX idx_projects_likes_count ON projects (likes_count DESC);
-CREATE INDEX idx_projects_project_type ON projects (project_type);
+CREATE INDEX idx_projects_project_type_id ON projects (project_type_id);
 CREATE INDEX idx_projects_project_status ON projects (project_status);
 CREATE INDEX idx_projects_deadline ON projects (deadline);
 CREATE INDEX idx_project_applications_project_id ON project_applications (project_id);
@@ -888,7 +935,6 @@ CREATE INDEX idx_project_applications_status ON project_applications (status);
 CREATE INDEX idx_project_team_members_project_id ON project_team_members (project_id);
 
 -- 자료실 게시물 인덱스 (새로운 분리된 구조)
-CREATE INDEX idx_resources_slug ON resources (slug);
 CREATE INDEX idx_resources_category_id ON resources (category_id);
 CREATE INDEX idx_resources_author_id ON resources (author_id);
 CREATE INDEX idx_resources_status ON resources (status);
@@ -896,7 +942,7 @@ CREATE INDEX idx_resources_is_pinned ON resources (is_pinned);
 CREATE INDEX idx_resources_created_at ON resources (created_at);
 CREATE INDEX idx_resources_views ON resources (views DESC);
 CREATE INDEX idx_resources_likes_count ON resources (likes_count DESC);
-CREATE INDEX idx_resources_file_type ON resources (file_type);
+CREATE INDEX idx_resources_file_extension ON resources (file_extension);
 CREATE INDEX idx_resources_subject ON resources (subject);
 CREATE INDEX idx_resources_year ON resources (year);
 CREATE INDEX idx_resources_downloads_count ON resources (downloads_count DESC);
@@ -1198,33 +1244,72 @@ CREATE TRIGGER update_resource_downloads_count_trigger
 -- =============================================
 
 -- 게시판 카테고리 데이터
-INSERT INTO board_categories (name, description, color, icon, board_type, sort_order) VALUES
--- 활동 게시판 카테고리
-('공지사항', '학회 공지사항', '#8B5CF6', 'megaphone', 'activities', 1),
-('이벤트', '학회 이벤트 및 행사', '#EF4444', 'calendar', 'activities', 2),
-('세미나', '학술 세미나 및 발표회', '#3B82F6', 'presentation', 'activities', 3),
-('워크샵', '실습 중심 워크샵', '#10B981', 'tools', 'activities', 4),
-('투표', '학회 관련 투표', '#F59E0B', 'vote', 'activities', 5),
-('행사기록', '지난 행사 기록', '#6B7280', 'camera', 'activities', 6),
+-- =============================================
+-- 4. 게시판별 초기 카테고리 데이터
+-- =============================================
 
--- 프로젝트 게시판 카테고리
-('웹개발', '웹 애플리케이션 개발', '#3B82F6', 'globe', 'projects', 1),
-('모바일앱', '모바일 애플리케이션 개발', '#10B981', 'smartphone', 'projects', 2),
-('AI/ML', '인공지능 및 머신러닝', '#8B5CF6', 'brain', 'projects', 3),
-('게임개발', '게임 개발', '#EF4444', 'gamepad', 'projects', 4),
-('해커톤', '해커톤 참가', '#F59E0B', 'zap', 'projects', 5),
-('공모전', '공모전 참가', '#EC4899', 'trophy', 'projects', 6),
-('연구프로젝트', '연구 및 논문 프로젝트', '#6366F1', 'book-open', 'projects', 7),
-('사이드프로젝트', '개인 사이드 프로젝트', '#6B7280', 'code', 'projects', 8),
+-- 활동 게시판 카테고리 데이터
+INSERT INTO activity_categories (name, description, color, icon, sort_order) VALUES
+('공지사항', '학회 공지사항', '#8B5CF6', 'megaphone', 1),
+('이벤트', '학회 이벤트 및 행사', '#EF4444', 'calendar', 2),
+('세미나', '학술 세미나 및 발표회', '#3B82F6', 'presentation', 3),
+('워크샵', '실습 중심 워크샵', '#10B981', 'tools', 4),
+('투표', '학회 관련 투표', '#F59E0B', 'vote', 5),
+('행사기록', '지난 행사 기록', '#6B7280', 'camera', 6);
 
--- 자료실 게시판 카테고리
-('시험지', '과목별 시험지', '#EF4444', 'file-text', 'resources', 1),
-('강의자료', '강의 자료 및 노트', '#3B82F6', 'book', 'resources', 2),
-('코드', '프로그래밍 코드', '#10B981', 'code', 'resources', 3),
-('프레젠테이션', '발표 자료', '#8B5CF6', 'presentation', 'resources', 4),
-('이미지', '이미지 및 그래픽', '#EC4899', 'image', 'resources', 5),
-('동영상', '강의 동영상', '#F59E0B', 'video', 'resources', 6),
-('기타', '기타 자료', '#6B7280', 'file', 'resources', 7);
+-- 프로젝트 게시판 카테고리 데이터
+INSERT INTO project_categories (name, description, color, icon, sort_order) VALUES
+('웹개발', '웹 애플리케이션 개발', '#3B82F6', 'globe', 1),
+('모바일앱', '모바일 애플리케이션 개발', '#10B981', 'smartphone', 2),
+('AI/ML', '인공지능 및 머신러닝', '#8B5CF6', 'brain', 3),
+('게임개발', '게임 개발', '#EF4444', 'gamepad', 4),
+('해커톤', '해커톤 참가', '#F59E0B', 'zap', 5),
+('공모전', '공모전 참가', '#EC4899', 'trophy', 6),
+('연구프로젝트', '연구 및 논문 프로젝트', '#6366F1', 'book-open', 7),
+('사이드프로젝트', '개인 사이드 프로젝트', '#6B7280', 'code', 8);
+
+-- 자료실 게시판 카테고리 데이터
+INSERT INTO resource_categories (name, description, color, icon, sort_order) VALUES
+('시험지', '과목별 시험지', '#EF4444', 'file-text', 1),
+('강의자료', '강의 자료 및 노트', '#3B82F6', 'book', 2),
+('코드', '프로그래밍 코드', '#10B981', 'code', 3),
+('프레젠테이션', '발표 자료', '#8B5CF6', 'presentation', 4),
+('이미지', '이미지 및 그래픽', '#EC4899', 'image', 5),
+('동영상', '강의 동영상', '#F59E0B', 'video', 6),
+('기타', '기타 자료', '#6B7280', 'file', 7);
+
+-- =============================================
+-- 5. 타입별 초기 데이터
+-- =============================================
+
+-- 활동 타입 데이터
+INSERT INTO activity_types (name, description, icon, sort_order) VALUES
+('학회행사', '정기 학회 행사', 'calendar', 1),
+('세미나', '학술 세미나', 'presentation', 2),
+('워크샵', '실습 워크샵', 'tools', 3),
+('해커톤', '해커톤 대회', 'zap', 4),
+('공모전', '공모전 참가', 'trophy', 5),
+('기타', '기타 활동', 'activity', 6);
+
+-- 프로젝트 타입 데이터
+INSERT INTO project_types (name, description, icon, sort_order) VALUES
+('개인프로젝트', '개인 사이드 프로젝트', 'user', 1),
+('팀프로젝트', '팀 협업 프로젝트', 'users', 2),
+('해커톤', '해커톤 참가 프로젝트', 'zap', 3),
+('공모전', '공모전 참가 프로젝트', 'trophy', 4),
+('연구프로젝트', '연구 및 논문 프로젝트', 'book-open', 5),
+('상업프로젝트', '상업적 목적 프로젝트', 'dollar-sign', 6),
+('오픈소스', '오픈소스 기여 프로젝트', 'github', 7);
+
+-- 자료 타입 데이터
+INSERT INTO resource_types (name, description, icon, file_extensions, sort_order) VALUES
+('문서', 'PDF, DOC, DOCX 파일', 'file-text', '{"pdf", "doc", "docx", "txt"}', 1),
+('코드', '프로그래밍 소스코드', 'code', '{"js", "ts", "py", "java", "cpp", "c", "html", "css"}', 2),
+('이미지', '이미지 파일', 'image', '{"jpg", "jpeg", "png", "gif", "svg", "webp"}', 3),
+('동영상', '동영상 파일', 'video', '{"mp4", "avi", "mov", "wmv", "flv"}', 4),
+('프레젠테이션', '발표 자료', 'presentation', '{"ppt", "pptx", "key"}', 5),
+('압축파일', '압축된 파일', 'archive', '{"zip", "rar", "7z", "tar", "gz"}', 6),
+('기타', '기타 파일', 'file', '{}', 7);
 
 -- =============================================
 -- 13. 초기 데이터 삽입 (실사용 환경용)

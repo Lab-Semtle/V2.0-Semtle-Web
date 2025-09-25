@@ -33,3 +33,4 @@ export const CategoryBadge = ({ category, className }: CategoryBadgeProps) => {
         </span>
     );
 };
+

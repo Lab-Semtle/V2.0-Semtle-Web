@@ -12,3 +12,4 @@
 `.env.local`에 다음 변수들이 필요합니다:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+

@@ -10,23 +10,25 @@ export interface ProjectPost extends Post {
 
 export interface ProjectData {
     post_id: number;
-    project_type: 'development' | 'competition' | 'hackathon' | 'research' | 'side_project';
+    project_type_id: number;
+    project_type?: {
+        id: number;
+        name: string;
+        description?: string;
+        icon?: string;
+    };
     team_size: number;
     current_members: number;
     needed_skills: string[];
-    duration: string;
-    start_date?: string;
     deadline: string;
     difficulty: 'beginner' | 'intermediate' | 'advanced';
     location: 'online' | 'offline' | 'hybrid';
     project_status: 'recruiting' | 'in_progress' | 'completed' | 'cancelled';
     progress_percentage: number;
     tech_stack: string[];
-    tools: string[];
     project_goals?: string;
-    deliverables?: string;
-    requirements?: string;
-    benefits?: string;
+    github_url?: string;
+    demo_url?: string;
 }
 
 export interface ProjectApplication {
@@ -82,20 +84,16 @@ export interface ProjectCreateData {
     tags?: string[];
 
     // 프로젝트 특화 정보
-    project_type: 'development' | 'competition' | 'hackathon' | 'research' | 'side_project';
+    project_type_id: number;
     team_size: number;
     needed_skills: string[];
-    duration: string;
-    start_date?: string;
     deadline: string;
     difficulty: 'beginner' | 'intermediate' | 'advanced';
     location: 'online' | 'offline' | 'hybrid';
     tech_stack: string[];
-    tools: string[];
     project_goals?: string;
-    deliverables?: string;
-    requirements?: string;
-    benefits?: string;
+    github_url?: string;
+    demo_url?: string;
 }
 
 export interface ProjectUpdateData {
@@ -109,22 +107,18 @@ export interface ProjectUpdateData {
     tags?: string[];
 
     // 프로젝트 특화 정보
-    project_type?: 'development' | 'competition' | 'hackathon' | 'research' | 'side_project';
+    project_type_id?: number;
     team_size?: number;
     needed_skills?: string[];
-    duration?: string;
-    start_date?: string;
     deadline?: string;
     difficulty?: 'beginner' | 'intermediate' | 'advanced';
     location?: 'online' | 'offline' | 'hybrid';
     project_status?: 'recruiting' | 'in_progress' | 'completed' | 'cancelled';
     progress_percentage?: number;
     tech_stack?: string[];
-    tools?: string[];
     project_goals?: string;
-    deliverables?: string;
-    requirements?: string;
-    benefits?: string;
+    github_url?: string;
+    demo_url?: string;
 }
 
 export interface ProjectApplicationData {
@@ -144,7 +138,7 @@ export interface ProjectApplicationUpdateData {
 }
 
 export interface ProjectFilters {
-    project_type?: string;
+    project_type_id?: number;
     difficulty?: string;
     location?: string;
     tech_stack?: string[];

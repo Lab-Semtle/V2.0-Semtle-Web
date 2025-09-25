@@ -48,7 +48,7 @@ export async function POST(
         }
 
         // 투표 가능한 활동인지 확인
-        if (activity.activity_type !== 'vote' || !activity.vote_options || activity.vote_options.length === 0) {
+        if (!activity.has_voting || !activity.vote_options || activity.vote_options.length === 0) {
             return NextResponse.json({ error: '투표가 가능한 활동이 아닙니다.' }, { status: 400 });
         }
 
@@ -58,9 +58,9 @@ export async function POST(
         }
 
         // 투표 옵션 유효성 확인
-        const validOptions = activity.vote_options.map((option: unknown) => 
-            typeof option === 'object' && option !== null && 'text' in option 
-                ? (option as { text: string }).text 
+        const validOptions = activity.vote_options.map((option: unknown) =>
+            typeof option === 'object' && option !== null && 'text' in option
+                ? (option as { text: string }).text
                 : String(option)
         );
         if (!validOptions.includes(vote_option)) {
@@ -143,7 +143,7 @@ export async function GET(
             .eq('post_id', activityId)
             .single();
 
-        if (!activity || activity.activity_type !== 'vote') {
+        if (!activity || !activity.has_voting) {
             return NextResponse.json({ error: '투표 활동이 아닙니다.' }, { status: 404 });
         }
 
@@ -161,8 +161,8 @@ export async function GET(
 
         // 투표 옵션별 결과 생성
         const voteResults = (activity.vote_options || []).map((option: unknown) => {
-            const optionText = typeof option === 'object' && option !== null && 'text' in option 
-                ? (option as { text: string }).text 
+            const optionText = typeof option === 'object' && option !== null && 'text' in option
+                ? (option as { text: string }).text
                 : String(option);
             return {
                 option: optionText,

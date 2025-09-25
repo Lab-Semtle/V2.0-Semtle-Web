@@ -18,28 +18,19 @@ export default function UserDropdownShadcn() {
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
 
-    // 디버깅용 로그
-    console.log('🔍 UserDropdownShadcn - Profile:', profile);
-    console.log('🔍 UserDropdownShadcn - isAdmin():', isAdmin());
-    console.log('🔍 UserDropdownShadcn - Role:', profile?.role);
-
     const handleMyPageClick = () => {
-        console.log('🖱️ 마이페이지 클릭됨!');
-        router.push('/mypage');
+        router.push(`/profile/${profile?.nickname}`);
     };
 
     const handleSettingsClick = () => {
-        console.log('🖱️ 개인설정 클릭됨!');
         router.push('/settings');
     };
 
     const handleAdminDashboardClick = () => {
-        console.log('🖱️ 관리자 대시보드 클릭됨!');
         router.push('/admin');
     };
 
     const handleLogoutClick = async () => {
-        console.log('🖱️ 로그아웃 클릭됨!');
         await signOut();
     };
 
@@ -101,7 +92,7 @@ export default function UserDropdownShadcn() {
                         <UserCircle className="h-4 w-4 text-blue-600" />
                     </div>
                     <div className="flex-1">
-                        <span className="font-semibold text-slate-900">마이페이지</span>
+                        <span className="font-semibold text-slate-900">내 프로필</span>
                         <p className="text-xs text-slate-500">프로필 관리</p>
                     </div>
                 </DropdownMenuItem>
@@ -111,8 +102,8 @@ export default function UserDropdownShadcn() {
                         <Cog className="h-4 w-4 text-purple-600" />
                     </div>
                     <div className="flex-1">
-                        <span className="font-semibold text-slate-900">개인설정</span>
-                        <p className="text-xs text-slate-500">계정 설정</p>
+                        <span className="font-semibold text-slate-900">계정 설정</span>
+                        <p className="text-xs text-slate-500">개인 정보 관리</p>
                     </div>
                 </DropdownMenuItem>
 
@@ -124,8 +115,8 @@ export default function UserDropdownShadcn() {
                             <Shield className="h-4 w-4 text-orange-600" />
                         </div>
                         <div className="flex-1">
-                            <span className="font-semibold text-slate-900">관리자 대시보드</span>
-                            <p className="text-xs text-slate-500">사용자 관리</p>
+                            <span className="font-semibold text-slate-900">아치셈틀 공홈관리</span>
+                            <p className="text-xs text-slate-500">관리자 전용 기능</p>
                         </div>
                     </DropdownMenuItem>
                 )}

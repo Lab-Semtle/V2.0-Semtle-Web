@@ -6,11 +6,21 @@ import PostForm from '@/components/PostForm';
 
 interface PostFormData {
   title: string;
-  slug: string;
   description: string;
   category: string;
   thumbnail: string;
   status?: string;
+  resource_type_id?: number;
+  subject?: string;
+  professor?: string;
+  semester?: string;
+  year?: number;
+  difficulty_level?: string;
+  file_extension?: string;
+  original_filename?: string;
+  downloads_count?: number;
+  rating?: number;
+  rating_count?: number;
 }
 
 export default function WriteResourcePage() {
@@ -32,14 +42,20 @@ export default function WriteResourcePage() {
       });
 
       if (!response.ok) {
-        throw new Error('자료 저장에 실패했습니다.');
+        const errorData = await response.json();
+        throw new Error(errorData.error || '자료 저장에 실패했습니다.');
       }
 
       const result = await response.json();
       console.log('Resource saved:', result);
 
-      alert('자료가 성공적으로 저장되었습니다!');
-      router.push('/resources');
+      // 상태에 따라 다른 메시지 표시
+      if (formData.status === 'draft') {
+        alert('자료가 임시저장되었습니다!');
+      } else {
+        alert('자료가 성공적으로 등록되었습니다!');
+        router.push('/resources');
+      }
     } catch (error) {
       console.error('자료 저장 중 오류:', error);
       throw error;

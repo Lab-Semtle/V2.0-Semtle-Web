@@ -118,3 +118,4 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 1. 회원가입 시 이메일이 실제로 전송되는지 확인
 2. 이메일 링크 클릭 시 정상적으로 인증되는지 확인
 3. 인증 후 로그인이 정상적으로 작동하는지 확인
+

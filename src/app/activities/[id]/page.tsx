@@ -13,7 +13,6 @@ import { JSONContent } from 'novel';
 interface Activity {
     id: number;
     title: string;
-    slug: string;
     description?: string;
     thumbnail?: string;
     category?: {
@@ -193,11 +192,16 @@ export default function ActivityDetailPage() {
                             활동 게시판으로
                         </Link>
 
-                        {/* 카테고리 및 상태 */}
+                        {/* 카테고리, 타입 및 상태 */}
                         <div className="flex items-center gap-3 mb-6">
                             {activity.category && (
                                 <span className={`inline-flex items-center px-4 py-2 rounded-xl font-bold text-sm border ${getCategoryColor(activity.category.name)}`}>
                                     {activity.category.name}
+                                </span>
+                            )}
+                            {activity.activity_type && (
+                                <span className="inline-flex items-center px-4 py-2 rounded-xl font-bold text-sm border bg-blue-100 text-blue-800 border-blue-200">
+                                    {activity.activity_type.name}
                                 </span>
                             )}
                             <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm border ${statusInfo.color}`}>
