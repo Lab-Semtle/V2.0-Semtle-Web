@@ -53,10 +53,14 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ stats });
 
     } catch (error) {
-        console.error('게시물 통계 조회 오류:', error);
         return NextResponse.json(
             { error: '게시물 통계를 불러올 수 없습니다.' },
             { status: 500 }
         );
     }
 }
+
+
+
+
+

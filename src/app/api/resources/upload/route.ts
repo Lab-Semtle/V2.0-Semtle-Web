@@ -77,7 +77,6 @@ export async function POST(request: NextRequest) {
             });
 
         if (uploadError) {
-            console.error('파일 업로드 오류:', uploadError);
             return NextResponse.json({ error: '파일 업로드에 실패했습니다.' }, { status: 500 });
         }
 
@@ -95,7 +94,6 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json(response);
     } catch (error) {
-        console.error('파일 업로드 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -128,13 +126,11 @@ export async function DELETE(request: NextRequest) {
             .remove([path]);
 
         if (deleteError) {
-            console.error('파일 삭제 오류:', deleteError);
             return NextResponse.json({ error: '파일 삭제에 실패했습니다.' }, { status: 500 });
         }
 
         return NextResponse.json({ message: '파일이 삭제되었습니다.' });
     } catch (error) {
-        console.error('파일 삭제 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

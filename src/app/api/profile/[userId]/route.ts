@@ -30,8 +30,8 @@ export async function GET(
             return NextResponse.json({ error: '사용자를 찾을 수 없습니다.' }, { status: 404 });
         }
 
-        // 사용자의 공개 게시물 통계
-        const [projectsResult, resourcesResult, activitiesResult] = await Promise.all([
+        // 사용자의 공개 게시물 통계 및 팔로워/팔로잉 수 계산
+        const [projectsResult, resourcesResult, activitiesResult, followersResult, followingResult] = await Promise.all([
             supabase
                 .from('projects')
                 .select('id, views, likes_count, comments_count, bookmarks_count')
@@ -46,7 +46,17 @@ export async function GET(
                 .from('activities')
                 .select('id, views, likes_count, comments_count, bookmarks_count')
                 .eq('author_id', userId)
-                .eq('status', 'published')
+                .eq('status', 'published'),
+            // 팔로워 수 계산 (이 사용자를 팔로우하는 사람들)
+            supabase
+                .from('follows')
+                .select('id', { count: 'exact' })
+                .eq('following_id', userId),
+            // 팔로잉 수 계산 (이 사용자가 팔로우하는 사람들)
+            supabase
+                .from('follows')
+                .select('id', { count: 'exact' })
+                .eq('follower_id', userId)
         ]);
 
         const allPosts = [
@@ -62,8 +72,8 @@ export async function GET(
                 activities: activitiesResult.data?.length || 0,
                 total: allPosts.length
             },
-            followers_count: profile.followers_count || 0,
-            following_count: profile.following_count || 0
+            followers_count: followersResult.count || 0,
+            following_count: followingResult.count || 0
         };
 
         return NextResponse.json({
@@ -73,7 +83,6 @@ export async function GET(
             }
         });
     } catch (error) {
-        console.error('프로필 조회 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

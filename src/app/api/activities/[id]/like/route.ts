@@ -38,7 +38,6 @@ export async function POST(
                 .eq('user_id', user.id);
 
             if (deleteError) {
-                console.error('활동 좋아요 취소 오류:', deleteError);
                 return NextResponse.json({ error: '좋아요 취소에 실패했습니다.' }, { status: 500 });
             }
 
@@ -56,7 +55,6 @@ export async function POST(
                 });
 
             if (insertError) {
-                console.error('활동 좋아요 추가 오류:', insertError);
                 return NextResponse.json({ error: '좋아요 추가에 실패했습니다.' }, { status: 500 });
             }
 
@@ -96,7 +94,6 @@ export async function POST(
             });
         }
     } catch (error) {
-        console.error('활동 좋아요 토글 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -131,7 +128,6 @@ export async function GET(
 
         return NextResponse.json({ liked: !!like });
     } catch (error) {
-        console.error('활동 좋아요 상태 확인 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

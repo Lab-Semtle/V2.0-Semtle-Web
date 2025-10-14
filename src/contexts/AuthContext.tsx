@@ -28,29 +28,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         // 초기 세션 확인
         const getInitialSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
+            try {
+                console.log('AuthContext - 세션 확인 시작');
+                const { data: { session }, error } = await supabase.auth.getSession();
+                console.log('AuthContext - 세션 결과:', { session: !!session, error });
 
-            if (session?.user) {
-                setUser(session.user);
-                await fetchProfile(session.user.id);
-            } else {
+                if (error) {
+                    console.log('AuthContext - 세션 오류:', error);
+                    setUser(null);
+                    setProfile(null);
+                } else if (session?.user) {
+                    console.log('AuthContext - 사용자 로그인됨:', session.user.id);
+                    setUser(session.user);
+                    await fetchProfile(session.user.id);
+                } else {
+                    console.log('AuthContext - 세션 없음');
+                    setUser(null);
+                    setProfile(null);
+                }
+            } catch (error) {
+                console.log('AuthContext - 세션 확인 오류:', error);
                 setUser(null);
+                setProfile(null);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
 
         getInitialSession();
 
         // 인증 상태 변경 감지
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (_, session) => {
-                // 상태 업데이트를 즉시 실행
-                setUser(session?.user ?? null);
+            async (event, session) => {
 
-                if (session?.user) {
-                    await fetchProfile(session.user.id);
+                // 비밀번호 재설정 이벤트 처리
+                if (event === 'PASSWORD_RECOVERY') {
+                    // 세션을 유지하면서 비밀번호 재설정 모드로 전환
+                    if (session?.user) {
+                        setUser(session.user);
+                        await fetchProfile(session.user.id);
+                    }
                 } else {
-                    setProfile(null);
+                    // 일반적인 상태 업데이트
+                    setUser(session?.user ?? null);
+
+                    if (session?.user) {
+                        await fetchProfile(session.user.id);
+                    } else {
+                        setProfile(null);
+                    }
                 }
                 setLoading(false);
             }
@@ -89,7 +115,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const signUp = async (registrationData: UserRegistrationData) => {
         try {
-            console.log('🔐 회원가입 시작:', registrationData.email);
 
             // Supabase Auth에 사용자 등록 (raw_user_meta_data 활용)
             const { data, error } = await supabase.auth.signUp({
@@ -109,32 +134,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
 
             if (error) {
-                console.error('❌ 회원가입 오류:', error);
                 return { error };
             }
 
             if (!data.user) {
-                console.error('❌ 사용자 데이터 없음');
                 return { error: new Error('사용자 등록에 실패했습니다.') };
             }
 
-            console.log('✅ 회원가입 성공:', {
-                userId: data.user.id,
-                email: data.user.email,
-                emailConfirmed: data.user.email_confirmed_at,
-                needsConfirmation: !data.user.email_confirmed_at,
-                session: data.session
-            });
 
             // 이메일 인증이 필요한 경우
             if (!data.user.email_confirmed_at) {
-                console.log('📧 이메일 인증 필요 - 이메일이 전송되었습니다');
-                console.log('🔍 환경 변수 확인:', {
-                    siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
-                    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ? '설정됨' : '설정되지 않음'
-                });
             } else {
-                console.log('⚠️ 이메일이 이미 인증됨 - 이메일 전송되지 않음');
             }
 
             // 사용자 프로필 생성은 API를 통해 처리
@@ -161,17 +171,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const result = await response.json();
 
                 if (result.success) {
-                    console.log('✅ 사용자 프로필 생성 성공');
                 } else {
-                    console.error('❌ 사용자 프로필 생성 실패:', result.error);
                 }
             } catch (profileErr) {
-                console.error('❌ 프로필 생성 API 호출 중 오류:', profileErr);
             }
 
             return { error: null };
         } catch (error) {
-            console.error('❌ 회원가입 예외:', error);
             return { error: error as Error };
         }
     };

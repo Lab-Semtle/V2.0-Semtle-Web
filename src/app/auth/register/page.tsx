@@ -174,7 +174,6 @@ export default function RegisterPage() {
                 setValidationErrors(prev => ({ ...prev, nickname: '' }));
             }
         } catch (error) {
-            console.error('닉네임 중복 확인 오류:', error);
             setNicknameAvailable(false);
             setValidationErrors(prev => ({ ...prev, nickname: '닉네임 확인 중 오류가 발생했습니다.' }));
         } finally {
@@ -369,7 +368,6 @@ export default function RegisterPage() {
                 } else {
                     setError(error.message || '회원가입 중 오류가 발생했습니다.');
                 }
-                console.error('Register error:', result.error);
             } else {
                 setSuccess(true);
 
@@ -388,7 +386,6 @@ export default function RegisterPage() {
             }
         } catch (error) {
             setError('회원가입 중 오류가 발생했습니다.');
-            console.error('Register error:', error);
         } finally {
             setLoading(false);
         }
@@ -579,10 +576,10 @@ export default function RegisterPage() {
                                                     onKeyDown={handleNicknameKeyDown}
                                                     required
                                                     className={`w-full pl-12 pr-12 py-4 bg-slate-50/70 border rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 transition-all duration-300 shadow-sm hover:shadow-md text-sm ${nicknameAvailable === true
-                                                            ? 'border-green-500 focus:ring-green-500/30 focus:border-green-500'
-                                                            : nicknameAvailable === false
-                                                                ? 'border-red-500 focus:ring-red-500/30 focus:border-red-500'
-                                                                : 'border-slate-200 focus:ring-emerald-500/30 focus:border-emerald-500'
+                                                        ? 'border-green-500 focus:ring-green-500/30 focus:border-green-500'
+                                                        : nicknameAvailable === false
+                                                            ? 'border-red-500 focus:ring-red-500/30 focus:border-red-500'
+                                                            : 'border-slate-200 focus:ring-emerald-500/30 focus:border-emerald-500'
                                                         }`}
                                                     placeholder="닉네임을 입력하세요 (2-50자, 한글/영문/숫자/_,-)"
                                                 />

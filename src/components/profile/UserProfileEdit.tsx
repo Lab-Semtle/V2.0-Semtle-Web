@@ -87,7 +87,6 @@ export default function UserProfileEdit({ profile, onSave, onCancel }: UserProfi
         try {
             await onSave(formData);
         } catch (error) {
-            console.error('프로필 업데이트 오류:', error);
         } finally {
             setLoading(false);
         }

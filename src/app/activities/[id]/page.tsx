@@ -68,7 +68,6 @@ export default function ActivityDetailPage() {
 
                 setActivity(data.activity);
             } catch (err) {
-                console.error('활동 로드 중 오류:', err);
                 setError(err instanceof Error ? err.message : '활동을 불러오는 중 오류가 발생했습니다.');
             } finally {
                 setLoading(false);

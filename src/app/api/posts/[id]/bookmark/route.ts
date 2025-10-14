@@ -7,51 +7,69 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        console.log('북마크 POST 요청 받음');
         const supabase = await createServerSupabase();
         const resolvedParams = await params;
         const postId = parseInt(resolvedParams.id);
+        console.log('북마크 POST - postId:', postId);
 
         if (isNaN(postId)) {
             return NextResponse.json({ error: '잘못된 게시물 ID입니다.' }, { status: 400 });
         }
 
-        // 현재 사용자 확인
+        // 현재 사용자 확인 (서버에서 세션 기반 인증)
         const { data: { user }, error: authError } = await supabase.auth.getUser();
+
         if (authError || !user) {
+            console.log('북마크 API - 인증 실패:', authError);
             return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
         }
 
+        console.log('북마크 API - 사용자 인증 성공:', user.id);
+
+        // 프로젝트 존재 확인
+        const { data: project } = await supabase
+            .from('projects')
+            .select('id')
+            .eq('id', postId)
+            .single();
+
+        if (!project) {
+            return NextResponse.json({ error: '프로젝트를 찾을 수 없습니다.' }, { status: 404 });
+        }
+
+        // 프로젝트 북마크 처리
         // 기존 북마크 확인
         const { data: existingBookmark } = await supabase
-            .from('post_bookmarks')
+            .from('project_bookmarks')
             .select('id')
-            .eq('post_id', postId)
+            .eq('project_id', postId)
             .eq('user_id', user.id)
             .single();
 
         if (existingBookmark) {
             // 북마크 취소
             const { error: deleteError } = await supabase
-                .from('post_bookmarks')
+                .from('project_bookmarks')
                 .delete()
-                .eq('post_id', postId)
+                .eq('project_id', postId)
                 .eq('user_id', user.id);
 
             if (deleteError) {
-                console.error('북마크 취소 오류:', deleteError);
+                console.error('북마크 삭제 오류:', deleteError);
                 return NextResponse.json({ error: '북마크 취소에 실패했습니다.' }, { status: 500 });
             }
 
             return NextResponse.json({
-                bookmarked: false,
+                isBookmarked: false,
                 message: '북마크가 취소되었습니다.'
             });
         } else {
             // 북마크 추가
             const { error: insertError } = await supabase
-                .from('post_bookmarks')
+                .from('project_bookmarks')
                 .insert({
-                    post_id: postId,
+                    project_id: postId,
                     user_id: user.id
                 });
 
@@ -61,12 +79,12 @@ export async function POST(
             }
 
             return NextResponse.json({
-                bookmarked: true,
+                isBookmarked: true,
                 message: '북마크가 추가되었습니다.'
             });
         }
     } catch (error) {
-        console.error('북마크 토글 중 오류:', error);
+        console.error('북마크 POST API 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -87,21 +105,33 @@ export async function GET(
 
         // 현재 사용자 확인
         const { data: { user }, error: authError } = await supabase.auth.getUser();
+
         if (authError || !user) {
-            return NextResponse.json({ bookmarked: false });
+            return NextResponse.json({ isBookmarked: false });
         }
 
-        // 북마크 상태 확인
-        const { data: bookmark } = await supabase
-            .from('post_bookmarks')
+        // 프로젝트 존재 확인
+        const { data: project } = await supabase
+            .from('projects')
             .select('id')
-            .eq('post_id', postId)
+            .eq('id', postId)
+            .single();
+
+        if (!project) {
+            return NextResponse.json({ isBookmarked: false });
+        }
+
+        // 프로젝트 북마크 상태 확인
+        const { data: bookmark } = await supabase
+            .from('project_bookmarks')
+            .select('id')
+            .eq('project_id', postId)
             .eq('user_id', user.id)
             .single();
 
-        return NextResponse.json({ bookmarked: !!bookmark });
+        return NextResponse.json({ isBookmarked: !!bookmark });
     } catch (error) {
-        console.error('북마크 상태 확인 중 오류:', error);
+        console.error('북마크 GET API 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

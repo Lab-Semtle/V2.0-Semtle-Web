@@ -16,7 +16,6 @@ export async function POST() {
             .not('email_confirmed_at', 'is', null);
 
         if (authError) {
-            console.error('Error fetching auth users:', authError);
             return NextResponse.json(
                 { error: '인증된 사용자 조회 중 오류가 발생했습니다.' },
                 { status: 500 }
@@ -38,7 +37,6 @@ export async function POST() {
             .in('email', authUsers.map(user => user.email));
 
         if (updateError) {
-            console.error('Error updating user profiles:', updateError);
             return NextResponse.json(
                 { error: '사용자 프로필 업데이트 중 오류가 발생했습니다.' },
                 { status: 500 }
@@ -59,7 +57,6 @@ export async function POST() {
         });
 
     } catch (error) {
-        console.error('Sync all verified error:', error);
         return NextResponse.json(
             { error: '서버 오류가 발생했습니다.' },
             { status: 500 }

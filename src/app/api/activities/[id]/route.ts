@@ -34,7 +34,6 @@ export async function GET(
             .single();
 
         if (error) {
-            console.error('활동 조회 오류:', error);
             return NextResponse.json({ error: '활동을 찾을 수 없습니다.' }, { status: 404 });
         }
 
@@ -46,7 +45,6 @@ export async function GET(
 
         return NextResponse.json({ activity });
     } catch (error) {
-        console.error('활동 조회 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -132,13 +130,11 @@ export async function PUT(
             .single();
 
         if (updateError) {
-            console.error('활동 수정 오류:', updateError);
             return NextResponse.json({ error: '활동 수정에 실패했습니다.' }, { status: 500 });
         }
 
         return NextResponse.json({ activity: updatedActivity });
     } catch (error) {
-        console.error('활동 수정 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -181,13 +177,11 @@ export async function DELETE(
             .eq('id', activityId);
 
         if (deleteError) {
-            console.error('활동 삭제 오류:', deleteError);
             return NextResponse.json({ error: '활동 삭제에 실패했습니다.' }, { status: 500 });
         }
 
         return NextResponse.json({ message: '활동이 성공적으로 삭제되었습니다.' });
     } catch (error) {
-        console.error('활동 삭제 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

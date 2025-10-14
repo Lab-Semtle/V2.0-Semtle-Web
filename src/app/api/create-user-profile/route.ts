@@ -26,7 +26,6 @@ export async function POST(request: NextRequest) {
             .single();
 
         if (existingProfile) {
-            console.log('Profile already exists for user:', userId);
             return NextResponse.json({
                 success: true,
                 message: '프로필이 이미 존재합니다.',
@@ -50,7 +49,6 @@ export async function POST(request: NextRequest) {
             updated_at: new Date().toISOString()
         };
 
-        console.log('🔧 프로필 생성 데이터:', profileInsertData);
 
         // 사용자 프로필 생성 (외래 키 제약 조건 없이)
         const { data: insertData, error: profileError } = await supabase
@@ -58,10 +56,8 @@ export async function POST(request: NextRequest) {
             .insert(profileInsertData)
             .select();
 
-        console.log('📝 프로필 생성 결과:', { insertData, profileError });
 
         if (profileError) {
-            console.error('Error creating user profile:', profileError);
             return NextResponse.json(
                 { error: profileError.message || '프로필 생성 중 오류가 발생했습니다.' },
                 { status: 500 }
@@ -74,7 +70,6 @@ export async function POST(request: NextRequest) {
         });
 
     } catch (error) {
-        console.error('Create user profile error:', error);
         return NextResponse.json(
             { error: '서버 오류가 발생했습니다.' },
             { status: 500 }

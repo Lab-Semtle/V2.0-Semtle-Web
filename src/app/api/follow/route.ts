@@ -60,7 +60,6 @@ export async function POST(request: NextRequest) {
             });
         }
     } catch (error) {
-        console.error('팔로우 처리 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -82,21 +81,37 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
         }
 
-        // 팔로우 상태 확인
-        const { data: follow } = await supabase
-            .from('follows')
-            .select('id')
-            .eq('follower_id', user.id)
-            .eq('following_id', userId)
-            .single();
+        // 팔로우 상태 확인 및 카운트 계산
+        const [followResult, followersResult, followingResult] = await Promise.all([
+            supabase
+                .from('follows')
+                .select('id')
+                .eq('follower_id', user.id)
+                .eq('following_id', userId)
+                .single(),
+            // 해당 사용자의 팔로워 수
+            supabase
+                .from('follows')
+                .select('id', { count: 'exact' })
+                .eq('following_id', userId),
+            // 해당 사용자의 팔로잉 수
+            supabase
+                .from('follows')
+                .select('id', { count: 'exact' })
+                .eq('follower_id', userId)
+        ]);
 
         return NextResponse.json({
-            isFollowing: !!follow,
-            followersCount: 0, // 추후 구현
-            followingCount: 0  // 추후 구현
+            isFollowing: !!followResult.data,
+            followersCount: followersResult.count || 0,
+            followingCount: followingResult.count || 0
         });
     } catch (error) {
-        console.error('팔로우 상태 확인 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
+
+
+
+
+

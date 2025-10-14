@@ -66,7 +66,6 @@ export async function GET(request: NextRequest) {
         const { data: activities, error, count } = await query;
 
         if (error) {
-            console.error('활동 목록 조회 오류:', error);
             return NextResponse.json({ error: '활동 목록을 불러올 수 없습니다.' }, { status: 500 });
         }
 
@@ -96,7 +95,6 @@ export async function GET(request: NextRequest) {
             types: typesResult.data || []
         });
     } catch (error) {
-        console.error('활동 목록 조회 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -178,7 +176,6 @@ export async function POST(request: NextRequest) {
             .single();
 
         if (activityError) {
-            console.error('활동 게시물 생성 오류:', activityError);
             return NextResponse.json({ error: '활동 게시물 생성에 실패했습니다.' }, { status: 500 });
         }
 
@@ -202,7 +199,6 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ activity: completeActivity }, { status: 201 });
     } catch (error) {
-        console.error('활동 생성 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

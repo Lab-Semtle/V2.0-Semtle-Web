@@ -134,3 +134,12 @@ DROP TRIGGER IF EXISTS trigger_update_bookmark_counts ON bookmarks;
 CREATE TRIGGER trigger_update_bookmark_counts
     AFTER INSERT OR DELETE ON bookmarks
     FOR EACH ROW EXECUTE FUNCTION update_bookmark_counts();
+
+
+
+
+
+
+
+
+

@@ -20,11 +20,12 @@ export default function SortDropdown({
     className = ""
 }: SortDropdownProps) {
     const [showOptions, setShowOptions] = useState(false);
+    const dropdownRef = React.useRef<HTMLDivElement>(null);
 
     // 외부 클릭 시 드롭다운 닫기
     useEffect(() => {
-        const handleClickOutside = () => {
-            if (showOptions) {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (showOptions && dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setShowOptions(false);
             }
         };
@@ -41,7 +42,7 @@ export default function SortDropdown({
     const selectedOption = options.find(option => option.value === selectedValue);
 
     return (
-        <div className={`relative ${className}`}>
+        <div ref={dropdownRef} className={`relative ${className}`}>
             <button
                 onClick={() => setShowOptions(!showOptions)}
                 className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-xl text-slate-700 hover:bg-slate-50 transition-all duration-200 shadow-sm hover:shadow-md"
@@ -57,7 +58,9 @@ export default function SortDropdown({
                     {options.map((option, index) => (
                         <button
                             key={option.value}
-                            onClick={() => {
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
                                 onSortChange(option.value);
                                 setShowOptions(false);
                             }}

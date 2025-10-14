@@ -9,14 +9,17 @@ export async function createServerSupabase() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get: (key: string) => cookieStore.get(key)?.value,
+        get: (key: string) => {
+          const cookie = cookieStore.get(key);
+          return cookie?.value;
+        },
         set: async (key: string, value: string, options: Record<string, unknown>) => {
           cookieStore.set({ name: key, value, ...options });
         },
         remove: async (key: string, options: Record<string, unknown>) => {
           cookieStore.set({ name: key, value: '', ...options });
         },
-      },
+      }
     }
   );
 }

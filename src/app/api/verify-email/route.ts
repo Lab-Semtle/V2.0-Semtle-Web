@@ -47,7 +47,6 @@ export async function POST(request: NextRequest) {
             .eq('email', email);
 
         if (updateError) {
-            console.error('Profile update error:', updateError);
             return NextResponse.json(
                 { error: '프로필 업데이트 중 오류가 발생했습니다.' },
                 { status: 500 }
@@ -61,12 +60,16 @@ export async function POST(request: NextRequest) {
         });
 
     } catch (error) {
-        console.error('Verify email error:', error);
         return NextResponse.json(
             { error: '서버 오류가 발생했습니다.' },
             { status: 500 }
         );
     }
 }
+
+
+
+
+
 
 

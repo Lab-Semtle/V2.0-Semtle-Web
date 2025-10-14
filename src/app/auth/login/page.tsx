@@ -51,7 +51,6 @@ function LoginForm() {
         }
 
         try {
-            console.log('🖱️ LoginPage: 로그인 버튼 클릭', { email });
 
             // 타임아웃 설정 (15초)
             const loginPromise = signIn(email, password);
@@ -59,20 +58,10 @@ function LoginForm() {
                 setTimeout(() => reject(new Error('로그인 시간이 초과되었습니다.')), 15000)
             );
 
-            console.log('⏱️ LoginPage: 로그인 요청 시작 (15초 타임아웃)');
             const { error } = await Promise.race([loginPromise, timeoutPromise]) as { error: Error | null };
 
-            console.log('📊 LoginPage: 로그인 결과 수신', {
-                hasError: !!error,
-                errorMessage: error?.message
-            });
 
             if (error) {
-                console.error('❌ LoginPage: 로그인 실패', {
-                    message: error.message,
-                    code: (error as { code?: string }).code,
-                    status: (error as { status?: number }).status
-                });
 
                 if (error.message.includes('Email not confirmed')) {
                     setError('이메일 인증이 필요합니다. 이메일을 확인해주세요.');
@@ -84,15 +73,12 @@ function LoginForm() {
                     setError(error.message || '로그인 중 오류가 발생했습니다.');
                 }
             } else {
-                console.log('✅ LoginPage: 로그인 성공, 메인 페이지로 리다이렉트');
                 // 로그인 성공 시 메인 페이지로 이동
                 router.push('/');
             }
         } catch (error) {
-            console.error('💥 LoginPage: 예외 발생', error);
             setError('로그인 중 오류가 발생했습니다.');
         } finally {
-            console.log('🏁 LoginPage: 로그인 프로세스 완료, 로딩 상태 해제');
             setLoading(false);
         }
     };

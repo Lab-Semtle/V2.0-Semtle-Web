@@ -6,6 +6,15 @@ import { Post } from './post';
 
 export interface ProjectPost extends Post {
     project_data?: ProjectData;
+    approved_members?: number;
+    applicant_count?: number;
+    project_type?: {
+        id: number;
+        name: string;
+        description?: string;
+        icon?: string;
+        color?: string;
+    };
 }
 
 export interface ProjectData {
@@ -23,7 +32,7 @@ export interface ProjectData {
     deadline: string;
     difficulty: 'beginner' | 'intermediate' | 'advanced';
     location: 'online' | 'offline' | 'hybrid';
-    project_status: 'recruiting' | 'in_progress' | 'completed' | 'cancelled';
+    project_status: 'recruiting' | 'active' | 'completed' | 'cancelled';
     progress_percentage: number;
     tech_stack: string[];
     project_goals?: string;
@@ -113,7 +122,7 @@ export interface ProjectUpdateData {
     deadline?: string;
     difficulty?: 'beginner' | 'intermediate' | 'advanced';
     location?: 'online' | 'offline' | 'hybrid';
-    project_status?: 'recruiting' | 'in_progress' | 'completed' | 'cancelled';
+    project_status?: 'recruiting' | 'active' | 'completed' | 'cancelled';
     progress_percentage?: number;
     tech_stack?: string[];
     project_goals?: string;

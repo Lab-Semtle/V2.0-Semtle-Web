@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import PostForm from '@/components/PostForm';
+import ResourcePostForm from '@/components/forms/ResourcePostForm';
 
 interface ResourceData {
     id: number;
@@ -59,7 +59,6 @@ export default function EditResourcePage({ params }: { params: Promise<{ id: str
                     router.push('/mypage');
                 }
             } catch (error) {
-                console.error('자료 로드 오류:', error);
                 alert('자료를 불러오는 중 오류가 발생했습니다.');
                 router.push('/mypage');
             } finally {
@@ -92,7 +91,6 @@ export default function EditResourcePage({ params }: { params: Promise<{ id: str
             }
 
             const result = await response.json();
-            console.log('Resource updated:', result);
 
             if (formData.status === 'draft') {
                 alert('자료가 임시저장되었습니다!');
@@ -101,7 +99,6 @@ export default function EditResourcePage({ params }: { params: Promise<{ id: str
                 router.push('/mypage');
             }
         } catch (error) {
-            console.error('자료 수정 중 오류:', error);
             throw error;
         }
     };
@@ -126,11 +123,10 @@ export default function EditResourcePage({ params }: { params: Promise<{ id: str
     }
 
     return (
-        <PostForm
+        <ResourcePostForm
             onSave={handleSave}
             isEditing={true}
             loading={false}
-            boardType="resources"
             initialData={{
                 title: resource.title,
                 description: resource.subtitle,
@@ -142,11 +138,6 @@ export default function EditResourcePage({ params }: { params: Promise<{ id: str
                 semester: resource.semester || '',
                 year: resource.year,
                 difficulty_level: resource.difficulty_level || '',
-                file_extension: resource.file_extension || '',
-                original_filename: resource.original_filename || '',
-                downloads_count: resource.downloads_count || 0,
-                rating: resource.rating || 0,
-                rating_count: resource.rating_count || 0,
                 status: resource.status
             }}
             initialContent={resource.content}

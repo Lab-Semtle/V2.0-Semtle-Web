@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Navigation from "@/components/layout/Navigation";
-import { Megaphone, Trophy, FileText, ArrowRight, CheckCircle } from "lucide-react";
+import { Megaphone, Trophy, FileText, ArrowRight, CheckCircle, MessageCircle } from "lucide-react";
 
 function HomeContent() {
   const [showVerificationMessage, setShowVerificationMessage] = useState(false);
@@ -280,6 +280,53 @@ function HomeContent() {
                 <div className="flex items-center text-emerald-600 font-semibold text-sm group-hover:text-emerald-700">
                   자세히 보기
                   <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white relative overflow-hidden">
+        {/* Background Elements */}
+        <div className="absolute top-0 left-0 w-80 h-80 bg-gradient-to-br from-orange-500/5 to-red-500/5 rounded-full -translate-y-40 -translate-x-40"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-pink-500/5 to-purple-500/5 rounded-full translate-y-48 translate-x-48"></div>
+
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="text-center mb-20">
+            <div className="inline-flex items-center px-4 py-2 bg-orange-100 text-orange-800 text-sm font-semibold rounded-full mb-6">
+              <span className="w-2 h-2 bg-orange-500 rounded-full mr-2 animate-pulse"></span>
+              문의하기
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6 leading-tight">
+              궁금한 점이<br />
+              <span className="bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">있으신가요?</span>
+            </h2>
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed mb-12">
+              아치셈틀에 대한 문의사항이나 제안사항이 있으시면 언제든지 연락해주세요.<br />
+              빠른 시일 내에 답변드리겠습니다.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+              <Link
+                href="/contact"
+                className="group relative inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-full hover:from-orange-600 hover:to-red-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 overflow-hidden"
+              >
+                <MessageCircle className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+                <span className="relative z-10">문의하기</span>
+                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300 relative z-10" />
+                <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </Link>
+
+              <div className="flex items-center space-x-6 text-slate-600">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium">평균 응답시간: 일주일 이내</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium">24시간 접수 가능</span>
                 </div>
               </div>
             </div>

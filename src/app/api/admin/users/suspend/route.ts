@@ -78,7 +78,6 @@ export async function POST(request: NextRequest) {
             .single();
 
         if (error) {
-            console.error('사용자 상태 업데이트 오류:', error);
             return NextResponse.json({ error: '사용자 상태 업데이트에 실패했습니다.' }, { status: 500 });
         }
 
@@ -103,7 +102,6 @@ export async function POST(request: NextRequest) {
             user: updatedUser
         });
     } catch (error) {
-        console.error('사용자 상태 업데이트 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

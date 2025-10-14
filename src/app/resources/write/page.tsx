@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import PostForm from '@/components/PostForm';
+import ResourcePostForm from '@/components/forms/ResourcePostForm';
 
 interface PostFormData {
   title: string;
@@ -47,7 +47,6 @@ export default function WriteResourcePage() {
       }
 
       const result = await response.json();
-      console.log('Resource saved:', result);
 
       // 상태에 따라 다른 메시지 표시
       if (formData.status === 'draft') {
@@ -57,7 +56,6 @@ export default function WriteResourcePage() {
         router.push('/resources');
       }
     } catch (error) {
-      console.error('자료 저장 중 오류:', error);
       throw error;
     }
   };
@@ -76,11 +74,10 @@ export default function WriteResourcePage() {
   }
 
   return (
-    <PostForm
+    <ResourcePostForm
       onSave={handleSave}
       isEditing={false}
       loading={false}
-      boardType="resources"
     />
   );
 }

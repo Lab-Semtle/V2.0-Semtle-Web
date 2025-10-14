@@ -63,7 +63,6 @@ export async function POST(request: NextRequest) {
             });
         }
     } catch (error) {
-        console.error('북마크 처리 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -99,7 +98,11 @@ export async function GET(request: NextRequest) {
             isBookmarked: !!bookmark
         });
     } catch (error) {
-        console.error('북마크 상태 확인 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
+
+
+
+
+

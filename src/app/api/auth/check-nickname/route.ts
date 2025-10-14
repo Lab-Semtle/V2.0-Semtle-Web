@@ -39,7 +39,6 @@ export async function POST(request: NextRequest) {
             .single();
 
         if (error && error.code !== 'PGRST116') { // PGRST116은 "no rows returned" 에러
-            console.error('닉네임 중복 확인 오류:', error);
             return NextResponse.json(
                 { error: '서버 오류가 발생했습니다.' },
                 { status: 500 }
@@ -59,10 +58,14 @@ export async function POST(request: NextRequest) {
         );
 
     } catch (error) {
-        console.error('닉네임 중복 확인 오류:', error);
         return NextResponse.json(
             { error: '서버 오류가 발생했습니다.' },
             { status: 500 }
         );
     }
 }
+
+
+
+
+

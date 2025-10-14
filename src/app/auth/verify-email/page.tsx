@@ -19,11 +19,6 @@ function VerifyEmailForm() {
     // 페이지 로드 시 이메일 확인 안내
     useEffect(() => {
         if (email) {
-            console.log('📧 이메일 인증 대기 중:', email);
-            console.log('🔍 다음을 확인해주세요:');
-            console.log('1. 이메일 수신함 확인');
-            console.log('2. 스팸 폴더 확인');
-            console.log('3. Supabase 대시보드 > Authentication > Logs에서 이메일 전송 로그 확인');
         }
     }, [email]);
 
@@ -31,12 +26,10 @@ function VerifyEmailForm() {
     const handleResendEmail = async () => {
         if (!email) return;
 
-        console.log('🔄 이메일 재전송 시작:', email);
         setIsResending(true);
         setResendMessage('');
 
         try {
-            console.log('📡 API 요청 전송 중...');
             const response = await fetch('/api/test-email', {
                 method: 'POST',
                 headers: {
@@ -45,20 +38,15 @@ function VerifyEmailForm() {
                 body: JSON.stringify({ email }),
             });
 
-            console.log('📡 API 응답 상태:', response.status);
             const data = await response.json();
-            console.log('📡 API 응답 데이터:', data);
 
             if (data.success) {
                 setResendMessage('이메일이 재전송되었습니다. 수신함을 확인해주세요.');
-                console.log('✅ 이메일 재전송 성공');
             } else {
                 setResendMessage(`오류: ${data.error}`);
-                console.error('❌ 이메일 재전송 실패:', data.error);
             }
         } catch (error) {
             setResendMessage('이메일 재전송 중 오류가 발생했습니다.');
-            console.error('❌ 이메일 재전송 예외:', error);
         } finally {
             setIsResending(false);
         }

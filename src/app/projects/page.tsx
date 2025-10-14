@@ -18,10 +18,21 @@ export default function ProjectsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedCategory, setSelectedCategory] = useState("전체");
+    const [selectedStatus, setSelectedStatus] = useState("전체");
+    const [selectedDifficulty, setSelectedDifficulty] = useState("전체");
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState("latest");
+
+    // 정렬 상태 변경 디버깅
+    useEffect(() => {
+        console.log('정렬 기준 변경됨:', sortBy);
+    }, [sortBy]);
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(6);
+    const [itemsPerPage] = useState(10);
+
+    const handleRefresh = () => {
+        window.location.reload();
+    };
 
     // 데이터 로드
     useEffect(() => {
@@ -30,11 +41,23 @@ export default function ProjectsPage() {
                 setLoading(true);
                 setError(null); // 이전 오류 상태 초기화
 
-                const response = await fetch('/api/projects');
+                // 캐시 무효화를 위해 timestamp 추가
+                const response = await fetch(`/api/projects?t=${Date.now()}`);
                 const data = await response.json();
 
+                console.log('프로젝트 목록 API 응답:', data);
+                if (data.projects && data.projects.length > 0) {
+                    console.log('첫 번째 프로젝트 데이터:', {
+                        id: data.projects[0].id,
+                        title: data.projects[0].title,
+                        approved_members: data.projects[0].approved_members,
+                        applicant_count: data.projects[0].applicant_count,
+                        team_size: data.projects[0].project_data?.team_size,
+                        current_members: data.projects[0].project_data?.current_members
+                    });
+                }
+
                 if (!response.ok) {
-                    console.warn('프로젝트 데이터 로드 실패, 빈 배열로 처리:', data.error);
                     // API 오류 시에도 빈 배열로 처리하여 정상 렌더링
                     setProjects([]);
                 } else {
@@ -44,7 +67,6 @@ export default function ProjectsPage() {
                     setTypes(data.types || []);
                 }
             } catch (err) {
-                console.warn('프로젝트 데이터 로드 오류, 빈 배열로 처리:', err);
                 // 네트워크 오류 등도 빈 배열로 처리하여 정상 렌더링
                 setProjects([]);
             } finally {
@@ -57,18 +79,30 @@ export default function ProjectsPage() {
 
     const filteredPosts = projects.filter(project => {
         const matchesCategory = selectedCategory === "전체" || project.category?.name === selectedCategory;
+        const matchesStatus = selectedStatus === "전체" || project.project_data?.project_status === selectedStatus;
+        const matchesDifficulty = selectedDifficulty === "전체" || project.project_data?.difficulty === selectedDifficulty;
         const matchesSearch = project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (project.subtitle && project.subtitle.toLowerCase().includes(searchQuery.toLowerCase())) ||
-            project.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-        return matchesCategory && matchesSearch;
+            (project.tags && project.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())));
+        return matchesCategory && matchesStatus && matchesDifficulty && matchesSearch;
     });
 
     const sortedPosts = [...filteredPosts].sort((a, b) => {
+        console.log('정렬 실행:', sortBy);
         if (sortBy === "latest") {
             return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         }
         if (sortBy === "popular") {
-            return b.views - a.views;
+            return (b.views || 0) - (a.views || 0);
+        }
+        if (sortBy === "likes") {
+            return (b.likes_count || 0) - (a.likes_count || 0);
+        }
+        if (sortBy === "deadline") {
+            return new Date(a.project_data?.deadline || a.created_at).getTime() - new Date(b.project_data?.deadline || b.created_at).getTime();
+        }
+        if (sortBy === "comments") {
+            return (b.comments_count || 0) - (a.comments_count || 0);
         }
         return 0;
     });
@@ -125,12 +159,90 @@ export default function ProjectsPage() {
                         </div>
 
                         {/* Filter Buttons */}
-                        <div className="w-full">
-                            <FilterButtons
-                                filters={["전체", ...categories.map(cat => cat.name)]}
-                                selectedFilter={selectedCategory}
-                                onFilterChange={setSelectedCategory}
-                            />
+                        <div className="bg-gradient-to-br from-slate-50/50 to-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-slate-200/60 shadow-sm">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                                {/* 카테고리 필터 */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
+                                            <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                            </svg>
+                                        </div>
+                                        <h3 className="text-sm font-semibold text-slate-700">카테고리</h3>
+                                    </div>
+                                    <FilterButtons
+                                        filters={["전체", ...categories.map(cat => cat.name)]}
+                                        selectedFilter={selectedCategory}
+                                        onFilterChange={setSelectedCategory}
+                                        activeColor="blue-500"
+                                        icon={<svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>}
+                                        compact={true}
+                                    />
+                                </div>
+
+                                {/* 프로젝트 상태 필터 */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 bg-green-100 rounded-lg flex items-center justify-center">
+                                            <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </div>
+                                        <h3 className="text-sm font-semibold text-slate-700">프로젝트 상태</h3>
+                                    </div>
+                                    <FilterButtons
+                                        filters={["전체", "모집중", "진행중", "완료됨"]}
+                                        selectedFilter={selectedStatus === "전체" ? "전체" :
+                                            selectedStatus === "recruiting" ? "모집중" :
+                                                selectedStatus === "active" ? "진행중" : "완료됨"}
+                                        onFilterChange={(filter) => {
+                                            const statusMap: { [key: string]: string } = {
+                                                "전체": "전체",
+                                                "모집중": "recruiting",
+                                                "진행중": "active",
+                                                "완료됨": "completed"
+                                            };
+                                            setSelectedStatus(statusMap[filter]);
+                                        }}
+                                        activeColor={selectedStatus === "recruiting" ? "red-500" :
+                                            selectedStatus === "active" ? "green-500" :
+                                                selectedStatus === "completed" ? "purple-500" : "green-500"}
+                                        icon={<svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+                                        compact={true}
+                                    />
+                                </div>
+
+                                {/* 난이도 필터 */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 bg-orange-100 rounded-lg flex items-center justify-center">
+                                            <svg className="w-3 h-3 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                            </svg>
+                                        </div>
+                                        <h3 className="text-sm font-semibold text-slate-700">난이도</h3>
+                                    </div>
+                                    <FilterButtons
+                                        filters={["전체", "초급", "중급", "고급"]}
+                                        selectedFilter={selectedDifficulty === "전체" ? "전체" :
+                                            selectedDifficulty === "beginner" ? "초급" :
+                                                selectedDifficulty === "intermediate" ? "중급" : "고급"}
+                                        onFilterChange={(filter) => {
+                                            const difficultyMap: { [key: string]: string } = {
+                                                "전체": "전체",
+                                                "초급": "beginner",
+                                                "중급": "intermediate",
+                                                "고급": "advanced"
+                                            };
+                                            setSelectedDifficulty(difficultyMap[filter]);
+                                        }}
+                                        activeColor="orange-500"
+                                        icon={<svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
+                                        compact={true}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -156,7 +268,10 @@ export default function ProjectsPage() {
                             <SortDropdown
                                 options={[
                                     { value: "latest", label: "최신순" },
-                                    { value: "popular", label: "인기순" }
+                                    { value: "popular", label: "조회순" },
+                                    { value: "likes", label: "좋아요순" },
+                                    { value: "comments", label: "댓글순" },
+                                    { value: "deadline", label: "마감일순" }
                                 ]}
                                 selectedValue={sortBy}
                                 onSortChange={setSortBy}
@@ -168,7 +283,7 @@ export default function ProjectsPage() {
                     {pinnedPosts.length > 0 && (
                         <div className="mb-12">
                             <h2 className="text-2xl font-bold text-slate-900 mb-6">주요 프로젝트</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            <div className="grid grid-cols-1 gap-6">
                                 {pinnedPosts.map(project => (
                                     <ProjectCard key={project.id} project={project} />
                                 ))}
@@ -188,19 +303,21 @@ export default function ProjectsPage() {
                                         : "아직 등록된 프로젝트가 없습니다. 첫 번째 프로젝트를 등록해보세요!"
                             }
                             action={
-                                searchQuery || selectedCategory !== "전체"
+                                searchQuery || selectedCategory !== "전체" || selectedStatus !== "전체" || selectedDifficulty !== "전체"
                                     ? {
                                         label: "필터 초기화",
                                         onClick: () => {
                                             setSearchQuery("");
                                             setSelectedCategory("전체");
+                                            setSelectedStatus("전체");
+                                            setSelectedDifficulty("전체");
                                         }
                                     }
                                     : undefined
                             }
                         />
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div className="grid grid-cols-1 gap-6">
                             {currentItems.map(project => (
                                 <ProjectCard key={project.id} project={project} />
                             ))}
@@ -208,15 +325,13 @@ export default function ProjectsPage() {
                     )}
 
                     {/* Pagination */}
-                    {totalPages > 1 && (
-                        <div className="mt-12">
-                            <Pagination
-                                currentPage={currentPage}
-                                totalPages={totalPages}
-                                onPageChange={paginate}
-                            />
-                        </div>
-                    )}
+                    <div className="mt-12 mb-16">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={paginate}
+                        />
+                    </div>
                 </div>
             </main>
         </div>

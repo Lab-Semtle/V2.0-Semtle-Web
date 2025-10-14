@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import PostForm from '@/components/PostForm';
+import ProjectPostForm from '@/components/forms/ProjectPostForm';
 
 interface ProjectData {
     id: number;
@@ -11,12 +11,24 @@ interface ProjectData {
     subtitle: string;
     content: any;
     thumbnail: string;
+    author_id: string;
     category: {
         name: string;
     };
     project_type: {
         id: number;
         name: string;
+    };
+    project_data?: {
+        team_size: number;
+        needed_skills: string[];
+        deadline: string;
+        difficulty: string;
+        location: string;
+        project_goals: string;
+        tech_stack: string[];
+        github_url: string;
+        demo_url: string;
     };
     team_size: number;
     needed_skills: string[];
@@ -31,7 +43,7 @@ interface ProjectData {
 }
 
 export default function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
-    const { user, loading } = useAuth();
+    const { user, profile, loading } = useAuth();
     const router = useRouter();
 
     // params를 unwrap
@@ -58,7 +70,6 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                     router.push('/mypage');
                 }
             } catch (error) {
-                console.error('프로젝트 로드 오류:', error);
                 alert('프로젝트를 불러오는 중 오류가 발생했습니다.');
                 router.push('/mypage');
             } finally {
@@ -81,7 +92,8 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                 body: JSON.stringify({
                     ...formData,
                     content,
-                    board_type: 'projects'
+                    board_type: 'projects',
+                    userId: user?.id
                 }),
             });
 
@@ -91,16 +103,15 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
             }
 
             const result = await response.json();
-            console.log('Project updated:', result);
 
             if (formData.status === 'draft') {
                 alert('프로젝트가 임시저장되었습니다!');
+                router.push(`/profile/${profile?.nickname}`);
             } else {
                 alert('프로젝트가 성공적으로 수정되었습니다!');
-                router.push('/mypage');
+                router.push(`/profile/${profile?.nickname}`);
             }
         } catch (error) {
-            console.error('프로젝트 수정 중 오류:', error);
             throw error;
         }
     };
@@ -125,27 +136,27 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
     }
 
     return (
-        <PostForm
+        <ProjectPostForm
             onSave={handleSave}
             isEditing={true}
             loading={false}
-            boardType="projects"
             initialData={{
                 title: project.title,
                 description: project.subtitle,
                 category: project.category?.name || '',
                 thumbnail: project.thumbnail || '',
+                status: project.status,
                 project_type_id: project.project_type?.id,
-                team_size: project.team_size,
-                needed_skills: project.needed_skills || [],
-                deadline: project.deadline,
-                difficulty: project.difficulty,
-                location: project.location,
-                project_goals: project.project_goals || '',
-                tech_stack: project.tech_stack || [],
-                github_url: project.github_url || '',
-                demo_url: project.demo_url || '',
-                status: project.status
+                team_size: project.project_data?.team_size || project.team_size,
+                needed_skills: project.project_data?.needed_skills || project.needed_skills || [],
+                deadline: project.project_data?.deadline || project.deadline,
+                difficulty: project.project_data?.difficulty || project.difficulty,
+                location: project.project_data?.location || project.location,
+                project_goals: project.project_data?.project_goals || project.project_goals || '',
+                project_status: project.project_data?.project_status || project.project_status || 'recruiting',
+                tech_stack: project.project_data?.tech_stack || project.tech_stack || [],
+                github_url: project.project_data?.github_url || project.github_url || '',
+                demo_url: project.project_data?.demo_url || project.demo_url || '',
             }}
             initialContent={project.content}
         />

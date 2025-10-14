@@ -15,13 +15,14 @@ export async function GET(
             .from('user_profiles')
             .select(`
                 id, nickname, name, bio, profile_image, role, created_at,
-                followers_count, following_count
+                email, student_id, birth_date, github_url, portfolio_url, linkedin_url,
+                major, grade, followers_count, following_count,
+                profile_public, email_public, student_id_public, major_grade_public
             `)
             .eq('nickname', nickname)
             .single();
 
         if (error) {
-            console.error('프로필 조회 오류:', error);
             return NextResponse.json(
                 { error: '프로필을 찾을 수 없습니다.' },
                 { status: 404 }
@@ -35,8 +36,8 @@ export async function GET(
             );
         }
 
-        // 게시물 통계 계산
-        const [projectsResult, resourcesResult, activitiesResult] = await Promise.all([
+        // 게시물 통계 및 팔로워/팔로잉 수 계산
+        const [projectsResult, resourcesResult, activitiesResult, followersResult, followingResult] = await Promise.all([
             supabase
                 .from('projects')
                 .select('id', { count: 'exact' })
@@ -51,15 +52,33 @@ export async function GET(
                 .from('activities')
                 .select('id', { count: 'exact' })
                 .eq('author_id', profile.id)
-                .eq('status', 'published')
+                .eq('status', 'published'),
+            // 팔로워 수 계산 (이 사용자를 팔로우하는 사람들)
+            supabase
+                .from('follows')
+                .select('id', { count: 'exact' })
+                .eq('following_id', profile.id),
+            // 팔로잉 수 계산 (이 사용자가 팔로우하는 사람들)
+            supabase
+                .from('follows')
+                .select('id', { count: 'exact' })
+                .eq('follower_id', profile.id)
         ]);
 
         const projectsCount = projectsResult.count || 0;
         const resourcesCount = resourcesResult.count || 0;
         const activitiesCount = activitiesResult.count || 0;
+        const followersCount = followersResult.count || 0;
+        const followingCount = followingResult.count || 0;
 
         const profileWithStats = {
             ...profile,
+            privacy: {
+                profileVisibility: profile.profile_public ? 'public' : 'private',
+                email_public: profile.email_public,
+                student_id_public: profile.student_id_public,
+                major_grade_public: profile.major_grade_public
+            },
             stats: {
                 posts: {
                     projects: projectsCount,
@@ -67,8 +86,8 @@ export async function GET(
                     activities: activitiesCount,
                     total: projectsCount + resourcesCount + activitiesCount
                 },
-                followers_count: profile.followers_count || 0,
-                following_count: profile.following_count || 0
+                followers_count: followersCount,
+                following_count: followingCount
             }
         };
 
@@ -77,7 +96,6 @@ export async function GET(
         });
 
     } catch (error) {
-        console.error('프로필 조회 오류:', error);
         return NextResponse.json(
             { error: '서버 오류가 발생했습니다.' },
             { status: 500 }

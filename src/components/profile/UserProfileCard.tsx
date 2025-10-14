@@ -43,7 +43,7 @@ export default function UserProfileCard({ profile, isOwnProfile = false, onEdit 
     const getRoleLabel = (role: string) => {
         switch (role) {
             case 'super_admin':
-                return '최고 관리자';
+                return '대표 관리자';
             case 'admin':
                 return '관리자';
             case 'user':

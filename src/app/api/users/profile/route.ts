@@ -21,13 +21,11 @@ export async function GET() {
             .single();
 
         if (error) {
-            console.error('프로필 조회 오류:', error);
             return NextResponse.json({ error: '프로필을 불러올 수 없습니다.' }, { status: 500 });
         }
 
         return NextResponse.json({ profile });
     } catch (error) {
-        console.error('프로필 조회 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -71,13 +69,11 @@ export async function PUT(request: NextRequest) {
             .single();
 
         if (error) {
-            console.error('프로필 업데이트 오류:', error);
             return NextResponse.json({ error: '프로필 업데이트에 실패했습니다.' }, { status: 500 });
         }
 
         return NextResponse.json({ profile: updatedProfile });
     } catch (error) {
-        console.error('프로필 업데이트 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

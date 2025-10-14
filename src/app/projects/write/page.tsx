@@ -2,7 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import PostForm from '@/components/PostForm';
+import ProjectPostForm from '@/components/forms/ProjectPostForm';
+import { JSONContent } from 'novel';
 
 interface PostFormData {
   title: string;
@@ -26,9 +27,8 @@ export default function WriteProjectPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  const handleSave = async (formData: PostFormData, content: unknown) => {
+  const handleSave = async (formData: PostFormData, content: JSONContent) => {
     try {
-      console.log('Saving project with data:', { formData, content });
 
       const response = await fetch('/api/projects', {
         method: 'POST',
@@ -38,7 +38,8 @@ export default function WriteProjectPage() {
         body: JSON.stringify({
           ...formData,
           content,
-          board_type: 'projects'
+          board_type: 'projects',
+          userId: user?.id
         }),
       });
 
@@ -48,7 +49,6 @@ export default function WriteProjectPage() {
       }
 
       const result = await response.json();
-      console.log('Project post saved:', result);
 
       // 상태에 따라 다른 메시지 표시
       if (formData.status === 'draft') {
@@ -58,7 +58,6 @@ export default function WriteProjectPage() {
         router.push('/projects');
       }
     } catch (error) {
-      console.error('게시물 저장 중 오류:', error);
       throw error;
     }
   };
@@ -77,11 +76,10 @@ export default function WriteProjectPage() {
   }
 
   return (
-    <PostForm
+    <ProjectPostForm
       onSave={handleSave}
       isEditing={false}
       loading={false}
-      boardType="projects"
     />
   );
 }

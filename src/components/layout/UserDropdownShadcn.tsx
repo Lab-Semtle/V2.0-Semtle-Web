@@ -11,7 +11,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, LogOut, ChevronDown, ChevronUp, UserCircle, Cog, Shield } from "lucide-react";
+import { User, LogOut, ChevronDown, ChevronUp, UserCircle, Cog, Shield, FileText, Users } from "lucide-react";
 
 export default function UserDropdownShadcn() {
     const { profile, signOut, isAdmin } = useAuth();
@@ -28,6 +28,14 @@ export default function UserDropdownShadcn() {
 
     const handleAdminDashboardClick = () => {
         router.push('/admin');
+    };
+
+    const handleMyApplicationsClick = () => {
+        router.push('/my-applications');
+    };
+
+    const handleProjectApplicationsClick = () => {
+        router.push('/my-projects/applications');
     };
 
     const handleLogoutClick = async () => {
@@ -104,6 +112,26 @@ export default function UserDropdownShadcn() {
                     <div className="flex-1">
                         <span className="font-semibold text-slate-900">계정 설정</span>
                         <p className="text-xs text-slate-500">개인 정보 관리</p>
+                    </div>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={handleMyApplicationsClick} className="cursor-pointer px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all duration-200 group">
+                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-200">
+                        <FileText className="h-4 w-4 text-green-600" />
+                    </div>
+                    <div className="flex-1">
+                        <span className="font-semibold text-slate-900">신청한 프로젝트 현황</span>
+                        <p className="text-xs text-slate-500">내가 신청한 프로젝트 관리</p>
+                    </div>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={handleProjectApplicationsClick} className="cursor-pointer px-4 py-3 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 transition-all duration-200 group">
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-200">
+                        <Users className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                        <span className="font-semibold text-slate-900">내 프로젝트 관리</span>
+                        <p className="text-xs text-slate-500">내 프로젝트 신청자 관리</p>
                     </div>
                 </DropdownMenuItem>
 

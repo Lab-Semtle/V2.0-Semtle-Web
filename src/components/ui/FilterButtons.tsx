@@ -1,4 +1,5 @@
 import React from 'react';
+import { Tag, Activity, Zap } from 'lucide-react';
 
 interface FilterButtonsProps {
     filters: string[];
@@ -6,29 +7,38 @@ interface FilterButtonsProps {
     onFilterChange: (filter: string) => void;
     activeColor?: string;
     className?: string;
+    icon?: React.ReactNode;
+    compact?: boolean;
 }
 
 export default function FilterButtons({
     filters,
     selectedFilter,
     onFilterChange,
-    activeColor = "slate-900",
-    className = ""
+    activeColor = "blue-500",
+    className = "",
+    icon,
+    compact = false
 }: FilterButtonsProps) {
     return (
-        <div className={`flex flex-wrap justify-center gap-3 ${className}`}>
+        <div className={`flex flex-wrap gap-2 ${className}`}>
             {filters.map((filter) => (
                 <button
                     key={filter}
                     onClick={() => onFilterChange(filter)}
-                    className={`group relative px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 transform hover:-translate-y-0.5 ${selectedFilter === filter
-                            ? `bg-gradient-to-r from-${activeColor} to-slate-700 text-white shadow-lg hover:shadow-xl`
-                            : 'bg-white/80 backdrop-blur-sm text-slate-700 hover:bg-slate-100 hover:shadow-md border border-slate-200/60'
-                        }`}
+                    className={`group relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 transform hover:scale-105 ${selectedFilter === filter
+                        ? `bg-${activeColor} text-white shadow-md hover:shadow-lg border border-${activeColor}/30`
+                        : 'bg-white/90 backdrop-blur-sm text-slate-600 hover:bg-slate-50 hover:text-slate-800 border border-slate-200/60 hover:border-slate-300/60 hover:shadow-sm'
+                        } ${compact ? 'px-3 py-2 text-xs' : ''}`}
                 >
+                    {icon && selectedFilter === filter && (
+                        <span className="text-xs opacity-80">
+                            {icon}
+                        </span>
+                    )}
                     <span className="relative z-10">{filter}</span>
                     {selectedFilter === filter && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <div className="absolute inset-0 bg-white/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                     )}
                 </button>
             ))}

@@ -91,7 +91,6 @@ export async function POST(
                     .eq('user_id', user.id);
 
                 if (deleteError) {
-                    console.error('기존 투표 삭제 오류:', deleteError);
                     return NextResponse.json({ error: '투표 변경에 실패했습니다.' }, { status: 500 });
                 }
             }
@@ -107,7 +106,6 @@ export async function POST(
             });
 
         if (insertError) {
-            console.error('투표 추가 오류:', insertError);
             return NextResponse.json({ error: '투표에 실패했습니다.' }, { status: 500 });
         }
 
@@ -117,7 +115,6 @@ export async function POST(
             vote_option
         });
     } catch (error) {
-        console.error('투표 처리 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -179,7 +176,6 @@ export async function GET(
             allow_multiple_votes: activity.allow_multiple_votes
         });
     } catch (error) {
-        console.error('투표 결과 조회 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

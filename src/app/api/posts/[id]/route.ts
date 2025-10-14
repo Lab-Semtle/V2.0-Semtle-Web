@@ -34,7 +34,6 @@ export async function GET(
             .single();
 
         if (error) {
-            console.error('게시물 조회 오류:', error);
             return NextResponse.json({ error: '게시물을 찾을 수 없습니다.' }, { status: 404 });
         }
 
@@ -46,7 +45,6 @@ export async function GET(
 
         return NextResponse.json({ post });
     } catch (error) {
-        console.error('게시물 조회 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -137,13 +135,11 @@ export async function PUT(
             .single();
 
         if (error) {
-            console.error('게시물 업데이트 오류:', error);
             return NextResponse.json({ error: '게시물 업데이트에 실패했습니다.' }, { status: 500 });
         }
 
         return NextResponse.json({ post: updatedPost });
     } catch (error) {
-        console.error('게시물 업데이트 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -203,13 +199,11 @@ export async function DELETE(
             .eq('id', postId);
 
         if (error) {
-            console.error('게시물 삭제 오류:', error);
             return NextResponse.json({ error: '게시물 삭제에 실패했습니다.' }, { status: 500 });
         }
 
         return NextResponse.json({ message: '게시물이 삭제되었습니다.' });
     } catch (error) {
-        console.error('게시물 삭제 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

@@ -60,7 +60,6 @@ export async function POST(
                 .eq('user_id', user.id);
 
             if (deleteError) {
-                console.error('활동 참가 취소 오류:', deleteError);
                 return NextResponse.json({ error: '활동 참가 취소에 실패했습니다.' }, { status: 500 });
             }
 
@@ -84,7 +83,6 @@ export async function POST(
                 });
 
             if (insertError) {
-                console.error('활동 참가 오류:', insertError);
                 return NextResponse.json({ error: '활동 참가에 실패했습니다.' }, { status: 500 });
             }
 
@@ -110,7 +108,6 @@ export async function POST(
             });
         }
     } catch (error) {
-        console.error('활동 참가 처리 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -148,7 +145,6 @@ export async function GET(
             status: participation?.status || null
         });
     } catch (error) {
-        console.error('활동 참가 상태 확인 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

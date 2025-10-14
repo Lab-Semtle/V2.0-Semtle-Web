@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabase } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import { ProjectCreateData } from '@/types/project';
+
+const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 // 프로젝트 게시물 목록 조회
 export async function GET(request: NextRequest) {
     try {
-        const supabase = await createServerSupabase();
 
         // 쿼리 파라미터
         const { searchParams } = new URL(request.url);
@@ -13,7 +17,7 @@ export async function GET(request: NextRequest) {
         const difficulty = searchParams.get('difficulty');
         const location = searchParams.get('location');
         const tech_stack = searchParams.get('tech_stack')?.split(',') || [];
-        const project_status = searchParams.get('project_status') || 'recruiting';
+        const project_status = searchParams.get('project_status'); // 기본값 제거
         const deadline_from = searchParams.get('deadline_from');
         const deadline_to = searchParams.get('deadline_to');
         const page = parseInt(searchParams.get('page') || '1');
@@ -26,13 +30,7 @@ export async function GET(request: NextRequest) {
         *,
         category:project_categories(*),
         project_type:project_types(*),
-        author:user_profiles!projects_author_id_fkey(
-          id,
-          nickname,
-          name,
-          profile_image,
-          role
-        )
+        project_status_info:project_statuses!project_status(name, display_name, color, icon)
       `)
             .eq('status', 'published');
 
@@ -53,7 +51,7 @@ export async function GET(request: NextRequest) {
             query = query.overlaps('tech_stack', tech_stack);
         }
 
-        if (project_status) {
+        if (project_status && project_status !== 'all') {
             query = query.eq('project_status', project_status);
         }
 
@@ -65,8 +63,8 @@ export async function GET(request: NextRequest) {
             query = query.lte('deadline', deadline_to);
         }
 
-        // 정렬 (마감일 기준)
-        query = query.order('deadline', { ascending: true });
+        // 정렬 (고정된 게시물 우선, 그 다음 최신순)
+        query = query.order('is_pinned', { ascending: false }).order('created_at', { ascending: false });
 
         // 페이지네이션
         const from = (page - 1) * limit;
@@ -76,8 +74,12 @@ export async function GET(request: NextRequest) {
         const { data: projects, error, count } = await query;
 
         if (error) {
-            console.error('프로젝트 목록 조회 오류:', error);
             return NextResponse.json({ error: '프로젝트 목록을 불러올 수 없습니다.' }, { status: 500 });
+        }
+
+        // 디버깅: 좋아요 카운트 확인
+        if (projects && projects.length > 0) {
+            console.log('프로젝트 목록 좋아요 카운트:', projects.map(p => ({ id: p.id, title: p.title, likes_count: p.likes_count })));
         }
 
         // 카테고리 및 타입 목록 조회
@@ -94,8 +96,93 @@ export async function GET(request: NextRequest) {
                 .order('sort_order')
         ]);
 
+        // 작성자 정보 조회 및 좋아요 수 동기화
+        const projectsWithAuthors = await Promise.all(
+            (projects || []).map(async (project) => {
+                // 실제 좋아요 수 계산
+                const { data: likeCountData } = await supabase
+                    .from('project_likes')
+                    .select('id', { count: 'exact' })
+                    .eq('project_id', project.id);
+
+                const actualLikesCount = likeCountData?.length || 0;
+
+                // projects 테이블의 likes_count를 실제 값으로 업데이트
+                await supabase
+                    .from('projects')
+                    .update({ likes_count: actualLikesCount })
+                    .eq('id', project.id);
+
+                const { data: author } = await supabase
+                    .from('user_profiles')
+                    .select('id, nickname, name, profile_image, role')
+                    .eq('id', project.author_id)
+                    .single();
+
+                // 실제 승인된 팀원 수 계산 (작성자 + 승인된 신청자)
+                // project_team_members 테이블에서 프로젝트 작성자를 제외한 승인된 팀원 수
+                const { data: teamMembers } = await supabase
+                    .from('project_team_members')
+                    .select('id, user_id')
+                    .eq('project_id', project.id)
+                    .eq('status', 'active')
+                    .neq('user_id', project.author_id); // 작성자 제외
+
+                // 승인된 신청자 수 (project_applications에서 status='accepted'인 것들)
+                const { data: acceptedApplications } = await supabase
+                    .from('project_applications')
+                    .select('id')
+                    .eq('project_id', project.id)
+                    .eq('status', 'accepted');
+
+                // 실제 신청자 수 계산 (대기중인 신청자만)
+                const { data: applications } = await supabase
+                    .from('project_applications')
+                    .select('id')
+                    .eq('project_id', project.id)
+                    .eq('status', 'pending');
+
+                const actualApplicantCount = applications?.length || 0;
+
+                // 작성자(1) + 승인된 신청자 수
+                const actualCurrentMembers = 1 + (acceptedApplications?.length || 0);
+
+                // 디버깅 로그
+                console.log(`프로젝트 ${project.id} 모집현황:`, {
+                    project_title: project.title,
+                    author_id: project.author_id,
+                    team_size: project.team_size,
+                    accepted_applications: acceptedApplications?.length || 0,
+                    actual_current_members: actualCurrentMembers,
+                    pending_applications: actualApplicantCount
+                });
+
+                return {
+                    ...project,
+                    likes_count: actualLikesCount, // 실제 좋아요 수 사용
+                    author: author || null,
+                    project_data: {
+                        team_size: project.team_size,
+                        needed_skills: project.needed_skills,
+                        deadline: project.deadline,
+                        difficulty: project.difficulty,
+                        location: project.location,
+                        project_goals: project.project_goals,
+                        tech_stack: project.tech_stack,
+                        github_url: project.github_url,
+                        demo_url: project.demo_url,
+                        project_status: project.project_status,
+                        current_members: actualCurrentMembers,
+                        progress_percentage: project.progress_percentage
+                    },
+                    project_type: project.project_type, // 프로젝트 타입 정보 포함
+                    applicant_count: actualApplicantCount // 실제 신청자 수
+                };
+            })
+        );
+
         return NextResponse.json({
-            projects: projects || [],
+            projects: projectsWithAuthors,
             pagination: {
                 page,
                 limit,
@@ -106,7 +193,6 @@ export async function GET(request: NextRequest) {
             types: typesResult.data || []
         });
     } catch (error) {
-        console.error('프로젝트 목록 조회 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -114,16 +200,7 @@ export async function GET(request: NextRequest) {
 // 프로젝트 게시물 생성
 export async function POST(request: NextRequest) {
     try {
-        const supabase = await createServerSupabase();
-
-        // 현재 사용자 확인
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) {
-            return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
-        }
-
         const projectData = await request.json();
-        console.log('Received project data:', projectData);
 
         const {
             title,
@@ -138,11 +215,14 @@ export async function POST(request: NextRequest) {
             deadline,
             difficulty,
             location,
-            project_goals
+            project_status,
+            project_goals,
+            userId
         } = projectData;
 
+
         // 필수 필드 검증
-        if (!title || !project_type_id || !team_size || !deadline || !difficulty || !location) {
+        if (!title || !description || !content || !userId || !project_type_id || !team_size || !deadline || !difficulty || !location || !project_status) {
             return NextResponse.json({ error: '필수 필드가 누락되었습니다.' }, { status: 400 });
         }
 
@@ -167,7 +247,7 @@ export async function POST(request: NextRequest) {
                 thumbnail,
                 category_id,
                 project_type_id,
-                author_id: user.id,
+                author_id: userId,
                 status: status === 'published' ? 'published' : 'draft',
                 tags: [],
                 team_size: parseInt(team_size),
@@ -176,7 +256,7 @@ export async function POST(request: NextRequest) {
                 deadline: new Date(deadline).toISOString(),
                 difficulty,
                 location,
-                project_status: 'recruiting',
+                project_status: project_status || 'recruiting',
                 tech_stack: [],
                 project_goals: project_goals || '',
                 published_at: status === 'published' ? new Date().toISOString() : null
@@ -185,7 +265,6 @@ export async function POST(request: NextRequest) {
             .single();
 
         if (projectError) {
-            console.error('프로젝트 생성 오류:', projectError);
             return NextResponse.json({ error: '프로젝트 생성에 실패했습니다.' }, { status: 500 });
         }
 
@@ -194,7 +273,7 @@ export async function POST(request: NextRequest) {
             .from('project_team_members')
             .insert({
                 project_id: newProject.id,
-                user_id: user.id,
+                user_id: userId,
                 role: 'leader',
                 status: 'active'
             });
@@ -205,21 +284,39 @@ export async function POST(request: NextRequest) {
             .select(`
         *,
         category:project_categories(*),
-        project_type:project_types(*),
-        author:user_profiles!projects_author_id_fkey(
-          id,
-          nickname,
-          name,
-          profile_image,
-          role
-        )
+        project_type:project_types(*)
       `)
             .eq('id', newProject.id)
             .single();
 
-        return NextResponse.json({ project: completeProject }, { status: 201 });
+        // 작성자 정보 조회
+        const { data: author } = await supabase
+            .from('user_profiles')
+            .select('id, nickname, name, profile_image, role')
+            .eq('id', completeProject.author_id)
+            .single();
+
+        const projectWithAuthor = {
+            ...completeProject,
+            author: author || null,
+            project_data: {
+                team_size: completeProject.team_size,
+                needed_skills: completeProject.needed_skills,
+                deadline: completeProject.deadline,
+                difficulty: completeProject.difficulty,
+                location: completeProject.location,
+                project_goals: completeProject.project_goals,
+                tech_stack: completeProject.tech_stack,
+                github_url: completeProject.github_url,
+                demo_url: completeProject.demo_url,
+                project_status: completeProject.project_status,
+                current_members: completeProject.current_members,
+                progress_percentage: completeProject.progress_percentage
+            }
+        };
+
+        return NextResponse.json({ project: projectWithAuthor }, { status: 201 });
     } catch (error) {
-        console.error('프로젝트 생성 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

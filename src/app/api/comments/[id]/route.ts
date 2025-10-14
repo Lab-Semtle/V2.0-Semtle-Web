@@ -73,13 +73,11 @@ export async function PUT(
             .single();
 
         if (error) {
-            console.error('댓글 수정 오류:', error);
             return NextResponse.json({ error: '댓글 수정에 실패했습니다.' }, { status: 500 });
         }
 
         return NextResponse.json({ comment: updatedComment });
     } catch (error) {
-        console.error('댓글 수정 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -140,13 +138,11 @@ export async function DELETE(
             .eq('id', commentId);
 
         if (error) {
-            console.error('댓글 삭제 오류:', error);
             return NextResponse.json({ error: '댓글 삭제에 실패했습니다.' }, { status: 500 });
         }
 
         return NextResponse.json({ message: '댓글이 삭제되었습니다.' });
     } catch (error) {
-        console.error('댓글 삭제 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

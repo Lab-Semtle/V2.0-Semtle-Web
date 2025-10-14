@@ -104,8 +104,8 @@ export default function Navigation() {
             </div>
 
 
-            {/* Mobile Navigation - 투명 배경 스타일 */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 flex items-center justify-around px-4 z-50">
+            {/* Mobile Navigation - 흰색 배경 스타일 */}
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-200 flex items-center justify-around px-4 z-50 shadow-lg">
                 <Link href="/" className="p-3 rounded-lg hover:bg-slate-100 transition-colors duration-200 group">
                     <Home className="w-5 h-5 text-slate-600 group-hover:text-slate-900" />
                 </Link>

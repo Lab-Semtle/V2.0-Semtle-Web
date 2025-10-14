@@ -63,7 +63,6 @@ export async function PUT(request: NextRequest) {
             .single();
 
         if (error) {
-            console.error('사용자 역할 업데이트 오류:', error);
             return NextResponse.json({ error: '사용자 역할 업데이트에 실패했습니다.' }, { status: 500 });
         }
 
@@ -94,7 +93,6 @@ export async function PUT(request: NextRequest) {
         });
 
     } catch (error) {
-        console.error('사용자 역할 변경 오류:', error);
         return NextResponse.json(
             { error: '서버 오류가 발생했습니다.' },
             { status: 500 }
@@ -107,7 +105,7 @@ function getRoleDisplayName(role: string): string {
     switch (role) {
         case 'member': return '일반 회원';
         case 'admin': return '관리자';
-        case 'super_admin': return '최고 관리자';
+        case 'super_admin': return '대표 관리자';
         default: return role;
     }
 }

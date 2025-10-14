@@ -6,6 +6,17 @@ import { Post } from './post';
 
 export interface ResourcePost extends Post {
     resource_data?: ResourceData;
+    files?: ResourceFile[];
+}
+
+export interface ResourceFile {
+    id: string;
+    name: string;
+    size: number;
+    type: string;
+    url: string;
+    original_filename?: string;
+    file_extension?: string;
 }
 
 export interface ResourceData {
@@ -16,6 +27,7 @@ export interface ResourceData {
         name: string;
         description?: string;
         icon?: string;
+        color?: string;
         file_extensions?: string[];
     };
     file_extension?: string;

@@ -1,34 +1,57 @@
+"use client";
+
 import Link from 'next/link';
 import Image from 'next/image';
-import React from 'react';
-import { Github, Instagram, Mail, Youtube, Globe } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+    Mail, Globe, Phone, ExternalLink, Github, Instagram, Youtube,
+    Facebook, Twitter, Linkedin, Twitch,
+    BookOpen, Calendar, MapPin, Users, MessageSquare
+} from 'lucide-react';
 
 const Footer: React.FC = () => {
     const currentYear = new Date().getFullYear();
+    const [representativeAdmin, setRepresentativeAdmin] = useState<{
+        name: string;
+        email: string;
+    } | null>(null);
+    const [footerLinks, setFooterLinks] = useState<Array<{
+        id: string;
+        name: string;
+        url: string;
+        icon: string;
+        color: string;
+    }>>([]);
 
-    // SNS 링크 데이터
-    const SNS_LINKS = [
-        {
-            icon: Github,
-            url: 'https://github.com/semtle',
-            label: 'GitHub',
-        },
-        {
-            icon: Instagram,
-            url: 'https://instagram.com/semtle',
-            label: 'Instagram',
-        },
-        {
-            icon: Youtube,
-            url: 'https://youtube.com/@semtle',
-            label: 'YouTube',
-        },
-        {
-            icon: Mail,
-            url: 'mailto:semtle@kmou.ac.kr',
-            label: 'Email',
-        },
-    ];
+    useEffect(() => {
+        const fetchRepresentativeAdmin = async () => {
+            try {
+                const response = await fetch('/api/admin/representative');
+                if (response.ok) {
+                    const data = await response.json();
+                    setRepresentativeAdmin(data.representativeAdmin);
+                }
+            } catch (error) {
+            }
+        };
+
+        const fetchFooterLinks = async () => {
+            try {
+                const response = await fetch('/api/admin/footer-links');
+                if (response.ok) {
+                    const data = await response.json();
+                    setFooterLinks(data.links || []);
+                }
+            } catch (error) {
+            }
+        };
+
+        fetchRepresentativeAdmin();
+        fetchFooterLinks();
+    }, []);
+
+    // SNS 링크 데이터 (기존 하드코딩된 링크 - 이제 동적으로 관리됨)
+    // const SNS_LINKS = [...]; // 제거됨 - 이제 footerLinks 상태로 관리
 
     return (
         <footer className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden">
@@ -87,10 +110,6 @@ const Footer: React.FC = () => {
                                     <div className="w-1 h-1 bg-emerald-500 rounded-full mr-3 group-hover:scale-150 transition-transform duration-300"></div>
                                     자료실
                                 </Link>
-                                <Link href="/about" className="group flex items-center text-slate-300 hover:text-white transition-all duration-300 text-sm">
-                                    <div className="w-1 h-1 bg-orange-500 rounded-full mr-3 group-hover:scale-150 transition-transform duration-300"></div>
-                                    학회 소개
-                                </Link>
                             </div>
                         </div>
 
@@ -98,18 +117,33 @@ const Footer: React.FC = () => {
                         <div className="space-y-6">
                             <h3 className="text-xl font-bold text-white">연락처</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-                                <div className="flex items-start space-x-3">
-                                    <div className="w-6 h-6 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                                        <Mail className="w-3 h-3 text-blue-400" />
+                                {representativeAdmin ? (
+                                    <>
+                                        <div className="flex items-start space-x-3">
+                                            <div className="w-6 h-6 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                <Mail className="w-3 h-3 text-blue-400" />
+                                            </div>
+                                            <div>
+                                                <p className="text-slate-300 text-sm font-medium">대표 이메일</p>
+                                                <p className="text-slate-400 text-xs">{representativeAdmin.email}</p>
+                                                <p className="text-slate-500 text-xs">{representativeAdmin.name}</p>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="flex items-start space-x-3">
+                                        <div className="w-6 h-6 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                            <Mail className="w-3 h-3 text-blue-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-300 text-sm font-medium">이메일</p>
+                                            <p className="text-slate-400 text-xs">semtle@kmou.ac.kr</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-slate-300 text-sm font-medium">이메일</p>
-                                        <p className="text-slate-400 text-xs">semtle@kmou.ac.kr</p>
-                                    </div>
-                                </div>
+                                )}
                                 <div className="flex items-start space-x-3">
-                                    <div className="w-6 h-6 bg-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                                        <Globe className="w-3 h-3 text-emerald-400" />
+                                    <div className="w-6 h-6 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <Globe className="w-3 h-3 text-purple-400" />
                                     </div>
                                     <div>
                                         <p className="text-slate-300 text-sm font-medium">위치</p>
@@ -122,18 +156,45 @@ const Footer: React.FC = () => {
                             {/* SNS 링크 */}
                             <div className="space-y-3">
                                 <div className="flex flex-wrap gap-3">
-                                    {SNS_LINKS.map((link, index) => (
-                                        <Link
-                                            key={index}
-                                            href={link.url}
-                                            aria-label={link.label}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="group p-3 bg-slate-800/50 hover:bg-slate-700/50 rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg"
-                                        >
-                                            <link.icon className="h-5 w-5 text-slate-400 group-hover:text-white transition-colors duration-300" />
-                                        </Link>
-                                    ))}
+                                    {footerLinks.map((link) => {
+                                        // 아이콘 매핑 객체
+                                        const iconMap: { [key: string]: React.ComponentType<any> } = {
+                                            Github,
+                                            Instagram,
+                                            Youtube,
+                                            Mail,
+                                            Globe,
+                                            Phone,
+                                            MessageSquare,
+                                            ExternalLink,
+                                            Facebook,
+                                            Twitter,
+                                            Linkedin,
+                                            Twitch,
+                                            BookOpen,
+                                            Calendar,
+                                            MapPin,
+                                            Users
+                                        };
+
+                                        const IconComponent = iconMap[link.icon] || ExternalLink;
+
+                                        return (
+                                            <Link
+                                                key={link.id}
+                                                href={link.url}
+                                                aria-label={link.name}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="group p-3 bg-slate-800/50 hover:bg-slate-700/50 rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg"
+                                            >
+                                                <IconComponent
+                                                    className="h-5 w-5 text-slate-400 group-hover:text-white transition-colors duration-300"
+                                                    style={{ color: link.color }}
+                                                />
+                                            </Link>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>

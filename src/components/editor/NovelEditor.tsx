@@ -75,7 +75,6 @@ const NovelEditor = ({
                             codeBlock.classList.remove('copied');
                         }, 1200);
                     }).catch(err => {
-                        console.error('복사 실패:', err);
                     });
                 }
             }
@@ -270,7 +269,6 @@ const NovelEditor = ({
             try {
                 window.localStorage.setItem("markdown", editor.storage.markdown.getMarkdown());
             } catch {
-                console.warn("Markdown extension not available");
             }
         }
 

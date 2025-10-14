@@ -35,7 +35,6 @@ export default function ActivitiesPage() {
                 const data = await response.json();
 
                 if (!response.ok) {
-                    console.warn('활동 데이터 로드 실패, 빈 배열로 처리:', data.error);
                     // API 오류 시에도 빈 배열로 처리하여 정상 렌더링
                     setActivities([]);
                 } else {
@@ -45,7 +44,6 @@ export default function ActivitiesPage() {
                     setTypes(data.types || []);
                 }
             } catch (err) {
-                console.warn('활동 데이터 로드 오류, 빈 배열로 처리:', err);
                 // 네트워크 오류 등도 빈 배열로 처리하여 정상 렌더링
                 setActivities([]);
             } finally {

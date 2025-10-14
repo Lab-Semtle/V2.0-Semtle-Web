@@ -25,9 +25,7 @@ export async function saveVerificationCode(email: string, code: string, expiresA
         await mkdir(join(process.cwd(), 'temp'), { recursive: true });
 
         await writeFile(filePath, JSON.stringify(data), 'utf8');
-        console.log('인증번호 저장 완료:', { email, code, expires: new Date(expiresAt) });
     } catch (error) {
-        console.error('인증번호 저장 오류:', error);
         throw error;
     }
 }
@@ -39,10 +37,8 @@ export async function getVerificationCode(email: string): Promise<VerificationDa
         const data = await readFile(filePath, 'utf8');
         const verificationData: VerificationData = JSON.parse(data);
 
-        console.log('인증번호 조회:', { email, code: verificationData.code, expires: new Date(verificationData.expires) });
         return verificationData;
     } catch {
-        console.log('인증번호 조회 실패:', email);
         return null;
     }
 }
@@ -52,8 +48,6 @@ export async function deleteVerificationCode(email: string): Promise<void> {
     try {
         const filePath = getFilePath(email);
         await unlink(filePath);
-        console.log('인증번호 삭제 완료:', email);
     } catch (error) {
-        console.error('인증번호 삭제 오류:', error);
     }
 }
