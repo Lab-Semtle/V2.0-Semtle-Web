@@ -42,7 +42,7 @@ function LoginForm() {
         e.preventDefault();
         setLoading(true);
         setError('');
-        setSuccessMessage(''); // 로그인 시도 시 성공 메시지 제거
+        setSuccessMessage('');
 
         if (!email || !password) {
             setError('이메일과 비밀번호를 입력해주세요.');
@@ -51,32 +51,28 @@ function LoginForm() {
         }
 
         try {
+            console.log('로그인 시도:', { email }); // 디버깅용
 
-            // 타임아웃 설정 (15초)
-            const loginPromise = signIn(email, password);
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('로그인 시간이 초과되었습니다.')), 15000)
-            );
+            const result = await signIn(email, password);
+            console.log('로그인 결과:', result); // 디버깅용
 
-            const { error } = await Promise.race([loginPromise, timeoutPromise]) as { error: Error | null };
-
-
-            if (error) {
-
-                if (error.message.includes('Email not confirmed')) {
+            if (result.error) {
+                console.error('로그인 에러:', result.error); // 디버깅용
+                
+                const errorMessage = result.error.message || '';
+                if (errorMessage.includes('Email not confirmed')) {
                     setError('이메일 인증이 필요합니다. 이메일을 확인해주세요.');
-                } else if (error.message.includes('Invalid login credentials')) {
+                } else if (errorMessage.includes('Invalid login credentials')) {
                     setError('이메일 또는 비밀번호가 올바르지 않습니다.');
-                } else if (error.message.includes('로그인 시간이 초과')) {
-                    setError('로그인 시간이 초과되었습니다. 다시 시도해주세요.');
                 } else {
-                    setError(error.message || '로그인 중 오류가 발생했습니다.');
+                    setError(errorMessage || '로그인 중 오류가 발생했습니다.');
                 }
             } else {
-                // 로그인 성공 시 메인 페이지로 이동
+                console.log('로그인 성공, 리다이렉트 시작'); // 디버깅용
                 router.push('/');
             }
         } catch (error) {
+            console.error('로그인 예외:', error); // 디버깅용
             setError('로그인 중 오류가 발생했습니다.');
         } finally {
             setLoading(false);

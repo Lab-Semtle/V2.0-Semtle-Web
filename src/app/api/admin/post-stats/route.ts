@@ -7,13 +7,13 @@ export async function GET(request: NextRequest) {
         console.log('관리자 게시물 통계 API 시작');
         const supabase = await createServerSupabase();
 
-        // 현재 사용자 확인
+        // 사용자 확인 (보안상 getUser 사용)
         console.log('관리자 게시물 통계 API - 사용자 확인 시작');
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         console.log('관리자 게시물 통계 API - 사용자 결과:', { user: !!user, authError });
 
-        if (authError || !user) {
-            console.log('관리자 게시물 통계 API - 인증 실패:', authError);
+        if (!user || authError) {
+            console.log('관리자 게시물 통계 API - 인증 실패');
             return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
         }
 

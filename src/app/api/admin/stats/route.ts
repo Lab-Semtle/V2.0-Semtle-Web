@@ -1,39 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 
-// 관리자용 시스템 통계 조회
 export async function GET(request: NextRequest) {
     try {
         console.log('관리자 시스템 통계 API 시작');
         const supabase = await createServerSupabase();
 
-        // 현재 사용자 확인
-        console.log('관리자 시스템 통계 API - 사용자 확인 시작');
+        // 사용자 확인 (보안상 getUser 사용)
         const { data: { user }, error: authError } = await supabase.auth.getUser();
-        console.log('관리자 시스템 통계 API - 사용자 결과:', { user: !!user, authError });
-
-        if (authError || !user) {
-            console.log('관리자 시스템 통계 API - 인증 실패:', authError);
+        
+        if (!user || authError) {
+            console.log('관리자 시스템 통계 API - 인증 실패:', { user: !!user, authError });
             return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
         }
 
         // 관리자 권한 확인
-        console.log('관리자 시스템 통계 API - 권한 확인 시작:', user.id);
         const { data: userProfile, error: profileError } = await supabase
             .from('user_profiles')
             .select('role')
             .eq('id', user.id)
             .single();
 
-        console.log('관리자 시스템 통계 API - 프로필 결과:', { userProfile, profileError });
-
-        const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'super_admin';
-        if (!isAdmin) {
-            console.log('관리자 시스템 통계 API - 관리자 권한 없음:', userProfile?.role);
-            return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 });
+        if (profileError || !userProfile) {
+            console.log('관리자 시스템 통계 API - 프로필 조회 실패:', profileError);
+            return NextResponse.json({ error: '사용자 프로필을 찾을 수 없습니다.' }, { status: 401 });
         }
 
-        console.log('관리자 시스템 통계 API - 통계 조회 시작');
+        const isAdmin = userProfile.role === 'admin' || userProfile.role === 'super_admin';
+        if (!isAdmin) {
+            console.log('관리자 시스템 통계 API - 관리자 권한 없음:', userProfile.role);
+            return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 });
+        }
 
         // 사용자 통계
         const { count: totalUsers, error: usersError } = await supabase
@@ -60,19 +57,7 @@ export async function GET(request: NextRequest) {
             .from('activities')
             .select('id', { count: 'exact', head: true });
 
-        console.log('관리자 시스템 통계 API - 개별 통계 조회 결과:', {
-            totalUsers,
-            totalAdmins,
-            totalProjects,
-            totalResources,
-            totalActivities,
-            usersError,
-            projectError,
-            resourceError,
-            activityError
-        });
-
-        // 좋아요 통계 (프로젝트 + 자료실 + 활동)
+        // 좋아요 통계
         const { data: projectLikes } = await supabase
             .from('projects')
             .select('likes_count');
@@ -87,7 +72,7 @@ export async function GET(request: NextRequest) {
             (resourceLikes?.reduce((sum, r) => sum + (r.likes_count || 0), 0) || 0) +
             (activityLikes?.reduce((sum, a) => sum + (a.likes_count || 0), 0) || 0);
 
-        // 북마크 통계 (프로젝트 + 자료실 + 활동)
+        // 북마크 통계
         const { data: projectBookmarks } = await supabase
             .from('projects')
             .select('bookmarks_count');
@@ -102,30 +87,7 @@ export async function GET(request: NextRequest) {
             (resourceBookmarks?.reduce((sum, r) => sum + (r.bookmarks_count || 0), 0) || 0) +
             (activityBookmarks?.reduce((sum, a) => sum + (a.bookmarks_count || 0), 0) || 0);
 
-        console.log('관리자 시스템 통계 API - 좋아요/북마크 통계 조회 결과:', {
-            totalLikes,
-            totalBookmarks,
-            projectLikesCount: projectLikes?.length || 0,
-            resourceLikesCount: resourceLikes?.length || 0,
-            activityLikesCount: activityLikes?.length || 0
-        });
-
-        console.log('관리자 시스템 통계 API - 통계 조회 결과:', {
-            totalUsers,
-            totalAdmins,
-            totalProjects,
-            totalResources,
-            totalActivities,
-            totalLikes,
-            totalBookmarks,
-            usersError,
-            projectError,
-            resourceError,
-            activityError
-        });
-
         if (usersError || projectError || resourceError || activityError) {
-            console.error('시스템 통계 조회 오류:', { usersError, projectError, resourceError, activityError });
             return NextResponse.json({
                 error: '시스템 통계를 가져오는데 실패했습니다.',
                 details: {
@@ -146,14 +108,6 @@ export async function GET(request: NextRequest) {
             totalLikes,
             totalBookmarks
         };
-
-        console.log('관리자 시스템 통계 API - 최종 결과:', stats);
-
-        // 응답 데이터 검증
-        if (!stats || typeof stats !== 'object') {
-            console.error('관리자 시스템 통계 API - 잘못된 통계 데이터:', stats);
-            return NextResponse.json({ error: '통계 데이터 생성에 실패했습니다.' }, { status: 500 });
-        }
 
         return NextResponse.json(stats);
 

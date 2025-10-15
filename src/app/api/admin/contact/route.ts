@@ -1,13 +1,33 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createServerSupabase } from '@/lib/supabase/server';
 
 export async function GET(request: Request) {
+    const supabase = await createServerSupabase();
+
     try {
+        // 사용자 확인 (보안상 getUser 사용)
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (!user || authError) {
+            return NextResponse.json(
+                { error: '인증되지 않은 요청입니다.' },
+                { status: 401 }
+            );
+        }
+
+        // 사용자 프로필 확인
+        const { data: userProfile } = await supabase
+            .from('user_profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        if (!userProfile || !['admin', 'super_admin'].includes(userProfile.role)) {
+            return NextResponse.json(
+                { error: '관리자 권한이 필요합니다.' },
+                { status: 403 }
+            );
+        }
+
         const { searchParams } = new URL(request.url);
         const status = searchParams.get('status');
         const page = parseInt(searchParams.get('page') || '1');

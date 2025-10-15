@@ -293,11 +293,15 @@ export default function ProjectCard({ project, className = '' }: ProjectCardProp
 
     return (
         <Link href={`/projects/${project.id}`} onClick={incrementView}>
-            <article className={`group bg-transparent h-full flex flex-col ${className}`}>
+            <article className={`group h-full flex flex-col rounded-xl transition-all duration-300 ${
+                project.is_pinned 
+                    ? 'bg-gradient-to-br from-amber-50/50 to-orange-50/50' 
+                    : 'bg-white hover:bg-gray-50/50'
+            }`}>
                 {/* 메인 콘텐츠 영역 - 썸네일과 내용 */}
                 <div className="flex flex-col md:flex-row-reverse flex-1">
                     {/* 썸네일 - 우측 */}
-                    <div className="relative w-full md:w-80 h-44 md:h-auto bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl overflow-hidden flex-shrink-0">
+                    <div className="relative w-full md:w-80 h-44 md:h-auto bg-gray-50/50 rounded-xl overflow-hidden flex-shrink-0">
                         {project.thumbnail && !imageError ? (
                             <Image
                                 src={project.thumbnail}
@@ -383,12 +387,18 @@ export default function ProjectCard({ project, className = '' }: ProjectCardProp
 
                     {/* 내용 - 우측 */}
                     <div className="flex-1 px-4 pt-3 pb-6 flex flex-col">
-                        {/* 프로젝트 상태 - 제목 위쪽 */}
-                        <div className="flex items-center justify-start mb-2">
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${StatusInfo.color}`}>
-                                {StatusInfo.label}
-                            </span>
-                        </div>
+                                {/* 프로젝트 상태 - 제목 위쪽 */}
+                                        <div className="flex items-center gap-2 mb-2">
+                                            {project.is_pinned && (
+                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm">
+                                                    <Pin className="w-3 h-3" />
+                                                    고정된 프로젝트
+                                                </span>
+                                            )}
+                                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${StatusInfo.color}`}>
+                                                {StatusInfo.label}
+                                            </span>
+                                        </div>
 
                         {/* 제목 */}
                         <h3 className="text-2xl text-slate-900 mb-2 line-clamp-2" style={{ fontWeight: 950 }}>

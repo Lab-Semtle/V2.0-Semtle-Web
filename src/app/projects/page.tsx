@@ -111,10 +111,11 @@ export default function ProjectsPage() {
     const pinnedPosts = sortedPosts.filter(post => post.is_pinned);
     const regularPosts = sortedPosts.filter(post => !post.is_pinned);
 
-    // 페이지네이션
+    // 페이지네이션 (고정된 게시물은 항상 최상단에 표시)
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = regularPosts.slice(indexOfFirstItem, indexOfLastItem);
+    const currentRegularItems = regularPosts.slice(indexOfFirstItem, indexOfLastItem);
+    const currentItems = [...pinnedPosts, ...currentRegularItems];
     const totalPages = Math.ceil(regularPosts.length / itemsPerPage);
 
     const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
@@ -282,17 +283,23 @@ export default function ProjectsPage() {
                     {/* Pinned Posts Section */}
                     {pinnedPosts.length > 0 && (
                         <div className="mb-12">
-                            <h2 className="text-2xl font-bold text-slate-900 mb-6">주요 프로젝트</h2>
+                            <div className="flex items-center gap-2 mb-6">
+                                <h2 className="text-2xl font-bold text-slate-900">주요 프로젝트</h2>
+                                <span className="text-sm text-slate-500">({pinnedPosts.length}개)</span>
+                            </div>
                             <div className="grid grid-cols-1 gap-6">
                                 {pinnedPosts.map(project => (
-                                    <ProjectCard key={project.id} project={project} />
+                                    <ProjectCard 
+                                        key={project.id} 
+                                        project={project}
+                                    />
                                 ))}
                             </div>
                         </div>
                     )}
 
                     {/* Regular Posts Section */}
-                    {sortedPosts.length === 0 ? (
+                    {regularPosts.length === 0 ? (
                         <EmptyState
                             title="프로젝트가 없습니다"
                             description={
@@ -318,7 +325,7 @@ export default function ProjectsPage() {
                         />
                     ) : (
                         <div className="grid grid-cols-1 gap-6">
-                            {currentItems.map(project => (
+                            {currentRegularItems.map(project => (
                                 <ProjectCard key={project.id} project={project} />
                             ))}
                         </div>
