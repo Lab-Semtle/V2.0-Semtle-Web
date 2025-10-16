@@ -11,7 +11,8 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, LogOut, ChevronDown, ChevronUp, UserCircle, Cog, Shield, FileText, Users } from "lucide-react";
+import { LogOut, ChevronDown, ChevronUp, UserCircle, Cog, Shield, FileText, Users } from "lucide-react";
+import Image from "next/image";
 
 export default function UserDropdownShadcn() {
     const { profile, signOut } = useAuth();
@@ -46,19 +47,27 @@ export default function UserDropdownShadcn() {
         <DropdownMenu modal={false} open={isOpen} onOpenChange={setIsOpen}>
             <DropdownMenuTrigger asChild>
                 <button className="group flex items-center space-x-3 px-4 py-2 rounded-2xl hover:bg-gray-50 transition-all duration-200 w-48 focus:outline-none focus:ring-0">
+                    {/* 아바타 */}
+                    <div className="relative flex-shrink-0">
+                        <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center shadow-md overflow-hidden">
+                            {profile?.profile_image ? (
+                                <Image
+                                    src={profile.profile_image}
+                                    alt={profile.nickname || profile.name || '사용자'}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <span className="text-white text-sm font-semibold">
+                                    {(profile?.nickname || profile?.name || '사용자').charAt(0).toUpperCase()}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
                     {/* 사용자 이름 */}
                     <span className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 flex-1 text-left truncate">
                         {profile?.nickname || profile?.name || '사용자'}
                     </span>
-
-                    {/* 아바타 */}
-                    <div className="relative flex-shrink-0">
-                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-md">
-                            <User className="w-4 h-4 text-white" />
-                        </div>
-                        {/* 온라인 상태 표시 */}
-                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></div>
-                    </div>
 
                     {/* 드롭다운 토글 아이콘 - 상태 기반 제어 */}
                     <div className="flex-shrink-0 w-4 h-4 flex items-center justify-center relative">
@@ -79,8 +88,18 @@ export default function UserDropdownShadcn() {
             >
                 <DropdownMenuLabel className="px-4 py-3">
                     <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
-                            <User className="w-5 h-5 text-white" />
+                        <div className="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center shadow-lg overflow-hidden">
+                            {profile?.profile_image ? (
+                                <Image
+                                    src={profile.profile_image}
+                                    alt={profile.nickname || profile.name || '사용자'}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <span className="text-white text-lg font-semibold">
+                                    {(profile?.nickname || profile?.name || '사용자').charAt(0).toUpperCase()}
+                                </span>
+                            )}
                         </div>
                         <div className="flex flex-col space-y-1">
                             <p className="text-sm font-bold text-slate-900 leading-none">

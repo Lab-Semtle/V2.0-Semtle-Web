@@ -49,13 +49,11 @@ export async function POST(request: NextRequest) {
             updated_at: new Date().toISOString()
         };
 
-
         // 사용자 프로필 생성 (외래 키 제약 조건 없이)
         const { error: profileError } = await supabase
             .from('user_profiles')
             .insert(profileInsertData)
             .select();
-
 
         if (profileError) {
             return NextResponse.json(

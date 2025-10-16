@@ -253,15 +253,25 @@ export async function POST(request: NextRequest) {
 
         // 여러 파일을 resource_files 테이블에 저장
         if (files && files.length > 0) {
-            const fileInserts = files.map((file: FileData, index: number) => ({
-                resource_id: newResource.id,
-                file_path: file.url,
-                file_size: file.size,
-                file_extension: file.name.split('.').pop() || '',
-                original_filename: file.name,
-                file_type: file.type,
-                upload_order: index + 1
-            }));
+            const fileInserts = files.map((file: FileData, index: number) => {
+                // URL에서 실제 파일 경로만 추출
+                let filePath = file.url;
+                const urlParts = file.url.split('/');
+                const bucketIndex = urlParts.findIndex(part => part === 'resources');
+                if (bucketIndex !== -1 && bucketIndex < urlParts.length - 1) {
+                    filePath = urlParts.slice(bucketIndex + 1).join('/');
+                }
+
+                return {
+                    resource_id: newResource.id,
+                    file_path: filePath,
+                    file_size: file.size,
+                    file_extension: file.name.split('.').pop() || '',
+                    original_filename: file.name,
+                    file_type: file.type,
+                    upload_order: index + 1
+                };
+            });
 
             const { error: filesError } = await supabase
                 .from('resource_files')

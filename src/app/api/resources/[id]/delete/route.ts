@@ -44,8 +44,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
             message: '자료가 성공적으로 삭제되었습니다.'
         });
 
-    } catch (error) {
-        console.error('자료 삭제 오류:', error);
+    } catch {
         return NextResponse.json(
             { error: '자료 삭제에 실패했습니다.' },
             { status: 500 }

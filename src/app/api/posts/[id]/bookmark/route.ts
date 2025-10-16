@@ -21,7 +21,6 @@ export async function POST(
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
         if (authError || !user) {
-            console.log('북마크 API - 인증 실패:', authError);
             return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
         }
 

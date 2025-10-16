@@ -48,8 +48,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             resource: data
         });
 
-    } catch (error) {
-        console.error('자료 고정 상태 변경 오류:', error);
+    } catch {
         return NextResponse.json(
             { error: '자료 고정 상태 변경에 실패했습니다.' },
             { status: 500 }

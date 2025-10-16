@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
                         id, title, subtitle, thumbnail, views, likes_count, comments_count, bookmarks_count,
                         created_at, updated_at, published_at, status,
                         author_id,
-                        resource_type:resource_types(name, color),
+                        category:resource_categories(name, color),
                         downloads_count
                     `)
                     .eq('status', 'published')

@@ -30,7 +30,6 @@ export async function POST(
             .single();
 
         if (checkError && checkError.code !== 'PGRST116') {
-            console.error('좋아요 확인 오류:', checkError);
             return NextResponse.json({ error: '좋아요 상태를 확인할 수 없습니다.' }, { status: 500 });
         }
 
@@ -46,7 +45,6 @@ export async function POST(
                 .eq('user_id', user.id);
 
             if (deleteError) {
-                console.error('좋아요 취소 오류:', deleteError);
                 return NextResponse.json({ error: '좋아요 취소에 실패했습니다.' }, { status: 500 });
             }
 
@@ -61,7 +59,6 @@ export async function POST(
                 });
 
             if (insertError) {
-                console.error('좋아요 추가 오류:', insertError);
                 return NextResponse.json({ error: '좋아요 추가에 실패했습니다.' }, { status: 500 });
             }
 
@@ -88,15 +85,14 @@ export async function POST(
             likesCount
         });
 
-    } catch (error) {
-        console.error('자료 좋아요 처리 오류:', error);
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
 
 // 자료 좋아요 상태 확인
 export async function GET(
-    request: NextRequest,
+    _request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
@@ -123,7 +119,6 @@ export async function GET(
             .single();
 
         if (checkError && checkError.code !== 'PGRST116') {
-            console.error('좋아요 상태 확인 오류:', checkError);
             return NextResponse.json({ error: '좋아요 상태를 확인할 수 없습니다.' }, { status: 500 });
         }
 
@@ -131,8 +126,7 @@ export async function GET(
             isLiked: !!existingLike
         });
 
-    } catch (error) {
-        console.error('자료 좋아요 상태 확인 오류:', error);
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

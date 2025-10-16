@@ -102,15 +102,10 @@ export default function BasePostForm({
 
             // 타입 로드 (프로젝트와 활동만)
             if (boardType === 'projects' || boardType === 'activities') {
-                console.log('타입 로드 시작:', boardType);
                 const typeResponse = await fetch(`/api/types?board_type=${boardType}`);
-                console.log('타입 API 응답:', typeResponse.status);
                 if (typeResponse.ok) {
                     const typeData = await typeResponse.json();
-                    console.log('타입 데이터:', typeData);
                     setTypes(typeData.types || []);
-                } else {
-                    console.error('타입 API 오류:', typeResponse.status, typeResponse.statusText);
                 }
             }
         } catch {
@@ -276,12 +271,12 @@ export default function BasePostForm({
 
                                 <div className="space-y-4">
                                     {formData.thumbnail ? (
-                                        <div className="relative">
+                                        <div className="relative w-full h-[394px] rounded-xl overflow-hidden">
                                             <Image
                                                 src={formData.thumbnail}
                                                 alt="썸네일"
                                                 fill
-                                                className="object-cover rounded-xl"
+                                                className="object-cover"
                                             />
                                             {/* 우측 하단 버튼들 */}
                                             <div className="absolute bottom-4 right-4 flex gap-2">

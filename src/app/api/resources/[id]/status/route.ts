@@ -8,14 +8,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         const resolvedParams = await params;
         const resourceId = resolvedParams.id;
 
-        console.log('자료 상태 변경 요청:', { resourceId, status });
-
         // 사용자 확인 (보안상 getUser 사용)
         const { data: { user }, error: authError } = await supabase.auth.getUser();
-        console.log('사용자 확인:', { user: !!user, error: authError });
 
         if (!user || authError) {
-            console.log('인증 실패');
             return NextResponse.json(
                 { error: '인증되지 않은 요청입니다.' },
                 { status: 401 }
@@ -23,16 +19,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         }
 
         // 사용자 프로필 확인
-        const { data: userProfile, error: profileError } = await supabase
+        const { data: userProfile } = await supabase
             .from('user_profiles')
             .select('role')
             .eq('id', user.id)
             .single();
 
-        console.log('사용자 프로필 확인:', { userProfile, error: profileError });
-
         if (!userProfile || !['admin', 'super_admin'].includes(userProfile.role)) {
-            console.log('권한 없음:', userProfile?.role);
             return NextResponse.json(
                 { error: '관리자 권한이 필요합니다.' },
                 { status: 403 }
@@ -47,8 +40,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             .select()
             .single();
 
-        console.log('자료 업데이트:', { data, error: updateError });
-
         if (updateError) {
             throw updateError;
         }
@@ -59,7 +50,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         });
 
     } catch (error) {
-        console.error('자료 상태 변경 오류:', error);
         const errorMessage = error instanceof Error ? error.message : '자료 상태 변경에 실패했습니다.';
         return NextResponse.json(
             { error: errorMessage },

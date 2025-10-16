@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 
 export default function SettingsPage() {
-    const { user, profile, loading } = useAuth();
+    const { user, profile, loading, refreshProfile } = useAuth();
     const router = useRouter();
     const [isEditing, setIsEditing] = useState(false);
     const [isSendingCode, setIsSendingCode] = useState(false);
@@ -233,8 +233,8 @@ export default function SettingsPage() {
                     profile_image: result.imageUrl
                 }));
                 alert('프로필 이미지가 업로드되었습니다.');
-                // 페이지 새로고침으로 최신 데이터 반영
-                window.location.reload();
+                // AuthContext의 프로필 정보 새로고침
+                await refreshProfile();
             } else {
                 const errorData = await response.json();
                 alert(`이미지 업로드 실패: ${errorData.error || '알 수 없는 오류'}\n${errorData.details ? `상세: ${errorData.details}` : ''}`);

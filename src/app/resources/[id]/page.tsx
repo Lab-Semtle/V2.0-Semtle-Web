@@ -142,7 +142,7 @@ export default function ResourceDetailPage() {
             return;
         }
 
-        const downloadUrl = fileUrl || resource?.files?.[0]?.url;
+        const downloadUrl = fileUrl || resource?.files?.[0]?.file_path;
         const downloadFileName = fileName || resource?.files?.[0]?.original_filename || `resource_${resourceId}`;
 
         if (!downloadUrl) {
@@ -153,7 +153,8 @@ export default function ResourceDetailPage() {
         setIsDownloading(true);
 
         try {
-            const response = await fetch(`/api/resources/${resourceId}/download${fileUrl ? `?file=${encodeURIComponent(fileUrl)}` : ''}`);
+            const apiUrl = `/api/resources/${resourceId}/download${fileUrl ? `?file=${encodeURIComponent(fileUrl)}` : ''}`;
+            const response = await fetch(apiUrl);
 
             if (response.ok) {
                 // 파일 다운로드

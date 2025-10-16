@@ -269,15 +269,6 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
             try {
                 if (isOwnProfile) {
                     // 내 프로필인 경우: 모든 타입의 게시물 로드 (임시저장 포함)
-                    console.log('프로필 페이지 - 게시물 로딩 시작:', {
-                        userId: profileData.id,
-                        urls: [
-                            `/api/profile/${profileData.id}/posts?type=project&page=1&limit=9&include_drafts=true`,
-                            `/api/profile/${profileData.id}/posts?type=resource&page=1&limit=9&include_drafts=true`,
-                            `/api/profile/${profileData.id}/posts?type=activity&page=1&limit=9&include_drafts=true`
-                        ]
-                    });
-
                     const [projectsResponse, resourcesResponse] = await Promise.all([
                         fetch(`/api/profile/${profileData.id}/posts?type=project&page=1&limit=9&include_drafts=true`),
                         fetch(`/api/profile/${profileData.id}/posts?type=resource&page=1&limit=9&include_drafts=true`)
@@ -292,11 +283,6 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
 
                     if (resourcesResponse.ok) {
                         const data = await resourcesResponse.json();
-                        console.log('프로필 페이지 - 자료실 로딩 결과:', {
-                            status: resourcesResponse.status,
-                            postsCount: data.posts?.length || 0,
-                            posts: data.posts?.map((p: Record<string, unknown>) => ({ id: p.id, title: p.title, status: p.status })) || []
-                        });
                         setMyResources(data.posts || []);
                     }
                 } else {
@@ -328,30 +314,16 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
         const fetchBookmarkedPosts = async () => {
             if (!isOwnProfile) return;
 
-            console.log('프로필 페이지 - 북마크 로딩 시작');
             try {
                 const response = await fetch('/api/profile/bookmarks?type=all', {
                     credentials: 'include'
                 });
-                console.log('프로필 페이지 - 북마크 API 응답 상태:', response.status);
 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('프로필 페이지 - 북마크 데이터:', {
-                        totalPosts: data.posts?.length || 0,
-                        postsByType: {
-                            projects: data.posts?.filter((p: Record<string, unknown>) => p.post_type === 'project').length || 0,
-                            resources: data.posts?.filter((p: Record<string, unknown>) => p.post_type === 'resource').length || 0,
-                            activities: data.posts?.filter((p: Record<string, unknown>) => p.post_type === 'activity').length || 0
-                        },
-                        posts: data.posts?.map((p: Record<string, unknown>) => ({ id: p.id, title: p.title, post_type: p.post_type })) || []
-                    });
                     setBookmarkedPosts(data.posts || []);
-                } else {
-                    console.error('프로필 페이지 - 북마크 API 오류:', response.status, response.statusText);
                 }
             } catch {
-                console.error('프로필 페이지 - 북마크 로딩 오류:', error);
             } finally {
                 setLoadingBookmarks(false);
             }

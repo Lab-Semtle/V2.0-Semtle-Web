@@ -15,6 +15,7 @@ export interface ResourceFile {
     size: number;
     type: string;
     url: string;
+    file_path: string;
     original_filename?: string;
     file_extension?: string;
 }

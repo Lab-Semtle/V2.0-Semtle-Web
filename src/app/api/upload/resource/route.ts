@@ -9,7 +9,6 @@ export async function POST(request: NextRequest) {
         // 사용자 인증 확인
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) {
-            console.log('인증 오류:', authError);
             return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
         }
 

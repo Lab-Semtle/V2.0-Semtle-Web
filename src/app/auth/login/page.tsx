@@ -43,7 +43,6 @@ function LoginForm() {
 
         // AuthContext가 아직 로딩 중이면 대기
         if (authLoading) {
-            console.log('AuthContext 로딩 중, 로그인 대기');
             return;
         }
 
@@ -58,14 +57,9 @@ function LoginForm() {
         }
 
         try {
-            console.log('로그인 시도:', { email }); // 디버깅용
-
             const result = await signIn(email, password);
-            console.log('로그인 결과:', result); // 디버깅용
 
             if (result.error) {
-                console.error('로그인 에러:', result.error); // 디버깅용
-
                 const errorMessage = result.error.message || '';
                 if (errorMessage.includes('Email not confirmed')) {
                     setError('이메일 인증이 필요합니다. 이메일을 확인해주세요.');
@@ -75,11 +69,9 @@ function LoginForm() {
                     setError(errorMessage || '로그인 중 오류가 발생했습니다.');
                 }
             } else {
-                console.log('로그인 성공, 리다이렉트 시작'); // 디버깅용
                 router.push('/');
             }
-        } catch (error) {
-            console.error('로그인 예외:', error); // 디버깅용
+        } catch {
             setError('로그인 중 오류가 발생했습니다.');
         } finally {
             setLoading(false);

@@ -39,19 +39,15 @@ export async function GET(request: NextRequest) {
                     .order('sort_order')
             ]);
         } else if (boardType === 'resources') {
-            // 자료실 카테고리와 타입 조회
-            [categoriesResult, typesResult] = await Promise.all([
-                supabase
-                    .from('resource_categories')
-                    .select('*')
-                    .eq('is_active', true)
-                    .order('sort_order'),
-                supabase
-                    .from('resource_types')
-                    .select('*')
-                    .eq('is_active', true)
-                    .order('sort_order')
-            ]);
+            // 자료실은 카테고리만 조회 (타입 없음)
+            categoriesResult = await supabase
+                .from('resource_categories')
+                .select('*')
+                .eq('is_active', true)
+                .order('sort_order');
+
+            // 자료실은 타입이 없으므로 빈 배열로 설정
+            typesResult = { data: [], error: null };
         } else {
             return NextResponse.json({ error: '유효하지 않은 게시판 타입입니다.' }, { status: 400 });
         }
