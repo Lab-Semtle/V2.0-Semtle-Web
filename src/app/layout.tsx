@@ -6,12 +6,12 @@ import Navigation from "@/components/layout/Navigation";
 import Footer from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
-  title: "아치셈틀 - AI & Technology Community",
+  title: "아치셈틀",
   description: "국립한국해양대학교 인공지능공학부 학회 아치셈틀 공식 홈페이지",
-  keywords: ["아치셈틀", "AI", "인공지능", "학회", "동아리", "프로젝트", "기술"],
+  keywords: ["아치셈틀", "AI", "인공지능", "한국해양대학교", "인공지능공학부"],
   authors: [{ name: "아치셈틀" }],
   openGraph: {
-    title: "아치셈틀 - AI & Technology Community",
+    title: "아치셈틀",
     description: "국립한국해양대학교 인공지능공학부 학회 아치셈틀 공식 홈페이지",
     type: "website",
   },
