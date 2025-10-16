@@ -282,15 +282,14 @@ export default function ResourceCard({ resource, className = '' }: ResourceCardP
                                         e.stopPropagation();
                                         window.location.href = `/profile/${resource.author?.nickname}`;
                                     }}
-                                    className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform duration-200 flex-shrink-0"
+                                    className="w-5 h-5 bg-gray-400 rounded-full flex items-center justify-center cursor-pointer hover:scale-105 transition-transform duration-200 flex-shrink-0 overflow-hidden"
                                 >
                                     {resource.author.profile_image ? (
                                         <Image
                                             src={resource.author.profile_image}
                                             alt={resource.author.nickname}
-                                            width={20}
-                                            height={20}
-                                            className="w-full h-full object-cover rounded-full"
+                                            fill
+                                            className="object-cover"
                                         />
                                     ) : (
                                         <span className="text-white text-xs font-bold">

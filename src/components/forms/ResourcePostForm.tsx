@@ -29,7 +29,8 @@ interface ResourcePostFormData {
         name: string;
         size: number;
         type: string;
-        url: string;
+        url?: string;
+        file_path?: string;
     }>;
 }
 
@@ -53,7 +54,8 @@ interface ResourcePostFormProps {
             name: string;
             size: number;
             type: string;
-            url: string;
+            url?: string;
+            file_path?: string;
         }>;
     };
     initialContent?: JSONContent;
@@ -72,7 +74,8 @@ export default function ResourcePostForm({
         name: string;
         size: number;
         type: string;
-        url: string;
+        url?: string;
+        file_path?: string;
     }>>(initialData?.files || []);
 
     // refs for form fields
@@ -87,18 +90,20 @@ export default function ResourcePostForm({
         size: number;
         type: string;
         url?: string;
+        file_path?: string;
         progress?: number;
         error?: string;
     }>) => {
         // 성공적으로 업로드된 파일들만 저장
         const successfulFiles = files
-            .filter(file => file.url && !file.error)
+            .filter(file => (file.url || file.file_path) && !file.error)
             .map(file => ({
                 id: file.id,
                 name: file.name,
                 size: file.size,
                 type: file.type,
-                url: file.url!
+                url: file.url,
+                file_path: file.file_path
             }));
 
         setUploadedFiles(successfulFiles);
@@ -252,6 +257,7 @@ export default function ResourcePostForm({
                                     acceptedTypes={['*']}
                                     disabled={loading}
                                     userId={user?.id}
+                                    initialFiles={initialData?.files || []}
                                 />
                             </div>
                         </div>

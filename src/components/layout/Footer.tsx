@@ -26,28 +26,45 @@ const Footer: React.FC = () => {
     useEffect(() => {
         const fetchRepresentativeAdmin = async () => {
             try {
-                const response = await fetch('/api/admin/representative');
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000); // 5초 타임아웃
+
+                const response = await fetch('/api/admin/representative', {
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
                 if (response.ok) {
                     const data = await response.json();
                     setRepresentativeAdmin(data.representativeAdmin);
                 }
             } catch {
+                // API 호출 실패 시 기본값 유지
             }
         };
 
         const fetchFooterLinks = async () => {
             try {
-                const response = await fetch('/api/admin/footer-links');
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000); // 5초 타임아웃
+
+                const response = await fetch('/api/admin/footer-links', {
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
                 if (response.ok) {
                     const data = await response.json();
                     setFooterLinks(data.links || []);
                 }
             } catch {
+                // API 호출 실패 시 기본값 유지
             }
         };
 
-        fetchRepresentativeAdmin();
-        fetchFooterLinks();
+        // 비동기로 호출하되 에러가 발생해도 페이지 로딩을 방해하지 않음
+        fetchRepresentativeAdmin().catch(() => { });
+        fetchFooterLinks().catch(() => { });
     }, []);
 
     // SNS 링크 데이터 (기존 하드코딩된 링크 - 이제 동적으로 관리됨)

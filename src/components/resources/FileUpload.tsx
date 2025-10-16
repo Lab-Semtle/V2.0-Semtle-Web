@@ -9,8 +9,10 @@ interface UploadedFile {
     size: number;
     type: string;
     url?: string;
+    file_path?: string; // 파일 경로 추가
     progress?: number;
     error?: string;
+    isExisting?: boolean; // 기존 파일인지 구분
 }
 
 interface FileUploadProps {
@@ -20,6 +22,14 @@ interface FileUploadProps {
     acceptedTypes?: string[];
     disabled?: boolean;
     userId?: string;
+    initialFiles?: Array<{
+        id: string;
+        name: string;
+        size: number;
+        type: string;
+        url?: string;
+        file_path?: string;
+    }>;
 }
 
 export default function FileUpload({
@@ -28,32 +38,28 @@ export default function FileUpload({
     maxSizePerFile = 100, // 100MB 기본
     acceptedTypes = ['*'], // 모든 파일 타입 허용
     disabled = false,
-    userId
+    userId,
+    initialFiles = []
 }: FileUploadProps) {
-    const [files, setFiles] = useState<UploadedFile[]>([]);
+    const [files, setFiles] = useState<UploadedFile[]>(() =>
+        initialFiles.map(file => ({
+            ...file,
+            progress: 100, // 기존 파일들은 이미 업로드 완료된 상태
+            isExisting: true, // 기존 파일임을 표시
+            url: file.url || file.file_path || '', // URL 또는 file_path 사용
+            file_path: file.file_path || file.url || '' // file_path 우선 사용
+        }))
+    );
     const [uploading, setUploading] = useState(false);
     const [dragActive, setDragActive] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const formatFileSize = (bytes: number) => {
-        if (bytes === 0) return '0 Bytes';
+        if (!bytes || bytes === 0) return '0 Bytes';
         const k = 1024;
         const sizes = ['Bytes', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    };
-
-    const getFileIcon = (type: string) => {
-        if (type.startsWith('image/')) return '🖼️';
-        if (type.includes('pdf')) return '📄';
-        if (type.includes('word') || type.includes('doc')) return '📝';
-        if (type.includes('excel') || type.includes('sheet')) return '📊';
-        if (type.includes('powerpoint') || type.includes('presentation')) return '📈';
-        if (type.includes('zip') || type.includes('rar') || type.includes('7z')) return '📦';
-        if (type.includes('video')) return '🎥';
-        if (type.includes('audio')) return '🎵';
-        if (type.includes('code') || type.includes('text')) return '💻';
-        return '📁';
     };
 
     const uploadFile = async (file: File): Promise<UploadedFile> => {
@@ -63,7 +69,8 @@ export default function FileUpload({
             name: file.name,
             size: file.size,
             type: file.type,
-            progress: 0
+            progress: 0,
+            isExisting: false // 새로 업로드되는 파일
         };
 
         try {
@@ -231,7 +238,6 @@ export default function FileUpload({
                                 className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 hover:border-slate-300 transition-colors"
                             >
                                 <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                    <span className="text-2xl">{getFileIcon(file.type)}</span>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium text-slate-900 truncate">
                                             {file.name}
@@ -255,7 +261,7 @@ export default function FileUpload({
 
                                     {file.error ? (
                                         <AlertCircle className="w-4 h-4 text-red-500" />
-                                    ) : file.url ? (
+                                    ) : (file.url || file.file_path || file.isExisting) ? (
                                         <CheckCircle className="w-4 h-4 text-green-500" />
                                     ) : (
                                         <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -267,7 +273,11 @@ export default function FileUpload({
                                                 e.stopPropagation();
                                                 removeFile(file.id);
                                             }}
-                                            className="p-1 text-slate-400 hover:text-red-500 transition-colors"
+                                            className={`p-1 transition-colors ${file.isExisting
+                                                ? 'text-slate-400 hover:text-red-500'
+                                                : 'text-slate-400 hover:text-red-500'
+                                                }`}
+                                            title="파일 삭제"
                                         >
                                             <X className="w-4 h-4" />
                                         </button>

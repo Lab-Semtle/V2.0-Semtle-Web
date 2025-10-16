@@ -113,11 +113,15 @@ export async function PATCH(
         const updateData = await request.json();
 
         // 작성자 확인
-        const { data: existingResource } = await supabase
+        const { data: existingResource, error: existingError } = await supabase
             .from('resources')
             .select('author_id')
             .eq('id', resourceId)
             .single();
+
+        if (existingError) {
+            return NextResponse.json({ error: '자료를 찾을 수 없습니다.' }, { status: 404 });
+        }
 
         if (!existingResource || existingResource.author_id !== user.id) {
             return NextResponse.json({ error: '수정 권한이 없습니다.' }, { status: 403 });
@@ -149,11 +153,6 @@ export async function PATCH(
                 semester: updateData.semester || '',
                 year: updateData.year ? parseInt(updateData.year) : undefined,
                 difficulty_level: updateData.difficulty_level || '',
-                file_extension: updateData.file_extension || '',
-                original_filename: updateData.original_filename || '',
-                downloads_count: updateData.downloads_count || 0,
-                rating: updateData.rating || 0,
-                rating_count: updateData.rating_count || 0,
                 published_at: updateData.status === 'published' ? new Date().toISOString() : null,
                 updated_at: new Date().toISOString()
             })
@@ -163,6 +162,39 @@ export async function PATCH(
 
         if (updateError) {
             return NextResponse.json({ error: '자료 수정에 실패했습니다.' }, { status: 500 });
+        }
+
+        // 파일 처리 (기존 파일 삭제 후 새 파일 추가)
+        if (updateData.files && Array.isArray(updateData.files)) {
+            // 기존 파일들 삭제
+            const { error: deleteFilesError } = await supabase
+                .from('resource_files')
+                .delete()
+                .eq('resource_id', resourceId);
+
+            if (deleteFilesError) {
+                console.log('기존 파일 삭제 오류:', deleteFilesError);
+            }
+
+            // 새 파일들 추가
+            if (updateData.files.length > 0) {
+                const fileRecords = updateData.files.map((file: { file_path?: string; url?: string; name?: string; size?: number; type?: string }, index: number) => ({
+                    resource_id: resourceId,
+                    file_path: file.file_path || file.url || '',
+                    original_filename: file.name || '',
+                    file_size: file.size || 0,
+                    file_type: file.type || 'application/octet-stream',
+                    upload_order: index + 1
+                }));
+
+                const { error: insertFilesError } = await supabase
+                    .from('resource_files')
+                    .insert(fileRecords);
+
+                if (insertFilesError) {
+                    console.log('새 파일 추가 오류:', insertFilesError);
+                }
+            }
         }
 
         return NextResponse.json({ resource: updatedResource });

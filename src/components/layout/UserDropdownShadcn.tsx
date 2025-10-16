@@ -49,12 +49,13 @@ export default function UserDropdownShadcn() {
                 <button className="group flex items-center space-x-3 px-4 py-2 rounded-2xl hover:bg-gray-50 transition-all duration-200 w-48 focus:outline-none focus:ring-0">
                     {/* 아바타 */}
                     <div className="relative flex-shrink-0">
-                        <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center shadow-md overflow-hidden">
+                        <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center shadow-md overflow-hidden relative">
                             {profile?.profile_image ? (
                                 <Image
                                     src={profile.profile_image}
                                     alt={profile.nickname || profile.name || '사용자'}
-                                    className="w-full h-full object-cover"
+                                    fill
+                                    className="object-cover"
                                 />
                             ) : (
                                 <span className="text-white text-sm font-semibold">
@@ -88,12 +89,13 @@ export default function UserDropdownShadcn() {
             >
                 <DropdownMenuLabel className="px-4 py-3">
                     <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center shadow-lg overflow-hidden">
+                        <div className="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center shadow-lg overflow-hidden relative">
                             {profile?.profile_image ? (
                                 <Image
                                     src={profile.profile_image}
                                     alt={profile.nickname || profile.name || '사용자'}
-                                    className="w-full h-full object-cover"
+                                    fill
+                                    className="object-cover"
                                 />
                             ) : (
                                 <span className="text-white text-lg font-semibold">

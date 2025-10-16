@@ -93,6 +93,7 @@ export default function ProfilePostCard({ post, isOwnPost = false, onEdit, onDel
     const { user } = useAuth();
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
     const [isChangingStatus, setIsChangingStatus] = useState(false);
+    const [currentStatus, setCurrentStatus] = useState(post.status || 'draft');
     const dropdownRef = useRef<HTMLDivElement>(null);
     const { views, incrementView } = useViewCount({
         postType: post.post_type as 'project' | 'activity' | 'resource',
@@ -150,6 +151,14 @@ export default function ProfilePostCard({ post, isOwnPost = false, onEdit, onDel
     };
 
     const handleStatusChange = async (postId: number, postType: string, newStatus: string) => {
+        // 로컬 상태 즉시 업데이트
+        setCurrentStatus(newStatus as 'published' | 'draft' | 'private');
+
+        // 부모 컴포넌트에 상태 변경 알림
+        if (onStatusChange) {
+            onStatusChange(postId, postType, newStatus);
+        }
+
         try {
             const response = await fetch(`/api/posts/status`, {
                 method: 'PATCH',
@@ -164,17 +173,22 @@ export default function ProfilePostCard({ post, isOwnPost = false, onEdit, onDel
                 }),
             });
 
-            if (response.ok) {
-                // 부모 컴포넌트에 상태 변경 알림
-                if (onStatusChange) {
-                    onStatusChange(postId, postType, newStatus);
-                }
-            } else {
+            if (!response.ok) {
                 const errorData = await response.json();
                 alert(`상태 변경 실패: ${errorData.error}`);
+                // 실패 시 로컬 상태 되돌리기
+                setCurrentStatus(post.status || 'draft');
+                if (onStatusChange) {
+                    onStatusChange(postId, postType, post.status || 'draft');
+                }
             }
         } catch {
             alert('상태 변경 중 오류가 발생했습니다.');
+            // 실패 시 로컬 상태 되돌리기
+            setCurrentStatus(post.status || 'draft');
+            if (onStatusChange) {
+                onStatusChange(postId, postType, post.status || 'draft');
+            }
         }
     };
     const getPostTypeInfo = () => {
@@ -333,7 +347,7 @@ export default function ProfilePostCard({ post, isOwnPost = false, onEdit, onDel
 
     return (
         <Link href={`${postTypeInfo.boardPath}/${post.id}`} onClick={incrementView}>
-            <Card className={`group hover:-translate-y-1 transition-all duration-300 cursor-pointer border-0 shadow-none rounded-2xl overflow-hidden ${post.status === 'draft' ? 'bg-orange-50/30' : post.status === 'private' ? 'bg-red-50/50' : 'bg-transparent'
+            <Card className={`group hover:-translate-y-1 transition-all duration-300 cursor-pointer border-0 shadow-none rounded-2xl overflow-hidden ${currentStatus === 'draft' ? 'bg-orange-50/30' : currentStatus === 'private' ? 'bg-red-50/50' : 'bg-transparent'
                 }`}>
                 <CardContent className="p-0">
                     {/* 썸네일 */}
@@ -343,6 +357,7 @@ export default function ProfilePostCard({ post, isOwnPost = false, onEdit, onDel
                                 src={post.thumbnail}
                                 alt={post.title}
                                 fill
+                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                 className="object-cover group-hover:scale-105 transition-transform duration-200 rounded-t-2xl"
                             />
                         ) : (
@@ -383,12 +398,12 @@ export default function ProfilePostCard({ post, isOwnPost = false, onEdit, onDel
                         </div>
 
                         {/* 상태 오버레이 */}
-                        {post.status === 'draft' && (
+                        {currentStatus === 'draft' && (
                             <div className="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium">
                                 임시저장
                             </div>
                         )}
-                        {post.status === 'private' && (
+                        {currentStatus === 'private' && (
                             <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
                                 비공개
                             </div>
@@ -506,7 +521,7 @@ export default function ProfilePostCard({ post, isOwnPost = false, onEdit, onDel
                         )}
 
                         {/* 상태 표시 */}
-                        {post.status === 'draft' && (
+                        {currentStatus === 'draft' && (
                             <div className="flex items-center gap-2 mb-3">
                                 <div className="flex items-center gap-1 bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-xs font-medium">
                                     <Clock className="w-3 h-3" />
@@ -590,7 +605,7 @@ export default function ProfilePostCard({ post, isOwnPost = false, onEdit, onDel
                                             수정
                                         </Button>
                                     )}
-                                    {post.status === 'draft' && (
+                                    {currentStatus === 'draft' && (
                                         <Button
                                             size="sm"
                                             onClick={(e) => {
@@ -604,7 +619,7 @@ export default function ProfilePostCard({ post, isOwnPost = false, onEdit, onDel
                                             공개
                                         </Button>
                                     )}
-                                    {post.status === 'published' && (
+                                    {currentStatus === 'published' && (
                                         <Button
                                             size="sm"
                                             variant="outline"
@@ -619,7 +634,7 @@ export default function ProfilePostCard({ post, isOwnPost = false, onEdit, onDel
                                             비공개
                                         </Button>
                                     )}
-                                    {post.status === 'private' && (
+                                    {currentStatus === 'private' && (
                                         <Button
                                             size="sm"
                                             onClick={(e) => {

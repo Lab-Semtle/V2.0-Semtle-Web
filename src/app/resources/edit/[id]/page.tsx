@@ -18,10 +18,12 @@ interface ResourcePostFormData {
     year?: number;
     difficulty_level?: string;
     files?: Array<{
-        url: string;
-        size: number;
+        id: string;
         name: string;
+        size: number;
         type: string;
+        url?: string;
+        file_path?: string;
     }>;
 }
 
@@ -50,10 +52,21 @@ interface ResourceData {
     rating: number;
     rating_count: number;
     status: 'published' | 'draft';
+    files?: Array<{
+        id: string;
+        name: string;
+        size: number;
+        file_size: number;
+        type: string;
+        file_type: string;
+        url: string;
+        file_path: string;
+        original_filename: string;
+    }>;
 }
 
 export default function EditResourcePage({ params }: { params: Promise<{ id: string }> }) {
-    const { user, loading } = useAuth();
+    const { user, loading, profile } = useAuth();
     const router = useRouter();
 
     // params를 unwrap
@@ -117,7 +130,12 @@ export default function EditResourcePage({ params }: { params: Promise<{ id: str
                 alert('자료가 임시저장되었습니다!');
             } else {
                 alert('자료가 성공적으로 수정되었습니다!');
-                router.push('/mypage');
+                // 사용자 프로필 페이지로 이동
+                if (profile?.nickname) {
+                    router.push(`/profile/${profile.nickname}`);
+                } else {
+                    router.push('/mypage');
+                }
             }
         } catch (error) {
             throw error;
@@ -157,7 +175,15 @@ export default function EditResourcePage({ params }: { params: Promise<{ id: str
                 professor: resource.professor || '',
                 semester: resource.semester || '',
                 year: resource.year,
-                status: resource.status
+                status: resource.status,
+                files: resource.files?.map(file => ({
+                    id: file.id,
+                    name: file.original_filename,
+                    size: file.file_size || file.size || 0, // file_size 우선 사용
+                    type: file.file_type || file.type || 'application/octet-stream',
+                    url: file.file_path || file.url,
+                    file_path: file.file_path || file.url
+                })) || []
             }}
             initialContent={resource.content}
         />

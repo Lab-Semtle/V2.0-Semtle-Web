@@ -354,15 +354,14 @@ export default function ResourceDetailPage() {
                                         <div className="flex items-center gap-2">
                                             <div
                                                 onClick={() => window.location.href = `/profile/${resource.author?.nickname}`}
-                                                className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform duration-200"
+                                                className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center cursor-pointer hover:scale-105 transition-transform duration-200 overflow-hidden"
                                             >
                                                 {resource.author.profile_image ? (
                                                     <Image
                                                         src={resource.author.profile_image}
                                                         alt={resource.author.nickname}
-                                                        width={32}
-                                                        height={32}
-                                                        className="w-full h-full object-cover rounded-full"
+                                                        fill
+                                                        className="object-cover"
                                                     />
                                                 ) : (
                                                     <span className="text-white text-sm font-bold">
@@ -554,14 +553,13 @@ export default function ResourceDetailPage() {
                                     {resource.files.map((file, index) => (
                                         <div key={file.id || index} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
                                             <div className="flex items-center gap-3">
-                                                <File className="w-5 h-5 text-slate-500" />
                                                 <div>
                                                     <p className="font-medium text-slate-900">{file.original_filename}</p>
-                                                    <p className="text-sm text-slate-500">{formatFileSize(file.size)}</p>
+                                                    <p className="text-sm text-slate-500">{formatFileSize(file.file_size || file.size || 0)}</p>
                                                 </div>
                                             </div>
                                             <button
-                                                onClick={() => handleDownload(file.url, file.original_filename)}
+                                                onClick={() => handleDownload(file.file_path || file.url, file.original_filename)}
                                                 disabled={isDownloading}
                                                 className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
