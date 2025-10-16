@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
-import { ResourceCreateData } from '@/types/resource';
+
+interface FileData {
+    url: string;
+    size: number;
+    name: string;
+    type: string;
+}
 
 // 자료실 게시물 목록 조회
 export async function GET(request: NextRequest) {
@@ -9,7 +15,6 @@ export async function GET(request: NextRequest) {
 
         // 쿼리 파라미터
         const { searchParams } = new URL(request.url);
-        const resource_type_id = searchParams.get('resource_type_id');
         const category_id = searchParams.get('category_id');
         const subject = searchParams.get('subject');
         const professor = searchParams.get('professor');
@@ -26,16 +31,11 @@ export async function GET(request: NextRequest) {
             .from('resources')
             .select(`
                 *,
-                category:resource_categories(*),
-                resource_type:resource_types(id, name, description, icon, color, file_extensions, is_active, sort_order)
+                category:resource_categories(*)
             `)
             .eq('status', 'published');
 
         // 필터 적용 (최적화된 구조에 맞게)
-        if (resource_type_id) {
-            query = query.eq('resource_type_id', resource_type_id);
-        }
-
         if (category_id) {
             query = query.eq('category_id', category_id);
         }
@@ -92,14 +92,7 @@ export async function GET(request: NextRequest) {
 
         const { data: resources, error, count } = await query;
 
-        console.log('자료실 API 응답:', {
-            resourcesCount: resources?.length || 0,
-            error: error?.message,
-            count
-        });
-
         if (error) {
-            console.error('자료실 조회 오류:', error);
             return NextResponse.json({ error: '자료 목록을 불러올 수 없습니다.' }, { status: 500 });
         }
 
@@ -153,26 +146,18 @@ export async function GET(request: NextRequest) {
                         author: authorData,
                         files: filesData || []
                     };
-                } catch (error) {
-                    console.error(`자료 ${resource.id} 처리 중 오류:`, error);
+                } catch {
                     return resource;
                 }
             })
         );
 
-        // 카테고리 및 타입 목록 조회
-        const [categoriesResult, typesResult] = await Promise.all([
-            supabase
-                .from('resource_categories')
-                .select('*')
-                .eq('is_active', true)
-                .order('sort_order'),
-            supabase
-                .from('resource_types')
-                .select('*')
-                .eq('is_active', true)
-                .order('sort_order')
-        ]);
+        // 카테고리 목록 조회
+        const categoriesResult = await supabase
+            .from('resource_categories')
+            .select('*')
+            .eq('is_active', true)
+            .order('sort_order');
 
         return NextResponse.json({
             resources: resourcesWithActualCounts,
@@ -182,10 +167,9 @@ export async function GET(request: NextRequest) {
                 total: count || 0,
                 totalPages: Math.ceil((count || 0) / limit)
             },
-            categories: categoriesResult.data || [],
-            types: typesResult.data || []
+            categories: categoriesResult.data || []
         });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -209,7 +193,6 @@ export async function POST(request: NextRequest) {
             content,
             thumbnail,
             category,
-            resource_type_id,
             status = 'draft',
             subject,
             professor,
@@ -220,9 +203,8 @@ export async function POST(request: NextRequest) {
         } = resourceData;
 
         // 필수 필드 검증
-        if (!title || !resource_type_id) {
-            console.log('필수 필드 검증 실패:', { title, resource_type_id });
-            return NextResponse.json({ error: '필수 필드가 누락되었습니다.' }, { status: 400 });
+        if (!title) {
+            return NextResponse.json({ error: '제목은 필수입니다.' }, { status: 400 });
         }
 
         // 카테고리 ID 찾기
@@ -245,7 +227,6 @@ export async function POST(request: NextRequest) {
             content: content || null,
             thumbnail,
             category_id,
-            resource_type_id,
             author_id: user.id,
             status: status === 'published' ? 'published' : 'draft',
             tags: [],
@@ -260,8 +241,6 @@ export async function POST(request: NextRequest) {
             published_at: status === 'published' ? new Date().toISOString() : null
         };
 
-        console.log('자료 생성 데이터:', insertData);
-
         const { data: newResource, error: resourceError } = await supabase
             .from('resources')
             .insert(insertData)
@@ -269,15 +248,12 @@ export async function POST(request: NextRequest) {
             .single();
 
         if (resourceError) {
-            console.error('자료 생성 오류:', resourceError);
             return NextResponse.json({ error: '자료 생성에 실패했습니다.' }, { status: 500 });
         }
 
         // 여러 파일을 resource_files 테이블에 저장
         if (files && files.length > 0) {
-            console.log('여러 파일 저장 시작:', files.length);
-
-            const fileInserts = files.map((file, index) => ({
+            const fileInserts = files.map((file: FileData, index: number) => ({
                 resource_id: newResource.id,
                 file_path: file.url,
                 file_size: file.size,
@@ -292,10 +268,7 @@ export async function POST(request: NextRequest) {
                 .insert(fileInserts);
 
             if (filesError) {
-                console.error('파일 저장 오류:', filesError);
                 // 파일 저장 실패해도 자료는 생성되었으므로 계속 진행
-            } else {
-                console.log('파일 저장 성공:', fileInserts.length);
             }
         }
 
@@ -305,7 +278,6 @@ export async function POST(request: NextRequest) {
             .select(`
         *,
         category:resource_categories(*),
-        resource_type:resource_types(*),
         author:user_profiles!resources_author_id_fkey(
           id,
           nickname,
@@ -319,7 +291,7 @@ export async function POST(request: NextRequest) {
             .single();
 
         return NextResponse.json({ resource: completeResource }, { status: 201 });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

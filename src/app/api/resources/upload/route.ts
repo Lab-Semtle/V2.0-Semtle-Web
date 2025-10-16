@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
         };
 
         return NextResponse.json(response);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -130,7 +130,7 @@ export async function DELETE(request: NextRequest) {
         }
 
         return NextResponse.json({ message: '파일이 삭제되었습니다.' });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

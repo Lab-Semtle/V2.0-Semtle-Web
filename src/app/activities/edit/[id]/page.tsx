@@ -10,10 +10,8 @@ interface ActivityFormData {
   title: string;
   subtitle?: string;
   category_id: number;
-  activity_type_id: number;
   thumbnail?: string;
   status?: string;
-  activity_status?: string;
   location?: string;
   start_date?: string;
   end_date?: string;
@@ -21,6 +19,9 @@ interface ActivityFormData {
   participation_fee?: number;
   contact_info?: string;
   tags?: string[];
+  has_voting?: boolean;
+  vote_options?: { id: string; text: string; votes: number }[];
+  vote_deadline?: string;
 }
 
 interface Activity {
@@ -29,10 +30,8 @@ interface Activity {
   subtitle?: string;
   content: JSONContent;
   category_id: number;
-  activity_type_id: number;
   thumbnail?: string;
   status: string;
-  activity_status?: string;
   location?: string;
   start_date?: string;
   end_date?: string;
@@ -40,6 +39,9 @@ interface Activity {
   participation_fee?: number;
   contact_info?: string;
   tags?: string[];
+  has_voting?: boolean;
+  vote_options?: { id: string; text: string; votes: number }[];
+  vote_deadline?: string;
   author_id: string;
 }
 
@@ -48,7 +50,7 @@ export default function EditActivityPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
-  
+
   const [activity, setActivity] = useState<Activity | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -61,8 +63,7 @@ export default function EditActivityPage() {
         }
         const data = await response.json();
         setActivity(data.activity);
-      } catch (error) {
-        console.error('활동 로드 오류:', error);
+      } catch {
         alert('활동을 불러오는데 실패했습니다.');
         router.push('/activities');
       } finally {

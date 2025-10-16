@@ -7,19 +7,17 @@ import { ProjectPost } from '@/types/project';
 import { useViewCount } from '@/hooks/useViewCount';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase/client';
-import { Calendar, Users, MapPin, Code, Star, Pin, CheckCircle, XCircle, AlertCircle, Bookmark, Zap } from 'lucide-react';
+import { Users, Pin, CheckCircle, XCircle, AlertCircle, Bookmark } from 'lucide-react';
 
 interface ProjectCardProps {
     project: ProjectPost;
     className?: string;
 }
 
-export default function ProjectCard({ project, className = '' }: ProjectCardProps) {
+export default function ProjectCard({ project }: ProjectCardProps) {
     const [imageError, setImageError] = useState(false);
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [isBookmarking, setIsBookmarking] = useState(false);
-    const [isLiked, setIsLiked] = useState(false);
-    const [isLiking, setIsLiking] = useState(false);
     const { user } = useAuth();
     const { views, incrementView } = useViewCount({
         postType: 'project',
@@ -36,18 +34,6 @@ export default function ProjectCard({ project, className = '' }: ProjectCardProp
     };
 
 
-    const getDifficultyLabel = (difficulty: string) => {
-        switch (difficulty) {
-            case 'beginner':
-                return '초급';
-            case 'intermediate':
-                return '중급';
-            case 'advanced':
-                return '고급';
-            default:
-                return '알 수 없음';
-        }
-    };
 
     // 북마크 상태 확인
     useEffect(() => {
@@ -62,7 +48,7 @@ export default function ProjectCard({ project, className = '' }: ProjectCardProp
                     const data = await response.json();
                     setIsBookmarked(data.isBookmarked);
                 }
-            } catch (error) {
+            } catch {
                 // 에러 무시
             }
         };
@@ -70,40 +56,15 @@ export default function ProjectCard({ project, className = '' }: ProjectCardProp
         checkBookmarkStatus();
     }, [user, project.id]);
 
-    // 좋아요 상태 확인
-    useEffect(() => {
-        const checkLikeStatus = async () => {
-            if (!user) return;
-
-            try {
-                const response = await fetch(`/api/projects/${project.id}/like`, {
-                    credentials: 'include'
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    setIsLiked(data.liked);
-                }
-            } catch (error) {
-                // 에러 무시
-            }
-        };
-
-        checkLikeStatus();
-    }, [user, project.id]);
-
     // 북마크 토글
     const handleBookmark = async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
 
-        console.log('북마크 클릭 - 사용자:', user?.id, '프로젝트:', project.id);
-
         // Supabase 세션 직접 확인
-        const { data: { session }, error } = await supabase.auth.getSession();
-        console.log('직접 세션 확인:', { session: !!session, error, user: session?.user?.id });
+        await supabase.auth.getSession();
 
         if (!user) {
-            alert('로그인이 필요합니다.');
             return;
         }
 
@@ -111,16 +72,6 @@ export default function ProjectCard({ project, className = '' }: ProjectCardProp
 
         setIsBookmarking(true);
         try {
-            console.log('북마크 요청 전송 중...');
-            console.log('현재 사용자:', user?.id);
-            console.log('쿠키 확인:', document.cookie);
-
-            // Supabase 쿠키 확인
-            const supabaseCookies = document.cookie.split(';').filter(cookie =>
-                cookie.includes('sb-') || cookie.includes('supabase')
-            );
-            console.log('Supabase 쿠키들:', supabaseCookies);
-
             const response = await fetch(`/api/posts/${project.id}/bookmark`, {
                 method: 'POST',
                 headers: {
@@ -129,8 +80,6 @@ export default function ProjectCard({ project, className = '' }: ProjectCardProp
                 credentials: 'include'
             });
 
-            console.log('북마크 응답:', response.status, response.statusText);
-
             const data = await response.json();
 
             if (!response.ok) {
@@ -138,74 +87,13 @@ export default function ProjectCard({ project, className = '' }: ProjectCardProp
             }
 
             setIsBookmarked(data.isBookmarked);
-        } catch (error) {
+        } catch {
             alert('북마크 처리 중 오류가 발생했습니다.');
         } finally {
             setIsBookmarking(false);
         }
     };
 
-    // 좋아요 토글
-    const handleLike = async (e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (!user) {
-            alert('로그인이 필요합니다.');
-            return;
-        }
-
-        if (isLiking) return;
-
-        setIsLiking(true);
-
-        try {
-            const response = await fetch(`/api/projects/${project.id}/like`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include'
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setIsLiked(data.liked);
-            } else {
-                console.error('좋아요 응답:', response.status, response.statusText);
-            }
-        } catch (error) {
-            console.error('좋아요 오류:', error);
-        } finally {
-            setIsLiking(false);
-        }
-    };
-
-    const getDifficultyColor = (difficulty: string) => {
-        switch (difficulty) {
-            case 'beginner':
-                return 'bg-green-100 text-green-800';
-            case 'intermediate':
-                return 'bg-yellow-100 text-yellow-800';
-            case 'advanced':
-                return 'bg-red-100 text-red-800';
-            default:
-                return 'bg-gray-100 text-gray-800';
-        }
-    };
-
-    const getLocationLabel = (location: string) => {
-        switch (location) {
-            case 'online':
-                return '온라인';
-            case 'offline':
-                return '오프라인';
-            case 'hybrid':
-                return '하이브리드';
-            default:
-                return '알 수 없음';
-        }
-    };
 
     const getCustomStatusColor = (status: string) => {
         switch (status) {
@@ -227,12 +115,12 @@ export default function ProjectCard({ project, className = '' }: ProjectCardProp
             return { label: '알 수 없음', color: 'bg-gray-100 text-gray-800', icon: AlertCircle };
         }
 
-        // 데이터베이스에서 가져온 project_status_info 사용 (타입 안전성을 위해 any로 처리)
-        if ((project as any).project_status_info) {
-            const dbStatus = (project as any).project_status_info.name;
+        // 데이터베이스에서 가져온 project_status_info 사용
+        if ((project as unknown as Record<string, unknown>).project_status_info) {
+            const dbStatus = (project as unknown as Record<string, unknown>).project_status_info as { name: string; display_name: string; icon: string };
 
             // 모집중인데 마감일이 지난 경우 모집 마감으로 처리
-            if (dbStatus === 'recruiting' && project.project_data?.deadline) {
+            if (dbStatus.name === 'recruiting' && project.project_data?.deadline) {
                 const now = new Date();
                 const deadlineDate = new Date(project.project_data.deadline);
                 if (now > deadlineDate) {
@@ -245,11 +133,11 @@ export default function ProjectCard({ project, className = '' }: ProjectCardProp
             }
 
             // 데이터베이스 색상 대신 우리가 정의한 색상 사용
-            const customColor = getCustomStatusColor(dbStatus);
+            const customColor = getCustomStatusColor(dbStatus.name);
             return {
-                label: (project as any).project_status_info.display_name,
+                label: dbStatus.display_name,
                 color: customColor,
-                icon: getIconByName((project as any).project_status_info.icon)
+                icon: getIconByName(dbStatus.icon)
             };
         }
 
@@ -276,7 +164,7 @@ export default function ProjectCard({ project, className = '' }: ProjectCardProp
     };
 
     const getIconByName = (iconName: string) => {
-        const iconMap: { [key: string]: any } = {
+        const iconMap: { [key: string]: React.ComponentType } = {
             'Users': Users,
             'CheckCircle': CheckCircle,
             'XCircle': XCircle,
@@ -286,18 +174,13 @@ export default function ProjectCard({ project, className = '' }: ProjectCardProp
     };
 
     const StatusInfo = getStatusInfo(project);
-    const StatusIcon = StatusInfo.icon;
-
-    const isRecruiting = project.project_data?.project_status === 'recruiting' &&
-        new Date(project.project_data.deadline) > new Date();
 
     return (
         <Link href={`/projects/${project.id}`} onClick={incrementView}>
-            <article className={`group h-full flex flex-col rounded-xl transition-all duration-300 ${
-                project.is_pinned 
-                    ? 'bg-gradient-to-br from-amber-50/50 to-orange-50/50' 
-                    : 'bg-white hover:bg-gray-50/50'
-            }`}>
+            <article className={`group h-full flex flex-col rounded-xl transition-all duration-300 ${project.is_pinned
+                ? 'bg-gradient-to-br from-amber-50/50 to-orange-50/50'
+                : 'bg-white hover:bg-gray-50/50'
+                }`}>
                 {/* 메인 콘텐츠 영역 - 썸네일과 내용 */}
                 <div className="flex flex-col md:flex-row-reverse flex-1">
                     {/* 썸네일 - 우측 */}
@@ -333,7 +216,7 @@ export default function ProjectCard({ project, className = '' }: ProjectCardProp
 
                                 {/* 프로젝트 타입 */}
                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-900">
-                                    {(project as any).project_type?.name || '프로젝트'}
+                                    {((project as unknown as Record<string, unknown>).project_type as { name: string } || { name: '프로젝트' }).name}
                                 </span>
                             </div>
 
@@ -387,18 +270,18 @@ export default function ProjectCard({ project, className = '' }: ProjectCardProp
 
                     {/* 내용 - 우측 */}
                     <div className="flex-1 px-4 pt-3 pb-6 flex flex-col">
-                                {/* 프로젝트 상태 - 제목 위쪽 */}
-                                        <div className="flex items-center gap-2 mb-2">
-                                            {project.is_pinned && (
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm">
-                                                    <Pin className="w-3 h-3" />
-                                                    고정된 프로젝트
-                                                </span>
-                                            )}
-                                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${StatusInfo.color}`}>
-                                                {StatusInfo.label}
-                                            </span>
-                                        </div>
+                        {/* 프로젝트 상태 - 제목 위쪽 */}
+                        <div className="flex items-center gap-2 mb-2">
+                            {project.is_pinned && (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm">
+                                    <Pin className="w-3 h-3" />
+                                    고정된 프로젝트
+                                </span>
+                            )}
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${StatusInfo.color}`}>
+                                {StatusInfo.label}
+                            </span>
+                        </div>
 
                         {/* 제목 */}
                         <h3 className="text-2xl text-slate-900 mb-2 line-clamp-2" style={{ fontWeight: 950 }}>

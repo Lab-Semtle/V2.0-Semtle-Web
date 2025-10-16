@@ -10,13 +10,6 @@ export interface ActivityPost extends Post {
 
 export interface ActivityData {
     post_id: number;
-    activity_type_id: number;
-    activity_type?: {
-        id: number;
-        name: string;
-        description?: string;
-        icon?: string;
-    };
     location?: string;
     start_date?: string;
     end_date?: string;
@@ -68,7 +61,6 @@ export interface ActivityCreateData {
     content: unknown;
     thumbnail?: string;
     category_id: number;
-    activity_type_id: number;
     status?: 'draft' | 'published';
     tags?: string[];
 
@@ -91,7 +83,6 @@ export interface ActivityUpdateData {
     content?: unknown;
     thumbnail?: string;
     category_id?: number;
-    activity_type_id?: number;
     status?: 'draft' | 'published' | 'hidden';
     tags?: string[];
 
@@ -120,7 +111,6 @@ export interface ActivityVoteData {
 }
 
 export interface ActivityFilters {
-    activity_type?: string;
     location?: string;
     start_date_from?: string;
     start_date_to?: string;

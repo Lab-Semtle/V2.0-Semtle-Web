@@ -97,17 +97,15 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
     const [profileData, setProfileData] = useState<Profile | null>(null);
     const [myPosts, setMyPosts] = useState<Post[]>([]);
     const [myResources, setMyResources] = useState<Post[]>([]);
-    const [myActivities, setMyActivities] = useState<Post[]>([]);
     const [otherPosts, setOtherPosts] = useState<Post[]>([]);
     const [bookmarkedPosts, setBookmarkedPosts] = useState<Post[]>([]);
     const [loadingProfile, setLoadingProfile] = useState(true);
     const [loadingPosts, setLoadingPosts] = useState(true);
     const [loadingResources, setLoadingResources] = useState(true);
-    const [loadingActivities, setLoadingActivities] = useState(true);
     const [loadingBookmarks, setLoadingBookmarks] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [isFollowing, setIsFollowing] = useState(false);
     const [isFollowingLoading, setIsFollowingLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     // 무한 스크롤을 위한 상태
     const [projectPage, setProjectPage] = useState(1);
@@ -130,8 +128,8 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
                         const data = await response.json();
                         setIsFollowing(data.isFollowing);
                     }
-                } catch (error) {
-                    console.error('팔로우 상태 확인 오류:', error);
+                } catch {
+                    // 팔로우 상태 확인 오류 시 무시
                 }
             }
         };
@@ -182,10 +180,9 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
                     } : null);
                 }
             } else {
-                console.error('팔로우 응답:', response.status, response.statusText);
             }
-        } catch (error) {
-            console.error('팔로우 오류:', error);
+        } catch {
+
         } finally {
             setIsFollowingLoading(false);
         }
@@ -205,7 +202,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
                 } else {
                     setError('프로필을 불러오는 중 오류가 발생했습니다.');
                 }
-            } catch (error) {
+            } catch {
                 setError('프로필을 불러오는 중 오류가 발생했습니다.');
             } finally {
                 setLoadingProfile(false);
@@ -244,7 +241,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
                     }
                 }
             }
-        } catch (error) {
+        } catch {
         } finally {
             setLoadingMoreProjects(false);
         }
@@ -281,10 +278,9 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
                         ]
                     });
 
-                    const [projectsResponse, resourcesResponse, activitiesResponse] = await Promise.all([
+                    const [projectsResponse, resourcesResponse] = await Promise.all([
                         fetch(`/api/profile/${profileData.id}/posts?type=project&page=1&limit=9&include_drafts=true`),
-                        fetch(`/api/profile/${profileData.id}/posts?type=resource&page=1&limit=9&include_drafts=true`),
-                        fetch(`/api/profile/${profileData.id}/posts?type=activity&page=1&limit=9&include_drafts=true`)
+                        fetch(`/api/profile/${profileData.id}/posts?type=resource&page=1&limit=9&include_drafts=true`)
                     ]);
 
                     if (projectsResponse.ok) {
@@ -299,16 +295,9 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
                         console.log('프로필 페이지 - 자료실 로딩 결과:', {
                             status: resourcesResponse.status,
                             postsCount: data.posts?.length || 0,
-                            posts: data.posts?.map((p: any) => ({ id: p.id, title: p.title, status: p.status })) || []
+                            posts: data.posts?.map((p: Record<string, unknown>) => ({ id: p.id, title: p.title, status: p.status })) || []
                         });
                         setMyResources(data.posts || []);
-                    } else {
-                        console.error('프로필 페이지 - 자료실 로딩 실패:', resourcesResponse.status, resourcesResponse.statusText);
-                    }
-
-                    if (activitiesResponse.ok) {
-                        const data = await activitiesResponse.json();
-                        setMyActivities(data.posts);
                     }
                 } else {
                     // 다른 사람 프로필인 경우: 공개 게시물만 (페이지네이션 적용)
@@ -320,12 +309,11 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
                         setHasMoreProjects(data.posts.length === 9);
                     }
                 }
-            } catch (error) {
-                console.error('게시물 로딩 오류:', error);
+            } catch {
+                console.error('게시물 로딩 오류');
             } finally {
                 setLoadingPosts(false);
                 setLoadingResources(false);
-                setLoadingActivities(false);
             }
         };
 
@@ -352,17 +340,17 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
                     console.log('프로필 페이지 - 북마크 데이터:', {
                         totalPosts: data.posts?.length || 0,
                         postsByType: {
-                            projects: data.posts?.filter((p: any) => p.post_type === 'project').length || 0,
-                            resources: data.posts?.filter((p: any) => p.post_type === 'resource').length || 0,
-                            activities: data.posts?.filter((p: any) => p.post_type === 'activity').length || 0
+                            projects: data.posts?.filter((p: Record<string, unknown>) => p.post_type === 'project').length || 0,
+                            resources: data.posts?.filter((p: Record<string, unknown>) => p.post_type === 'resource').length || 0,
+                            activities: data.posts?.filter((p: Record<string, unknown>) => p.post_type === 'activity').length || 0
                         },
-                        posts: data.posts?.map((p: any) => ({ id: p.id, title: p.title, post_type: p.post_type })) || []
+                        posts: data.posts?.map((p: Record<string, unknown>) => ({ id: p.id, title: p.title, post_type: p.post_type })) || []
                     });
                     setBookmarkedPosts(data.posts || []);
                 } else {
                     console.error('프로필 페이지 - 북마크 API 오류:', response.status, response.statusText);
                 }
-            } catch (error) {
+            } catch {
                 console.error('프로필 페이지 - 북마크 로딩 오류:', error);
             } finally {
                 setLoadingBookmarks(false);
@@ -372,7 +360,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
         if (isOwnProfile) {
             fetchBookmarkedPosts();
         }
-    }, [isOwnProfile]);
+    }, [isOwnProfile, error]);
 
     const handleEditProfile = () => {
         router.push('/settings');
@@ -396,7 +384,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
                     const errorData = await response.json();
                     alert(`삭제에 실패했습니다: ${errorData.error || '알 수 없는 오류'}`);
                 }
-            } catch (error) {
+            } catch {
                 alert('삭제 중 오류가 발생했습니다.');
             }
         }
@@ -429,7 +417,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
             } else {
                 alert('공개에 실패했습니다.');
             }
-        } catch (error) {
+        } catch {
             alert('공개 중 오류가 발생했습니다.');
         }
     };
@@ -603,10 +591,6 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
                                     </div>
                                 ) : myResources.length > 0 ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {console.log('프로필 페이지 - 자료실 게시물 렌더링:', {
-                                            totalResources: myResources.length,
-                                            resources: myResources.map(r => ({ id: r.id, title: r.title, status: r.status }))
-                                        })}
                                         {myResources
                                             .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
                                             .map((post) => (
@@ -655,15 +639,6 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
                                     </div>
                                 ) : bookmarkedPosts.length > 0 ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {console.log('프로필 페이지 - 북마크 게시물 렌더링:', {
-                                            totalPosts: bookmarkedPosts.length,
-                                            postsByType: {
-                                                projects: bookmarkedPosts.filter(p => p.post_type === 'project').length,
-                                                resources: bookmarkedPosts.filter(p => p.post_type === 'resource').length,
-                                                activities: bookmarkedPosts.filter(p => p.post_type === 'activity').length
-                                            },
-                                            posts: bookmarkedPosts.map(p => ({ id: p.id, title: p.title, post_type: p.post_type }))
-                                        })}
                                         {bookmarkedPosts.map((post) => (
                                             <ProfilePostCard key={`${post.post_type}_${post.id}`} post={post} />
                                         ))}

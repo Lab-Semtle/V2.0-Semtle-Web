@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
     try {
         const supabase = await createServerSupabase();
 
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({ stats });
 
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { error: '게시물 통계를 불러올 수 없습니다.' },
             { status: 500 }

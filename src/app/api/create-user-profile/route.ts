@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 
 
         // 사용자 프로필 생성 (외래 키 제약 조건 없이)
-        const { data: insertData, error: profileError } = await supabase
+        const { error: profileError } = await supabase
             .from('user_profiles')
             .insert(profileInsertData)
             .select();
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
             message: '사용자 프로필이 생성되었습니다.',
         });
 
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { error: '서버 오류가 발생했습니다.' },
             { status: 500 }

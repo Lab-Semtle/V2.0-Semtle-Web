@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import NovelEditor from '@/components/editor/NovelEditor';
@@ -21,6 +22,7 @@ interface Type {
     id: number;
     name: string;
     description?: string;
+    color?: string;
     icon?: string;
     is_active: boolean;
     sort_order: number;
@@ -48,7 +50,7 @@ interface BasePostFormProps {
         status?: string;
     };
     initialContent?: JSONContent;
-    children?: React.ReactNode; // 게시판별 전용 필드들
+    children?: (props: { types: Type[]; categories: Category[] }) => React.ReactNode;
 }
 
 export default function BasePostForm({
@@ -77,38 +79,51 @@ export default function BasePostForm({
     // 카테고리와 타입 데이터
     const [categories, setCategories] = useState<Category[]>([]);
     const [types, setTypes] = useState<Type[]>([]);
-    const [loadingData, setLoadingData] = useState(true);
+    const [loadingData, setLoadingData] = useState(false);
 
-    // 데이터 로드
-    useEffect(() => {
-        loadData();
-    }, [boardType]);
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
             setLoadingData(true);
 
-            // 카테고리 로드
-            const categoryResponse = await fetch(`/api/categories?board_type=${boardType}`);
-            if (categoryResponse.ok) {
-                const categoryData = await categoryResponse.json();
-                setCategories(categoryData.categories || []);
+            // 카테고리 로드 - 활동 게시판은 별도 API 사용
+            if (boardType === 'activities') {
+                const activityResponse = await fetch('/api/activities');
+                if (activityResponse.ok) {
+                    const activityData = await activityResponse.json();
+                    setCategories(activityData.categories || []);
+                }
+            } else {
+                const categoryResponse = await fetch(`/api/categories?board_type=${boardType}`);
+                if (categoryResponse.ok) {
+                    const categoryData = await categoryResponse.json();
+                    setCategories(categoryData.categories || []);
+                }
             }
 
             // 타입 로드 (프로젝트와 활동만)
             if (boardType === 'projects' || boardType === 'activities') {
+                console.log('타입 로드 시작:', boardType);
                 const typeResponse = await fetch(`/api/types?board_type=${boardType}`);
+                console.log('타입 API 응답:', typeResponse.status);
                 if (typeResponse.ok) {
                     const typeData = await typeResponse.json();
+                    console.log('타입 데이터:', typeData);
                     setTypes(typeData.types || []);
+                } else {
+                    console.error('타입 API 오류:', typeResponse.status, typeResponse.statusText);
                 }
             }
-        } catch (error) {
-            console.error('데이터 로드 오류:', error);
+        } catch {
+            console.error('데이터 로드 오류');
         } finally {
             setLoadingData(false);
         }
-    };
+    }, [boardType]);
+
+    // 데이터 로드
+    useEffect(() => {
+        loadData();
+    }, [boardType, loadData]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -155,7 +170,7 @@ export default function BasePostForm({
             } else {
                 throw new Error('이미지 업로드에 실패했습니다.');
             }
-        } catch (error) {
+        } catch {
             setError('이미지 업로드에 실패했습니다.');
         } finally {
             setUploadingImage(false);
@@ -262,10 +277,11 @@ export default function BasePostForm({
                                 <div className="space-y-4">
                                     {formData.thumbnail ? (
                                         <div className="relative">
-                                            <img
+                                            <Image
                                                 src={formData.thumbnail}
                                                 alt="썸네일"
-                                                className="w-full h-[394px] object-cover rounded-xl"
+                                                fill
+                                                className="object-cover rounded-xl"
                                             />
                                             {/* 우측 하단 버튼들 */}
                                             <div className="absolute bottom-4 right-4 flex gap-2">
@@ -360,13 +376,16 @@ export default function BasePostForm({
                                 </div>
 
                                 {/* 카테고리 */}
-                                <div className="mb-6">
+                                <div className="p-4 bg-gradient-to-r from-slate-50 to-blue-50 rounded-xl border border-slate-200 mb-6">
+                                    <label htmlFor="category" className="block text-sm font-semibold text-slate-700 mb-2">
+                                        카테고리 *
+                                    </label>
                                     <select
                                         id="category"
                                         name="category"
                                         value={formData.category}
                                         onChange={handleInputChange}
-                                        className="w-full text-lg bg-transparent border-none outline-none text-slate-900 placeholder-slate-400"
+                                        className="w-full text-sm bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
                                         required
                                         disabled={loadingData}
                                     >
@@ -383,7 +402,16 @@ export default function BasePostForm({
 
                         {/* 게시판별 전용 필드들 */}
                         <div className="mb-4">
-                            {children}
+                            {loadingData ? (
+                                <div className="flex items-center justify-center py-8">
+                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                                    <span className="ml-2 text-gray-600">데이터 로딩 중...</span>
+                                </div>
+                            ) : (
+                                typeof children === 'function'
+                                    ? children({ types, categories })
+                                    : children
+                            )}
                         </div>
 
                         {/* 게시물 내용 작성 */}

@@ -31,7 +31,7 @@ const Footer: React.FC = () => {
                     const data = await response.json();
                     setRepresentativeAdmin(data.representativeAdmin);
                 }
-            } catch (error) {
+            } catch {
             }
         };
 
@@ -42,7 +42,7 @@ const Footer: React.FC = () => {
                     const data = await response.json();
                     setFooterLinks(data.links || []);
                 }
-            } catch (error) {
+            } catch {
             }
         };
 
@@ -158,7 +158,7 @@ const Footer: React.FC = () => {
                                 <div className="flex flex-wrap gap-3">
                                     {footerLinks.map((link) => {
                                         // 아이콘 매핑 객체
-                                        const iconMap: { [key: string]: React.ComponentType<any> } = {
+                                        const iconMap: { [key: string]: React.ComponentType } = {
                                             Github,
                                             Instagram,
                                             Youtube,
@@ -177,7 +177,7 @@ const Footer: React.FC = () => {
                                             Users
                                         };
 
-                                        const IconComponent = iconMap[link.icon] || ExternalLink;
+                                        const IconComponent = (iconMap[link.icon] || ExternalLink) as React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
 
                                         return (
                                             <Link

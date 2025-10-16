@@ -98,7 +98,7 @@ export async function POST(
             application
         });
 
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -135,7 +135,7 @@ export async function GET(
             application: application || null
         });
 
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

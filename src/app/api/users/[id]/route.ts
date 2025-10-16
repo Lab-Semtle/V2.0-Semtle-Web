@@ -42,7 +42,7 @@ export async function GET(
         }
 
         return NextResponse.json({ profile });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

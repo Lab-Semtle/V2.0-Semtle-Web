@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
                 isFollowing: true
             });
         }
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
             followersCount: followersResult.count || 0,
             followingCount: followingResult.count || 0
         });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

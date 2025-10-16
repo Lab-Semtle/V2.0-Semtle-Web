@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface UseViewCountProps {
     postType: 'project' | 'activity' | 'resource';
@@ -13,7 +13,7 @@ export function useViewCount({ postType, postId, initialViews = 0 }: UseViewCoun
     const incrementTime = useRef<number>(0);
 
     // 조회수 증가 함수 (더 엄격한 조건)
-    const incrementView = async () => {
+    const incrementView = useCallback(async () => {
         // 이미 증가했거나 증가 중이면 무시
         if (isIncrementing || hasIncremented.current) return;
 
@@ -43,11 +43,11 @@ export function useViewCount({ postType, postId, initialViews = 0 }: UseViewCoun
                 incrementTime.current = now;
             } else {
             }
-        } catch (error) {
+        } catch {
         } finally {
             setIsIncrementing(false);
         }
-    };
+    }, [postId, postType, isIncrementing]);
 
     // 초기 조회수 설정
     useEffect(() => {
@@ -65,7 +65,7 @@ export function useViewCount({ postType, postId, initialViews = 0 }: UseViewCoun
             // 조회 기록 저장 (세션 동안 유지)
             sessionStorage.setItem(viewKey, 'true');
         }
-    }, [postType, postId]);
+    }, [postType, postId, incrementView]);
 
     return {
         views,

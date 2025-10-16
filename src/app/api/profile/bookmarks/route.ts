@@ -3,29 +3,21 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
     try {
-        console.log('프로필 북마크 API 시작');
         const supabase = await createServerSupabase();
         const { searchParams } = new URL(request.url);
         const type = searchParams.get('type') || 'all'; // all, projects, resources, activities
-        console.log('프로필 북마크 API - 타입:', type);
 
         // 현재 사용자 확인
-        console.log('프로필 북마크 API - 사용자 확인 시작');
         const { data: { user }, error: userError } = await supabase.auth.getUser();
-        console.log('프로필 북마크 API - 사용자 결과:', { user: !!user, userError });
 
         if (userError || !user) {
-            console.log('프로필 북마크 API - 인증 실패:', userError);
             return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
         }
 
-        console.log('프로필 북마크 API - 사용자 인증 성공:', user.id);
-
-        let posts = [];
+        const posts = [];
 
         // 프로젝트 북마크 조회
         if (type === 'all' || type === 'projects') {
-            console.log('프로필 북마크 API - 프로젝트 북마크 조회 시작');
 
             // 프로젝트 북마크 테이블에서 북마크한 프로젝트 ID들을 가져옴
             const { data: bookmarkedProjectIds } = await supabase
@@ -33,11 +25,9 @@ export async function GET(request: NextRequest) {
                 .select('project_id')
                 .eq('user_id', user.id);
 
-            console.log('프로필 북마크 API - 북마크된 프로젝트 ID들:', bookmarkedProjectIds);
 
             if (bookmarkedProjectIds && bookmarkedProjectIds.length > 0) {
                 const projectIds = bookmarkedProjectIds.map(b => b.project_id);
-                console.log('프로필 북마크 API - 조회할 프로젝트 ID들:', projectIds);
 
                 const { data: projects, error: projectsError } = await supabase
                     .from('projects')
@@ -53,8 +43,6 @@ export async function GET(request: NextRequest) {
                     .in('id', projectIds)
                     .order('published_at', { ascending: false });
 
-                console.log('프로필 북마크 API - 프로젝트 조회 결과:', projects?.length || 0);
-                console.log('프로필 북마크 API - 프로젝트 조회 오류:', projectsError);
 
                 if (projects && projects.length > 0) {
                     // 작성자 정보를 별도로 조회
@@ -81,7 +69,6 @@ export async function GET(request: NextRequest) {
 
         // 자료실 북마크 조회
         if (type === 'all' || type === 'resources') {
-            console.log('프로필 북마크 API - 자료실 북마크 조회 시작');
 
             // 자료실 북마크 테이블에서 북마크한 자료 ID들을 가져옴
             const { data: bookmarkedResourceIds } = await supabase
@@ -89,11 +76,9 @@ export async function GET(request: NextRequest) {
                 .select('resource_id')
                 .eq('user_id', user.id);
 
-            console.log('프로필 북마크 API - 북마크된 자료 ID들:', bookmarkedResourceIds);
 
             if (bookmarkedResourceIds && bookmarkedResourceIds.length > 0) {
                 const resourceIds = bookmarkedResourceIds.map(b => b.resource_id);
-                console.log('프로필 북마크 API - 조회할 자료 ID들:', resourceIds);
 
                 const { data: resources, error: resourcesError } = await supabase
                     .from('resources')
@@ -108,8 +93,6 @@ export async function GET(request: NextRequest) {
                     .in('id', resourceIds)
                     .order('published_at', { ascending: false });
 
-                console.log('프로필 북마크 API - 자료실 조회 결과:', resources?.length || 0);
-                console.log('프로필 북마크 API - 자료실 조회 오류:', resourcesError);
 
                 if (resources && resources.length > 0) {
                     // 작성자 정보를 별도로 조회
@@ -146,7 +129,6 @@ export async function GET(request: NextRequest) {
 
         // 활동 북마크 조회
         if (type === 'all' || type === 'activities') {
-            console.log('프로필 북마크 API - 활동 북마크 조회 시작');
 
             // 활동 북마크 테이블에서 북마크한 활동 ID들을 가져옴
             const { data: bookmarkedActivityIds } = await supabase
@@ -154,11 +136,9 @@ export async function GET(request: NextRequest) {
                 .select('activity_id')
                 .eq('user_id', user.id);
 
-            console.log('프로필 북마크 API - 북마크된 활동 ID들:', bookmarkedActivityIds);
 
             if (bookmarkedActivityIds && bookmarkedActivityIds.length > 0) {
                 const activityIds = bookmarkedActivityIds.map(b => b.activity_id);
-                console.log('프로필 북마크 API - 조회할 활동 ID들:', activityIds);
 
                 const { data: activities, error: activitiesError } = await supabase
                     .from('activities')
@@ -173,8 +153,6 @@ export async function GET(request: NextRequest) {
                     .in('id', activityIds)
                     .order('published_at', { ascending: false });
 
-                console.log('프로필 북마크 API - 활동 조회 결과:', activities?.length || 0);
-                console.log('프로필 북마크 API - 활동 조회 오류:', activitiesError);
 
                 if (activities && activities.length > 0) {
                     // 작성자 정보를 별도로 조회
@@ -199,22 +177,12 @@ export async function GET(request: NextRequest) {
             }
         }
 
-        console.log('프로필 북마크 API - 최종 결과:', {
-            totalPosts: posts.length,
-            postsByType: {
-                projects: posts.filter(p => p.post_type === 'project').length,
-                resources: posts.filter(p => p.post_type === 'resource').length,
-                activities: posts.filter(p => p.post_type === 'activity').length
-            },
-            posts: posts.map(p => ({ id: p.id, title: p.title, post_type: p.post_type }))
-        });
 
         return NextResponse.json({
             posts: posts
         });
 
-    } catch (error) {
-        console.error('프로필 북마크 API 오류:', error);
+    } catch {
         return NextResponse.json(
             { error: '서버 오류가 발생했습니다.' },
             { status: 500 }

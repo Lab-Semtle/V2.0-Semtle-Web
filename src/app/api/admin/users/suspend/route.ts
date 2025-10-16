@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
             message: '사용자 상태가 성공적으로 업데이트되었습니다.',
             user: updatedUser
         });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

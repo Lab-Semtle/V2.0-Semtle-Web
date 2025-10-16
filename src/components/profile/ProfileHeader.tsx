@@ -3,16 +3,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import {
-    User,
-    Calendar,
-    Eye,
-    Heart,
-    MessageCircle,
-    Bookmark,
-    Settings,
-    Edit,
     Mail,
     Hash,
     GraduationCap,
@@ -67,14 +58,6 @@ export default function ProfileHeader({ profile, isOwnProfile, onEditProfile, is
             .join('')
             .toUpperCase()
             .slice(0, 2);
-    };
-
-    const formatJoinDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('ko-KR', {
-            year: 'numeric',
-            month: 'long'
-        });
     };
 
     const getRoleBadge = (role: string) => {
@@ -134,8 +117,8 @@ export default function ProfileHeader({ profile, isOwnProfile, onEditProfile, is
                                         onClick={onFollow}
                                         disabled={isFollowingLoading}
                                         className={`px-6 py-2.5 rounded-full text-sm font-medium shadow-sm hover:shadow-md transition-all duration-200 ${isFollowing
-                                                ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                                : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white'
+                                            ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white'
                                             }`}
                                     >
                                         {isFollowingLoading ? (

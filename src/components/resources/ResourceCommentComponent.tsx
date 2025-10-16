@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import Image from 'next/image';
 import { ResourcePost } from '@/types/resource';
-import { Heart, MessageCircle, Send, User, Calendar, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { Heart, MessageCircle, Send, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ResourceComment {
@@ -37,12 +38,7 @@ export default function CommentComponent({ resource }: CommentComponentProps) {
     const { user } = useAuth();
     const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
 
-    // 댓글 목록 조회
-    useEffect(() => {
-        fetchComments();
-    }, [resource.id]);
-
-    const fetchComments = async () => {
+    const fetchComments = useCallback(async () => {
         try {
             setLoading(true);
             const response = await fetch(`/api/resources/${resource.id}/comments`);
@@ -50,12 +46,17 @@ export default function CommentComponent({ resource }: CommentComponentProps) {
                 const data = await response.json();
                 setComments(data.comments || []);
             }
-        } catch (error) {
-            console.error('댓글 조회 오류:', error);
+        } catch {
+            // 댓글 조회 오류 시 무시
         } finally {
             setLoading(false);
         }
-    };
+    }, [resource.id]);
+
+    // 댓글 목록 조회
+    useEffect(() => {
+        fetchComments();
+    }, [resource.id, fetchComments]);
 
     // 댓글 작성
     const handleSubmitComment = async (e: React.FormEvent) => {
@@ -89,8 +90,7 @@ export default function CommentComponent({ resource }: CommentComponentProps) {
             } else {
                 alert('댓글 작성에 실패했습니다.');
             }
-        } catch (error) {
-            console.error('댓글 작성 오류:', error);
+        } catch {
             alert('댓글 작성 중 오류가 발생했습니다.');
         } finally {
             setSubmitting(false);
@@ -282,12 +282,13 @@ export default function CommentComponent({ resource }: CommentComponentProps) {
                             {/* 댓글 */}
                             <div className="flex gap-4">
                                 {/* 프로필 이미지 */}
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center flex-shrink-0">
+                                <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
                                     {comment.author.profile_image ? (
-                                        <img
+                                        <Image
                                             src={comment.author.profile_image}
                                             alt={comment.author.nickname}
-                                            className="w-full h-full object-cover rounded-full"
+                                            fill
+                                            className="object-cover rounded-full"
                                         />
                                     ) : (
                                         <span className="text-white text-sm font-bold">
@@ -387,12 +388,13 @@ export default function CommentComponent({ resource }: CommentComponentProps) {
                                                 <div className="space-y-4 pl-4 border-l-2 border-purple-100">
                                                     {commentReplies.map((reply) => (
                                                         <div key={reply.id} className="flex gap-3">
-                                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center flex-shrink-0">
+                                                            <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
                                                                 {reply.author.profile_image ? (
-                                                                    <img
+                                                                    <Image
                                                                         src={reply.author.profile_image}
                                                                         alt={reply.author.nickname}
-                                                                        className="w-full h-full object-cover rounded-full"
+                                                                        fill
+                                                                        className="object-cover rounded-full"
                                                                     />
                                                                 ) : (
                                                                     <span className="text-white text-xs font-bold">

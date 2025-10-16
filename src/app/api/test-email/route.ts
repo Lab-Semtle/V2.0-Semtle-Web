@@ -45,22 +45,33 @@ export async function POST(request: NextRequest) {
         }
 
 
-        // 사용자 상태에 따라 다른 타입의 링크 생성
-        let linkType = 'signup';
+        // 이메일 인증 링크 생성
+        let data, error;
+
         if (user.email_confirmed_at) {
             // 이미 인증된 사용자에게는 recovery 링크 생성
-            linkType = 'recovery';
+            const result = await supabase.auth.admin.generateLink({
+                type: 'recovery',
+                email: email,
+                options: {
+                    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL || 'http://localhost:3000'}/auth/callback`
+                }
+            });
+            data = result.data;
+            error = result.error;
+        } else {
+            // 미인증 사용자에게는 signup 링크 생성
+            const result = await supabase.auth.admin.generateLink({
+                type: 'signup',
+                email: email,
+                password: 'temp_password_123!', // 임시 비밀번호
+                options: {
+                    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL || 'http://localhost:3000'}/auth/callback`
+                }
+            });
+            data = result.data;
+            error = result.error;
         }
-
-
-        // 이메일 인증 링크 생성
-        const { data, error } = await supabase.auth.admin.generateLink({
-            type: linkType as any,
-            email: email,
-            options: {
-                redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`
-            }
-        });
 
 
         if (error) {
@@ -76,7 +87,7 @@ export async function POST(request: NextRequest) {
             data
         });
 
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { error: '서버 오류가 발생했습니다.' },
             { status: 500 }

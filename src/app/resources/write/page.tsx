@@ -46,7 +46,7 @@ export default function WriteResourcePage() {
         throw new Error(errorData.error || '자료 저장에 실패했습니다.');
       }
 
-      const result = await response.json();
+      await response.json();
 
       // 상태에 따라 다른 메시지 표시
       if (formData.status === 'draft') {

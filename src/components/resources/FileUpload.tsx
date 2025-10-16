@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Upload, X, File, Download, AlertCircle, CheckCircle } from 'lucide-react';
+import { Upload, X, File, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface UploadedFile {
     id: string;
@@ -182,8 +182,8 @@ export default function FileUpload({
             {/* 드래그 앤 드롭 영역 */}
             <div
                 className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${dragActive
-                        ? 'border-blue-500 bg-blue-50/50'
-                        : 'border-slate-300 bg-slate-50/50 hover:bg-slate-100/50'
+                    ? 'border-blue-500 bg-blue-50/50'
+                    : 'border-slate-300 bg-slate-50/50 hover:bg-slate-100/50'
                     } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}

@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
             if (data.user) {
             }
-        } catch (error) {
+        } catch {
             return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=callback_failed`)
         }
     }

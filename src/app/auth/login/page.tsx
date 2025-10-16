@@ -16,7 +16,7 @@ function LoginForm() {
     const [successMessage, setSuccessMessage] = useState('');
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { signIn } = useAuth();
+    const { signIn, loading: authLoading } = useAuth();
 
     // URL 파라미터 확인
     useEffect(() => {
@@ -40,6 +40,13 @@ function LoginForm() {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // AuthContext가 아직 로딩 중이면 대기
+        if (authLoading) {
+            console.log('AuthContext 로딩 중, 로그인 대기');
+            return;
+        }
+
         setLoading(true);
         setError('');
         setSuccessMessage('');
@@ -58,7 +65,7 @@ function LoginForm() {
 
             if (result.error) {
                 console.error('로그인 에러:', result.error); // 디버깅용
-                
+
                 const errorMessage = result.error.message || '';
                 if (errorMessage.includes('Email not confirmed')) {
                     setError('이메일 인증이 필요합니다. 이메일을 확인해주세요.');
@@ -227,14 +234,14 @@ function LoginForm() {
                                 {/* 로그인 버튼 */}
                                 <button
                                     type="submit"
-                                    disabled={loading}
+                                    disabled={loading || authLoading}
                                     className="group relative w-full bg-gradient-to-r from-slate-900 to-slate-700 hover:from-slate-800 hover:to-slate-600 disabled:from-slate-400 disabled:to-slate-500 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:shadow-slate-900/20 transform hover:-translate-y-0.5 overflow-hidden text-sm"
                                 >
                                     <span className="relative z-10">
-                                        {loading ? (
+                                        {loading || authLoading ? (
                                             <div className="flex items-center justify-center">
                                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                                로그인 중...
+                                                {authLoading ? '시스템 로딩 중...' : '로그인 중...'}
                                             </div>
                                         ) : (
                                             '로그인'

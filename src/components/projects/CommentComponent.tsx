@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { Heart, MessageCircle, Send, User, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import Image from 'next/image';
+import { Heart, MessageCircle, Send, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ProjectComment {
@@ -34,12 +35,7 @@ export default function CommentComponent({ projectId }: CommentComponentProps) {
     const { user } = useAuth();
     const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
 
-    // 댓글 목록 조회
-    useEffect(() => {
-        fetchComments();
-    }, [projectId]);
-
-    const fetchComments = async () => {
+    const fetchComments = useCallback(async () => {
         try {
             setLoading(true);
             const response = await fetch(`/api/projects/${projectId}/comments`);
@@ -47,12 +43,17 @@ export default function CommentComponent({ projectId }: CommentComponentProps) {
                 const data = await response.json();
                 setComments(data.comments || []);
             }
-        } catch (error) {
-            console.error('댓글 조회 오류:', error);
+        } catch {
+            // 댓글 조회 오류 시 무시
         } finally {
             setLoading(false);
         }
-    };
+    }, [projectId]);
+
+    // 댓글 목록 조회
+    useEffect(() => {
+        fetchComments();
+    }, [projectId, fetchComments]);
 
     // 댓글 작성
     const handleSubmitComment = async (e: React.FormEvent) => {
@@ -86,8 +87,7 @@ export default function CommentComponent({ projectId }: CommentComponentProps) {
             } else {
                 alert('댓글 작성에 실패했습니다.');
             }
-        } catch (error) {
-            console.error('댓글 작성 오류:', error);
+        } catch {
             alert('댓글 작성 중 오류가 발생했습니다.');
         } finally {
             setSubmitting(false);
@@ -127,8 +127,7 @@ export default function CommentComponent({ projectId }: CommentComponentProps) {
             } else {
                 alert('답글 작성에 실패했습니다.');
             }
-        } catch (error) {
-            console.error('답글 작성 오류:', error);
+        } catch {
             alert('답글 작성 중 오류가 발생했습니다.');
         } finally {
             setSubmittingReply(false);
@@ -158,8 +157,8 @@ export default function CommentComponent({ projectId }: CommentComponentProps) {
                         : comment
                 ));
             }
-        } catch (error) {
-            console.error('댓글 좋아요 오류:', error);
+        } catch {
+            // 댓글 좋아요 오류 시 무시
         }
     };
 
@@ -249,12 +248,13 @@ export default function CommentComponent({ projectId }: CommentComponentProps) {
                             {/* 댓글 */}
                             <div className="flex gap-4">
                                 {/* 프로필 이미지 */}
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center flex-shrink-0">
+                                <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
                                     {comment.user.profile_image ? (
-                                        <img
+                                        <Image
                                             src={comment.user.profile_image}
                                             alt={comment.user.nickname}
-                                            className="w-full h-full object-cover rounded-full"
+                                            fill
+                                            className="object-cover rounded-full"
                                         />
                                     ) : (
                                         <span className="text-white text-sm font-bold">
@@ -342,12 +342,13 @@ export default function CommentComponent({ projectId }: CommentComponentProps) {
                                                 <div className="space-y-4 pl-4 border-l-2 border-purple-100">
                                                     {commentReplies.map((reply) => (
                                                         <div key={reply.id} className="flex gap-3">
-                                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center flex-shrink-0">
+                                                            <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
                                                                 {reply.user.profile_image ? (
-                                                                    <img
+                                                                    <Image
                                                                         src={reply.user.profile_image}
                                                                         alt={reply.user.nickname}
-                                                                        className="w-full h-full object-cover rounded-full"
+                                                                        fill
+                                                                        className="object-cover rounded-full"
                                                                     />
                                                                 ) : (
                                                                     <span className="text-white text-xs font-bold">

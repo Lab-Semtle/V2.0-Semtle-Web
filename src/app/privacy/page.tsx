@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Shield, Calendar, FileText, AlertTriangle, Users, Database, Eye, Trash2, Phone, Mail } from 'lucide-react';
+import { ArrowLeft, Shield, Calendar, FileText, AlertTriangle, Users, Database, Eye, Trash2, Phone } from 'lucide-react';
 import Link from 'next/link';
 
 export default function PrivacyPage() {
@@ -52,7 +52,7 @@ export default function PrivacyPage() {
                                 <h2 className="text-xl font-bold text-gray-900">개인정보 보호 원칙</h2>
                             </div>
                             <p className="text-gray-700 leading-relaxed">
-                                아치셈틀(이하 '학회'라 한다)은 개인정보 보호법 제30조에 따라 정보 주체의 개인정보를 보호하고, 이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 다음과 같이 개인정보 처리방침을 수립하여 공개합니다.
+                                아치셈틀(이하 &apos;학회&apos;라 한다)은 개인정보 보호법 제30조에 따라 정보 주체의 개인정보를 보호하고, 이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 다음과 같이 개인정보 처리방침을 수립하여 공개합니다.
                             </p>
                         </section>
 

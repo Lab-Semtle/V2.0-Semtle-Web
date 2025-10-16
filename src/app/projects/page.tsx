@@ -13,49 +13,25 @@ import { ProjectPost } from '@/types/project';
 
 export default function ProjectsPage() {
     const [projects, setProjects] = useState<ProjectPost[]>([]);
-    const [categories, setCategories] = useState<any[]>([]);
-    const [types, setTypes] = useState<any[]>([]);
+    const [categories, setCategories] = useState<{ name: string }[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [selectedCategory, setSelectedCategory] = useState("전체");
     const [selectedStatus, setSelectedStatus] = useState("전체");
     const [selectedDifficulty, setSelectedDifficulty] = useState("전체");
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState("latest");
-
-    // 정렬 상태 변경 디버깅
-    useEffect(() => {
-        console.log('정렬 기준 변경됨:', sortBy);
-    }, [sortBy]);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
-
-    const handleRefresh = () => {
-        window.location.reload();
-    };
 
     // 데이터 로드
     useEffect(() => {
         const fetchProjects = async () => {
             try {
                 setLoading(true);
-                setError(null); // 이전 오류 상태 초기화
 
                 // 캐시 무효화를 위해 timestamp 추가
                 const response = await fetch(`/api/projects?t=${Date.now()}`);
                 const data = await response.json();
-
-                console.log('프로젝트 목록 API 응답:', data);
-                if (data.projects && data.projects.length > 0) {
-                    console.log('첫 번째 프로젝트 데이터:', {
-                        id: data.projects[0].id,
-                        title: data.projects[0].title,
-                        approved_members: data.projects[0].approved_members,
-                        applicant_count: data.projects[0].applicant_count,
-                        team_size: data.projects[0].project_data?.team_size,
-                        current_members: data.projects[0].project_data?.current_members
-                    });
-                }
 
                 if (!response.ok) {
                     // API 오류 시에도 빈 배열로 처리하여 정상 렌더링
@@ -64,9 +40,8 @@ export default function ProjectsPage() {
                     // 데이터가 없어도 정상적으로 처리
                     setProjects(data.projects || []);
                     setCategories(data.categories || []);
-                    setTypes(data.types || []);
                 }
-            } catch (err) {
+            } catch {
                 // 네트워크 오류 등도 빈 배열로 처리하여 정상 렌더링
                 setProjects([]);
             } finally {
@@ -88,7 +63,6 @@ export default function ProjectsPage() {
     });
 
     const sortedPosts = [...filteredPosts].sort((a, b) => {
-        console.log('정렬 실행:', sortBy);
         if (sortBy === "latest") {
             return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         }
@@ -115,7 +89,6 @@ export default function ProjectsPage() {
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentRegularItems = regularPosts.slice(indexOfFirstItem, indexOfLastItem);
-    const currentItems = [...pinnedPosts, ...currentRegularItems];
     const totalPages = Math.ceil(regularPosts.length / itemsPerPage);
 
     const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
@@ -289,8 +262,8 @@ export default function ProjectsPage() {
                             </div>
                             <div className="grid grid-cols-1 gap-6">
                                 {pinnedPosts.map(project => (
-                                    <ProjectCard 
-                                        key={project.id} 
+                                    <ProjectCard
+                                        key={project.id}
                                         project={project}
                                     />
                                 ))}

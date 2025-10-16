@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const supabase = await createServerSupabase();
 
     try {
         const { status } = await request.json();
-        const inquiryId = await Promise.resolve(params.id);
+        const resolvedParams = await params;
+        const inquiryId = resolvedParams.id;
 
         // 사용자 확인 (보안상 getUser 사용)
         const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -41,7 +42,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
         }
 
         // 문의 상태 업데이트
-        const updateData: any = {
+        const updateData: Record<string, unknown> = {
             status,
             updated_at: new Date().toISOString()
         };
@@ -67,8 +68,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
             inquiry: data
         });
 
-    } catch (error) {
-        console.error('문의 상태 변경 오류:', error);
+    } catch {
         return NextResponse.json(
             { error: '문의 상태 변경에 실패했습니다.' },
             { status: 500 }

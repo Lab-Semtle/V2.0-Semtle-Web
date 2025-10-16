@@ -15,15 +15,11 @@ export async function GET(request: NextRequest) {
         // 현재 사용자 확인
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError) {
-            console.error('인증 오류:', authError);
             return NextResponse.json({ error: '인증 오류가 발생했습니다.' }, { status: 401 });
         }
         if (!user) {
-            console.log('사용자가 로그인하지 않음');
             return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
         }
-
-        console.log('사용자 인증 성공:', { userId: user.id, email: user.email });
 
         // 전체 신청 수 조회
         const { count: totalCount, error: countError } = await supabase
@@ -32,7 +28,6 @@ export async function GET(request: NextRequest) {
             .eq('applicant_id', user.id);
 
         if (countError) {
-            console.error('신청 수 조회 오류:', countError);
             return NextResponse.json({ error: '신청 수를 불러올 수 없습니다.' }, { status: 500 });
         }
 
@@ -45,16 +40,13 @@ export async function GET(request: NextRequest) {
             .range(offset, offset + limit - 1);
 
         if (error) {
-            console.error('신청 목록 조회 오류:', error);
             return NextResponse.json({ error: '신청 목록을 불러올 수 없습니다.' }, { status: 500 });
         }
 
-        console.log('기본 신청 목록 조회 성공:', { count: applications?.length || 0 });
 
         // 프로젝트 정보가 필요한 경우에만 추가 조회
         if (applications && applications.length > 0) {
             const projectIds = applications.map(app => app.project_id);
-            console.log('프로젝트 ID 목록:', projectIds);
 
             // 프로젝트 기본 정보 조회
             const { data: projects, error: projectsError } = await supabase
@@ -76,10 +68,8 @@ export async function GET(request: NextRequest) {
                 .in('id', projectIds);
 
             if (projectsError) {
-                console.error('프로젝트 정보 조회 오류:', projectsError);
                 // 프로젝트 정보 없이도 신청 목록은 반환
             } else {
-                console.log('프로젝트 기본 정보 조회 성공:', projects?.length || 0);
 
                 // 카테고리 정보 조회
                 const categoryIds = [...new Set(projects?.map(p => p.category_id).filter(Boolean) || [])];
@@ -124,7 +114,6 @@ export async function GET(request: NextRequest) {
                     };
                 });
 
-                console.log('최종 응답 데이터 준비 완료:', applicationsWithProjects.length);
                 return NextResponse.json({
                     applications: applicationsWithProjects,
                     pagination: {
@@ -139,7 +128,6 @@ export async function GET(request: NextRequest) {
 
         // 빈 배열도 정상적인 응답으로 처리
         const result = applications || [];
-        console.log('신청 목록 조회 성공:', { count: result.length, userId: user.id });
         return NextResponse.json({
             applications: result,
             pagination: {

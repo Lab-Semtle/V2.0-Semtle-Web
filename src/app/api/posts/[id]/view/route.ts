@@ -10,9 +10,6 @@ export async function POST(request: NextRequest) {
         );
 
         const { postType, postId } = await request.json();
-        const clientIP = request.headers.get('x-forwarded-for') ||
-            request.headers.get('x-real-ip') ||
-            'unknown';
 
 
         // 테이블명 결정
@@ -62,7 +59,7 @@ export async function POST(request: NextRequest) {
             views: updatedPost.views
         });
 
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { error: '서버 오류가 발생했습니다.' },
             { status: 500 }

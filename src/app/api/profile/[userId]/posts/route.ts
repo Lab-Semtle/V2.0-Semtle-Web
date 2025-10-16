@@ -20,7 +20,7 @@ export async function GET(
         const limit = parseInt(searchParams.get('limit') || '12');
 
 
-        let posts = [];
+        const posts = [];
 
         if (type === 'all' || type === 'project') {
             // 프로젝트 조회
@@ -93,8 +93,7 @@ export async function GET(
                                 approved_members: teamMembers?.length || 0,
                                 applicant_count: applications?.length || 0
                             };
-                        } catch (error) {
-                            console.error(`프로젝트 ${project.id} 처리 중 오류:`, error);
+                        } catch {
                             return {
                                 ...project,
                                 post_type: 'project',
@@ -120,7 +119,6 @@ export async function GET(
         }
 
         if (type === 'all' || type === 'resource') {
-            console.log('프로필 API - 자료실 조회 시작:', { userId, type, includeDrafts });
 
             // 자료 조회
             let query = supabase
@@ -140,11 +138,6 @@ export async function GET(
 
             const { data: resources, error: resourcesError } = await query.order('published_at', { ascending: false });
 
-            console.log('프로필 API - 자료실 조회 결과:', {
-                count: resources?.length || 0,
-                error: resourcesError,
-                resources: resources?.map(r => ({ id: r.id, title: r.title, status: r.status })) || []
-            });
 
             if (resources && resources.length > 0) {
                 // 파일 정보를 별도로 조회
@@ -211,7 +204,7 @@ export async function GET(
                 totalPages: Math.ceil(posts.length / limit)
             }
         });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

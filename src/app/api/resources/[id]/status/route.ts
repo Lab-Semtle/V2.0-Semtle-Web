@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const supabase = await createServerSupabase();
     try {
         const { status } = await request.json();
-        const resourceId = await Promise.resolve(params.id);
+        const resolvedParams = await params;
+        const resourceId = resolvedParams.id;
 
         console.log('자료 상태 변경 요청:', { resourceId, status });
 

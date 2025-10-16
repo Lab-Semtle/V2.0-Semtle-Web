@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ActivityPost } from '@/types/activity';
-import { Calendar, MapPin, Users, Clock, Vote, Pin, Star, CheckCircle } from 'lucide-react';
+import { Calendar, MapPin, Users, Clock, Vote, Pin, Star, CheckCircle, ArrowRight } from 'lucide-react';
 
 interface ActivityCardProps {
     activity: ActivityPost;
@@ -24,62 +24,29 @@ export default function ActivityCard({ activity, className = '' }: ActivityCardP
         });
     };
 
-    const getActivityTypeLabel = (type: string) => {
-        switch (type) {
-            case 'announcement':
-                return '공지사항';
-            case 'event':
-                return '이벤트';
-            case 'seminar':
-                return '세미나';
-            case 'workshop':
-                return '워크샵';
-            case 'vote':
-                return '투표';
-            case 'record':
-                return '행사기록';
-            default:
-                return '활동';
-        }
-    };
-
-    const getActivityTypeColor = (type: string) => {
-        switch (type) {
-            case 'announcement':
-                return 'bg-purple-100 text-purple-800';
-            case 'event':
-                return 'bg-red-100 text-red-800';
-            case 'seminar':
-                return 'bg-blue-100 text-blue-800';
-            case 'workshop':
-                return 'bg-green-100 text-green-800';
-            case 'vote':
-                return 'bg-yellow-100 text-yellow-800';
-            case 'record':
-                return 'bg-gray-100 text-gray-800';
-            default:
-                return 'bg-slate-100 text-slate-800';
-        }
-    };
 
     const getStatusInfo = (activity: ActivityPost) => {
-        if (!activity.activity_data?.start_date) {
+        // 실제 API에서 가져오는 데이터 구조에 맞게 수정
+        const startDate = activity.activity_data?.start_date;
+        const endDate = activity.activity_data?.end_date;
+
+        if (!startDate) {
             return { label: '상시', color: 'bg-gray-100 text-gray-800', icon: Clock };
         }
 
         const now = new Date();
-        const startDate = new Date(activity.activity_data.start_date);
-        const endDate = activity.activity_data.end_date ? new Date(activity.activity_data.end_date) : null;
+        const start = new Date(startDate);
+        const end = endDate ? new Date(endDate) : null;
 
-        if (endDate && now > endDate) {
+        if (end && now > end) {
             return { label: '종료됨', color: 'bg-gray-100 text-gray-800', icon: CheckCircle };
         }
 
-        if (now < startDate) {
+        if (now < start) {
             return { label: '예정', color: 'bg-blue-100 text-blue-800', icon: Clock };
         }
 
-        if (endDate && now >= startDate && now <= endDate) {
+        if (end && now >= start && now <= end) {
             return { label: '진행중', color: 'bg-green-100 text-green-800', icon: CheckCircle };
         }
 
@@ -91,7 +58,7 @@ export default function ActivityCard({ activity, className = '' }: ActivityCardP
 
     return (
         <Link href={`/activities/${activity.id}`}>
-            <article className={`group bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 ${className}`}>
+            <article className={`group bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden hover:shadow-2xl hover:border-blue-200 transition-all duration-300 hover:-translate-y-2 hover:bg-blue-50/30 ${className}`}>
                 {/* 썸네일 */}
                 <div className="relative aspect-video w-full overflow-hidden">
                     {activity.thumbnail && !imageError ? (
@@ -99,13 +66,13 @@ export default function ActivityCard({ activity, className = '' }: ActivityCardP
                             src={activity.thumbnail}
                             alt={activity.title}
                             fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="object-cover group-hover:scale-110 transition-transform duration-300"
                             onError={() => setImageError(true)}
                         />
                     ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
-                            <span className="text-blue-400 text-4xl font-bold">
-                                {getActivityTypeLabel(activity.activity_type?.name || 'activity').charAt(0)}
+                        <div className="w-full h-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center group-hover:from-blue-200 group-hover:to-indigo-200 transition-all duration-300">
+                            <span className="text-blue-400 text-4xl font-bold group-hover:text-blue-500 transition-colors duration-300">
+                                A
                             </span>
                         </div>
                     )}
@@ -126,11 +93,8 @@ export default function ActivityCard({ activity, className = '' }: ActivityCardP
                         )}
                     </div>
 
-                    {/* 활동 타입 및 상태 */}
+                    {/* 활동 상태 */}
                     <div className="absolute top-3 right-3 flex flex-col gap-2">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${getActivityTypeColor(activity.activity_type?.name || 'activity')}`}>
-                            {getActivityTypeLabel(activity.activity_type?.name || 'activity')}
-                        </span>
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${StatusInfo.color}`}>
                             <StatusIcon className="w-3 h-3 mr-1" />
                             {StatusInfo.label}
@@ -196,7 +160,7 @@ export default function ActivityCard({ activity, className = '' }: ActivityCardP
                                 </div>
                             )}
 
-                            {activity.has_voting && activity.vote_options && (
+                            {activity.activity_data?.has_voting && activity.activity_data?.vote_options && (
                                 <div className="flex items-center gap-2 text-sm text-slate-600">
                                     <Vote className="w-4 h-4" />
                                     <span>{activity.activity_data.vote_options.length}개 옵션</span>
@@ -271,6 +235,13 @@ export default function ActivityCard({ activity, className = '' }: ActivityCardP
                                 <Vote className="w-4 h-4" />
                                 <span>{activity.comments_count}</span>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* 화살표 아이콘 */}
+                    <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-1">
+                        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-lg">
+                            <ArrowRight className="w-4 h-4 text-white" />
                         </div>
                     </div>
                 </div>

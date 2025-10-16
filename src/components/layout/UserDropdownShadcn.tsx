@@ -14,7 +14,7 @@ import {
 import { User, LogOut, ChevronDown, ChevronUp, UserCircle, Cog, Shield, FileText, Users } from "lucide-react";
 
 export default function UserDropdownShadcn() {
-    const { profile, signOut, isAdmin } = useAuth();
+    const { profile, signOut } = useAuth();
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
 

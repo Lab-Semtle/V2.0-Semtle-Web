@@ -81,7 +81,7 @@ export async function GET(request: Request) {
             }
         });
 
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { error: '서버 오류가 발생했습니다.' },
             { status: 500 }
@@ -91,6 +91,7 @@ export async function GET(request: Request) {
 
 export async function PATCH(request: Request) {
     try {
+        const supabase = await createServerSupabase();
         const { id, status, adminNotes } = await request.json();
 
         if (!id || !status) {
@@ -100,7 +101,7 @@ export async function PATCH(request: Request) {
             );
         }
 
-        const updateData: any = {
+        const updateData: Record<string, unknown> = {
             status,
             updated_at: new Date().toISOString()
         };
@@ -132,7 +133,7 @@ export async function PATCH(request: Request) {
             data
         });
 
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { error: '서버 오류가 발생했습니다.' },
             { status: 500 }
@@ -142,6 +143,7 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
     try {
+        const supabase = await createServerSupabase();
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
 
@@ -168,7 +170,7 @@ export async function DELETE(request: Request) {
             message: '문의가 성공적으로 삭제되었습니다.'
         });
 
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { error: '서버 오류가 발생했습니다.' },
             { status: 500 }

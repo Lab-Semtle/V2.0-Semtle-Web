@@ -1,58 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
-import { ActivityParticipationData } from '@/types/activity';
 
-// 활동 참가/취소
 export async function POST(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id: activityId } = await params;
         const supabase = await createServerSupabase();
-        const resolvedParams = await params;
-        const activityId = parseInt(resolvedParams.id);
 
-        if (isNaN(activityId)) {
-            return NextResponse.json({ error: '잘못된 활동 ID입니다.' }, { status: 400 });
-        }
-
-        // 현재 사용자 확인
+        // 사용자 인증 확인
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) {
-            return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
+            return NextResponse.json(
+                { error: '인증이 필요합니다.' },
+                { status: 401 }
+            );
         }
 
-        const participationData: ActivityParticipationData = await request.json();
-        const { notes } = participationData;
-
-        // 활동 정보 확인
-        const { data: activity } = await supabase
-            .from('activity_posts')
-            .select(`
-        *,
-        post:posts!activity_posts_post_id_fkey(
-          id,
-          title,
-          status
-        )
-      `)
-            .eq('post_id', activityId)
+        // 활동 정보 조회
+        const { data: activity, error: activityError } = await supabase
+            .from('activities')
+            .select('id, title, max_participants, current_participants, author_id')
+            .eq('id', activityId)
             .single();
 
-        if (!activity || activity.post.status !== 'published') {
-            return NextResponse.json({ error: '활동을 찾을 수 없습니다.' }, { status: 404 });
+        if (activityError || !activity) {
+            return NextResponse.json(
+                { error: '활동을 찾을 수 없습니다.' },
+                { status: 404 }
+            );
         }
 
-        // 기존 참가 확인
-        const { data: existingParticipation } = await supabase
+        // 이미 참가했는지 확인
+        const { data: existingParticipant } = await supabase
             .from('activity_participants')
-            .select('id, status')
+            .select('id')
             .eq('activity_id', activityId)
             .eq('user_id', user.id)
             .single();
 
-        if (existingParticipation) {
-            // 이미 참가한 경우 취소
+        if (existingParticipant) {
+            // 참가 취소
             const { error: deleteError } = await supabase
                 .from('activity_participants')
                 .delete()
@@ -60,91 +49,122 @@ export async function POST(
                 .eq('user_id', user.id);
 
             if (deleteError) {
-                return NextResponse.json({ error: '활동 참가 취소에 실패했습니다.' }, { status: 500 });
+                return NextResponse.json(
+                    { error: '참가 취소 중 오류가 발생했습니다.' },
+                    { status: 500 }
+                );
             }
 
+            // current_participants 감소
+            await supabase
+                .from('activities')
+                .update({
+                    current_participants: Math.max(0, (activity.current_participants || 0) - 1)
+                })
+                .eq('id', activityId);
+
+
             return NextResponse.json({
-                participating: false,
-                message: '활동 참가가 취소되었습니다.'
+                message: '참가가 취소되었습니다.',
+                participated: false,
+                current_participants: Math.max(0, (activity.current_participants || 0) - 1)
             });
         } else {
             // 최대 참가자 수 확인
-            if (activity.max_participants && activity.current_participants >= activity.max_participants) {
-                return NextResponse.json({ error: '참가자 수가 가득 찼습니다.' }, { status: 400 });
+            if (activity.max_participants && (activity.current_participants || 0) >= activity.max_participants) {
+                return NextResponse.json(
+                    { error: '참가자 수가 가득 찼습니다.' },
+                    { status: 400 }
+                );
             }
 
-            // 활동 참가
+            // 참가 등록
             const { error: insertError } = await supabase
                 .from('activity_participants')
                 .insert({
                     activity_id: activityId,
                     user_id: user.id,
-                    notes: notes || null
+                    status: 'registered'
                 });
 
             if (insertError) {
-                return NextResponse.json({ error: '활동 참가에 실패했습니다.' }, { status: 500 });
+                return NextResponse.json(
+                    { error: '참가 등록 중 오류가 발생했습니다.' },
+                    { status: 500 }
+                );
             }
 
-            // 알림 생성 (활동 작성자에게)
-            if (activity.post.author_id !== user.id) {
-                await supabase
-                    .from('notifications')
-                    .insert({
-                        user_id: activity.post.author_id,
-                        type: 'activity_participation',
-                        title: '새로운 활동 참가자',
-                        message: `"${activity.post.title}" 활동에 새로운 참가자가 등록했습니다.`,
-                        data: {
-                            activity_id: activityId,
-                            participant_id: user.id
-                        }
-                    });
+            // current_participants 증가
+            await supabase
+                .from('activities')
+                .update({
+                    current_participants: (activity.current_participants || 0) + 1
+                })
+                .eq('id', activityId);
+
+            // 활동 작성자에게 알림 (선택사항)
+            if (activity.author_id !== user.id) {
+                // TODO: 알림 시스템 구현
             }
 
             return NextResponse.json({
-                participating: true,
-                message: '활동에 성공적으로 참가했습니다.'
+                message: '참가가 완료되었습니다.',
+                participated: true,
+                current_participants: (activity.current_participants || 0) + 1
             });
         }
-    } catch (error) {
-        return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
+
+    } catch {
+        return NextResponse.json(
+            { error: '참가 처리 중 오류가 발생했습니다.' },
+            { status: 500 }
+        );
     }
 }
 
-// 활동 참가 상태 확인
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id: activityId } = await params;
         const supabase = await createServerSupabase();
-        const resolvedParams = await params;
-        const activityId = parseInt(resolvedParams.id);
 
-        if (isNaN(activityId)) {
-            return NextResponse.json({ error: '잘못된 활동 ID입니다.' }, { status: 400 });
-        }
-
-        // 현재 사용자 확인
+        // 사용자 인증 확인
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) {
-            return NextResponse.json({ participating: false });
+            return NextResponse.json(
+                { error: '인증이 필요합니다.' },
+                { status: 401 }
+            );
         }
 
         // 참가 상태 확인
-        const { data: participation } = await supabase
+        const { data: participant, error: participantError } = await supabase
             .from('activity_participants')
-            .select('id, status')
+            .select('id, status, joined_at')
             .eq('activity_id', activityId)
             .eq('user_id', user.id)
-            .single();
+            .maybeSingle();
+
+        // 참가자가 없어도 오류가 아님
+        if (participantError) {
+            return NextResponse.json(
+                { error: '참가 상태 확인 중 오류가 발생했습니다.' },
+                { status: 500 }
+            );
+        }
 
         return NextResponse.json({
-            participating: !!participation,
-            status: participation?.status || null
+            participated: !!participant,
+            status: participant?.status || null,
+            joined_at: participant?.joined_at || null
         });
-    } catch (error) {
-        return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
+
+    } catch {
+        return NextResponse.json(
+            { error: '참가 상태 확인 중 오류가 발생했습니다.' },
+            { status: 500 }
+        );
     }
 }

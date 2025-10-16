@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,7 +16,6 @@ import {
     CheckCircle,
     XCircle,
     AlertCircle,
-    ExternalLink,
     Eye,
     User
 } from 'lucide-react';
@@ -153,18 +153,8 @@ export default function MyApplicationsPage() {
             return projectType.color;
         }
 
-        // 기본 색상 매핑 (fallback)
-        const defaultColors: { [key: string]: string } = {
-            '개인프로젝트': '#3B82F6',
-            '팀프로젝트': '#10B981',
-            '해커톤': '#F59E0B',
-            '공모전': '#EC4899',
-            '연구프로젝트': '#8B5CF6',
-            '상업프로젝트': '#EF4444',
-            '오픈소스': '#6366F1'
-        };
-
-        return defaultColors[projectType?.name || ''] || '#3B82F6';
+        // 기본 색상 (fallback)
+        return '#3B82F6';
     };
 
     const handleViewProject = (projectId: number) => {
@@ -194,7 +184,7 @@ export default function MyApplicationsPage() {
                         <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
                         <h2 className="text-xl font-semibold text-gray-900 mb-2">오류가 발생했습니다</h2>
                         <p className="text-gray-600 mb-4">{error}</p>
-                        <Button onClick={fetchApplications} variant="outline">
+                        <Button onClick={() => fetchApplications()} variant="outline">
                             다시 시도
                         </Button>
                     </div>
@@ -236,9 +226,11 @@ export default function MyApplicationsPage() {
                                         {/* 프로젝트 썸네일 */}
                                         <div className="flex-shrink-0">
                                             {application.project?.thumbnail ? (
-                                                <img
+                                                <Image
                                                     src={application.project.thumbnail}
                                                     alt={application.project?.title || '프로젝트'}
+                                                    width={128}
+                                                    height={96}
                                                     className="w-32 h-24 object-cover rounded-xl shadow-md"
                                                 />
                                             ) : (
@@ -305,7 +297,7 @@ export default function MyApplicationsPage() {
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
-                                                            onClick={() => handleViewProject(application.project.id)}
+                                                            onClick={() => application.project?.id && handleViewProject(application.project.id)}
                                                             className="flex items-center gap-2 hover:bg-blue-50 hover:border-blue-300"
                                                         >
                                                             <Eye className="w-4 h-4" />

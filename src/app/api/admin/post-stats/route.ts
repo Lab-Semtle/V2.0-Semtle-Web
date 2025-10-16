@@ -1,67 +1,49 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 
 // 관리자용 게시물 통계 조회
-export async function GET(request: NextRequest) {
+export async function GET() {
     try {
-        console.log('관리자 게시물 통계 API 시작');
         const supabase = await createServerSupabase();
 
         // 사용자 확인 (보안상 getUser 사용)
-        console.log('관리자 게시물 통계 API - 사용자 확인 시작');
         const { data: { user }, error: authError } = await supabase.auth.getUser();
-        console.log('관리자 게시물 통계 API - 사용자 결과:', { user: !!user, authError });
 
         if (!user || authError) {
-            console.log('관리자 게시물 통계 API - 인증 실패');
             return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
         }
 
         // 관리자 권한 확인
-        console.log('관리자 게시물 통계 API - 권한 확인 시작:', user.id);
-        const { data: userProfile, error: profileError } = await supabase
+        const { data: userProfile } = await supabase
             .from('user_profiles')
             .select('role')
             .eq('id', user.id)
             .single();
 
-        console.log('관리자 게시물 통계 API - 프로필 결과:', { userProfile, profileError });
-
         const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'super_admin';
         if (!isAdmin) {
-            console.log('관리자 게시물 통계 API - 관리자 권한 없음:', userProfile?.role);
             return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 });
         }
 
         // 각 게시판별 통계 조회
-        console.log('관리자 게시물 통계 API - 통계 조회 시작');
 
         // 프로젝트 통계
-        const { data: projectStats, error: projectError } = await supabase
+        const { data: projectStats } = await supabase
             .from('projects')
             .select('status, created_at')
             .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()); // 최근 30일
 
         // 자료실 통계
-        const { data: resourceStats, error: resourceError } = await supabase
+        const { data: resourceStats } = await supabase
             .from('resources')
             .select('status, created_at')
             .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()); // 최근 30일
 
         // 활동 통계
-        const { data: activityStats, error: activityError } = await supabase
+        const { data: activityStats } = await supabase
             .from('activities')
             .select('status, created_at')
             .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()); // 최근 30일
-
-        console.log('관리자 게시물 통계 API - 통계 조회 결과:', {
-            projectStats: projectStats?.length || 0,
-            resourceStats: resourceStats?.length || 0,
-            activityStats: activityStats?.length || 0,
-            projectError,
-            resourceError,
-            activityError
-        });
 
         // 통계 데이터 가공
         const stats = {
@@ -85,11 +67,8 @@ export async function GET(request: NextRequest) {
             }
         };
 
-        console.log('관리자 게시물 통계 API - 최종 결과:', stats);
-
         return NextResponse.json(stats);
-    } catch (error) {
-        console.error('관리자 게시물 통계 조회 서버 오류:', error);
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

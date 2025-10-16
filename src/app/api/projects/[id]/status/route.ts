@@ -1,68 +1,68 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
-    const supabase = await createServerSupabase();
+export async function PUT(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
     try {
-        const { status } = await request.json();
-        const projectId = await Promise.resolve(params.id); // await params
+        const supabase = await createServerSupabase();
+        const { id } = await params;
 
-        console.log('프로젝트 상태 변경 요청:', { projectId, status });
-
-        // 사용자 확인 (보안상 getUser 사용)
+        // 현재 사용자 확인
         const { data: { user }, error: authError } = await supabase.auth.getUser();
-        console.log('사용자 확인:', { user: !!user, error: authError });
-
-        if (!user || authError) {
-            console.log('인증 실패');
-            return NextResponse.json(
-                { error: '인증되지 않은 요청입니다.' },
-                { status: 401 }
-            );
+        if (authError || !user) {
+            return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
         }
 
-        // 사용자 프로필 확인
-        const { data: userProfile, error: profileError } = await supabase
-            .from('user_profiles')
-            .select('role')
-            .eq('id', user.id)
+        // 요청 본문에서 새로운 상태 가져오기
+        const { project_status } = await request.json();
+
+        if (!project_status) {
+            return NextResponse.json({ error: '프로젝트 상태가 필요합니다.' }, { status: 400 });
+        }
+
+        // 유효한 상태 값인지 확인
+        const validStatuses = ['recruiting', 'in_progress', 'completed', 'cancelled'];
+        if (!validStatuses.includes(project_status)) {
+            return NextResponse.json({ error: '유효하지 않은 프로젝트 상태입니다.' }, { status: 400 });
+        }
+
+        // 프로젝트가 존재하고 작성자인지 확인
+        const { data: project, error: projectError } = await supabase
+            .from('projects')
+            .select('id, author_id')
+            .eq('id', id)
             .single();
 
-        console.log('사용자 프로필 확인:', { userProfile, error: profileError });
+        if (projectError || !project) {
+            return NextResponse.json({ error: '프로젝트를 찾을 수 없습니다.' }, { status: 404 });
+        }
 
-        if (!userProfile || !['admin', 'super_admin'].includes(userProfile.role)) {
-            console.log('권한 없음:', userProfile?.role);
-            return NextResponse.json(
-                { error: '관리자 권한이 필요합니다.' },
-                { status: 403 }
-            );
+        if (project.author_id !== user.id) {
+            return NextResponse.json({ error: '프로젝트 작성자만 상태를 변경할 수 있습니다.' }, { status: 403 });
         }
 
         // 프로젝트 상태 업데이트
-        const { data, error: updateError } = await supabase
+        const { data: updatedProject, error: updateError } = await supabase
             .from('projects')
-            .update({ status })
-            .eq('id', projectId)
-            .select()
+            .update({ project_status })
+            .eq('id', id)
+            .select('id, project_status')
             .single();
 
-        console.log('프로젝트 업데이트:', { data, error: updateError });
-
         if (updateError) {
-            throw updateError;
+            console.error('프로젝트 상태 업데이트 오류:', updateError);
+            return NextResponse.json({ error: '프로젝트 상태 업데이트에 실패했습니다.' }, { status: 500 });
         }
 
         return NextResponse.json({
-            message: '프로젝트 상태가 성공적으로 변경되었습니다.',
-            project: data
+            success: true,
+            project: updatedProject
         });
 
     } catch (error) {
         console.error('프로젝트 상태 변경 오류:', error);
-        const errorMessage = error instanceof Error ? error.message : '프로젝트 상태 변경에 실패했습니다.';
-        return NextResponse.json(
-            { error: errorMessage },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

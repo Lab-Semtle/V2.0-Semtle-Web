@@ -1,5 +1,4 @@
 import React from 'react';
-import { Tag, Activity, Zap } from 'lucide-react';
 
 interface FilterButtonsProps {
     filters: string[];

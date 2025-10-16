@@ -4,12 +4,33 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import ResourcePostForm from '@/components/forms/ResourcePostForm';
+import { JSONContent } from 'novel';
+
+interface ResourcePostFormData {
+    title: string;
+    description: string;
+    category: string;
+    thumbnail: string;
+    status?: string;
+    subject?: string;
+    professor?: string;
+    semester?: string;
+    year?: number;
+    difficulty_level?: string;
+    files?: Array<{
+        url: string;
+        size: number;
+        name: string;
+        type: string;
+    }>;
+}
 
 interface ResourceData {
     id: number;
+    author_id: string;
     title: string;
     subtitle: string;
-    content: any;
+    content: Record<string, unknown>;
     thumbnail: string;
     category: {
         name: string;
@@ -58,7 +79,7 @@ export default function EditResourcePage({ params }: { params: Promise<{ id: str
                     alert('자료를 불러올 수 없습니다.');
                     router.push('/mypage');
                 }
-            } catch (error) {
+            } catch {
                 alert('자료를 불러오는 중 오류가 발생했습니다.');
                 router.push('/mypage');
             } finally {
@@ -71,7 +92,7 @@ export default function EditResourcePage({ params }: { params: Promise<{ id: str
         }
     }, [user, resolvedParams.id, router]);
 
-    const handleSave = async (formData: any, content: unknown) => {
+    const handleSave = async (formData: ResourcePostFormData, content: JSONContent) => {
         try {
             const response = await fetch(`/api/resources/${resolvedParams.id}`, {
                 method: 'PATCH',
@@ -90,7 +111,7 @@ export default function EditResourcePage({ params }: { params: Promise<{ id: str
                 throw new Error(errorData.error || '자료 수정에 실패했습니다.');
             }
 
-            const result = await response.json();
+            await response.json();
 
             if (formData.status === 'draft') {
                 alert('자료가 임시저장되었습니다!');
@@ -132,12 +153,10 @@ export default function EditResourcePage({ params }: { params: Promise<{ id: str
                 description: resource.subtitle,
                 category: resource.category?.name || '',
                 thumbnail: resource.thumbnail || '',
-                resource_type_id: resource.resource_type?.id,
                 subject: resource.subject || '',
                 professor: resource.professor || '',
                 semester: resource.semester || '',
                 year: resource.year,
-                difficulty_level: resource.difficulty_level || '',
                 status: resource.status
             }}
             initialContent={resource.content}

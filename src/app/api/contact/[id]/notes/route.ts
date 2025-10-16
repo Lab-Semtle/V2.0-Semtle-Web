@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const supabase = await createServerSupabase();
 
     try {
         const { notes } = await request.json();
-        const inquiryId = await Promise.resolve(params.id);
+        const resolvedParams = await params;
+        const inquiryId = resolvedParams.id;
 
         // 사용자 확인 (보안상 getUser 사용)
         const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -51,8 +52,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
             inquiry: data
         });
 
-    } catch (error) {
-        console.error('관리자 노트 저장 오류:', error);
+    } catch {
         return NextResponse.json(
             { error: '관리자 노트 저장에 실패했습니다.' },
             { status: 500 }

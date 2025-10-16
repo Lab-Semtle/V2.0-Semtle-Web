@@ -26,7 +26,6 @@ export async function GET(request: NextRequest) {
             .eq('status', 'published');
 
         if (countError) {
-            console.error('프로젝트 수 조회 오류:', countError);
             return NextResponse.json({ error: '프로젝트 수를 불러올 수 없습니다.' }, { status: 500 });
         }
 
@@ -52,17 +51,14 @@ export async function GET(request: NextRequest) {
             .range(offset, offset + limit - 1);
 
         if (projectsError) {
-            console.error('프로젝트 목록 조회 오류:', projectsError);
             return NextResponse.json({ error: '프로젝트 목록을 불러올 수 없습니다.' }, { status: 500 });
         }
 
-        console.log('내 프로젝트 목록:', myProjects?.length || 0, '개');
 
         // 각 프로젝트별 신청자 목록 조회
         const projectsWithApplications = await Promise.all(
             (myProjects || []).map(async (project) => {
                 try {
-                    console.log(`프로젝트 ${project.id} (${project.title}) 신청자 조회 시작`);
 
                     // 먼저 신청자 ID 목록을 가져옵니다
                     const { data: applications, error: applicationsError } = await supabase
@@ -72,7 +68,6 @@ export async function GET(request: NextRequest) {
                         .order('applied_at', { ascending: false });
 
                     if (applicationsError) {
-                        console.error(`프로젝트 ${project.id} 신청자 조회 오류:`, applicationsError);
                         return { ...project, applications: [] };
                     }
 
@@ -87,7 +82,6 @@ export async function GET(request: NextRequest) {
                             .in('id', applicantIds);
 
                         if (profilesError) {
-                            console.error(`프로젝트 ${project.id} 사용자 프로필 조회 오류:`, profilesError);
                             // 프로필 정보 없이도 신청 목록은 반환
                             applicationsWithProfiles = applications.map(app => ({
                                 ...app,
@@ -123,7 +117,6 @@ export async function GET(request: NextRequest) {
                         }
                     }
 
-                    console.log(`프로젝트 ${project.id} 신청자 조회 결과:`, applicationsWithProfiles.length, '명');
                     if (applicationsWithProfiles.length > 0) {
                         console.log('신청자 상세 정보:', applicationsWithProfiles.map(app => ({
                             id: app.id,
@@ -157,7 +150,7 @@ export async function GET(request: NextRequest) {
                 totalPages: Math.ceil((totalCount || 0) / limit)
             }
         });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

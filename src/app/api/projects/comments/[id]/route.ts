@@ -53,7 +53,7 @@ export async function PUT(
         }
 
         // 댓글 수정 (또는 소프트 삭제)
-        const updateData: any = {
+        const updateData: Record<string, unknown> = {
             content: content.trim(),
             updated_at: new Date().toISOString()
         };

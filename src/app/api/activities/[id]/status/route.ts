@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const supabase = await createServerSupabase();
     try {
         const { status } = await request.json();
-        const activityId = await Promise.resolve(params.id);
+        const resolvedParams = await params;
+        const activityId = resolvedParams.id;
 
         // 사용자 확인 (보안상 getUser 사용)
         const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -47,8 +48,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
             activity: data
         });
 
-    } catch (error) {
-        console.error('활동 상태 변경 오류:', error);
+    } catch {
         return NextResponse.json(
             { error: '활동 상태 변경에 실패했습니다.' },
             { status: 500 }

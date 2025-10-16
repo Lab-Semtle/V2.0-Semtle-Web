@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { ProjectCreateData } from '@/types/project';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -121,7 +120,7 @@ export async function GET(request: NextRequest) {
 
                 // 실제 승인된 팀원 수 계산 (작성자 + 승인된 신청자)
                 // project_team_members 테이블에서 프로젝트 작성자를 제외한 승인된 팀원 수
-                const { data: teamMembers } = await supabase
+                await supabase
                     .from('project_team_members')
                     .select('id, user_id')
                     .eq('project_id', project.id)
@@ -192,7 +191,7 @@ export async function GET(request: NextRequest) {
             categories: categoriesResult.data || [],
             types: typesResult.data || []
         });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -316,7 +315,7 @@ export async function POST(request: NextRequest) {
         };
 
         return NextResponse.json({ project: projectWithAuthor }, { status: 201 });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

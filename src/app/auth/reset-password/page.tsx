@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { supabase } from '@/lib/supabase/client';
 import { Eye, EyeOff, Lock, ArrowLeft, Check, AlertCircle } from 'lucide-react';
 
@@ -140,7 +139,7 @@ export default function ResetPasswordPage() {
 
         setLoading(true);
         try {
-            const { data, error: updateError } = await supabase.auth.updateUser({
+            const { error: updateError } = await supabase.auth.updateUser({
                 password: newPassword,
             });
 
@@ -153,7 +152,7 @@ export default function ResetPasswordPage() {
                     router.push('/settings');
                 }, 3000);
             }
-        } catch (err) {
+        } catch {
             setError('비밀번호 재설정 중 오류가 발생했습니다.');
         } finally {
             setLoading(false);

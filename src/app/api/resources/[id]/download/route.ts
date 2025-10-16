@@ -87,9 +87,9 @@ export async function GET(
 
         console.log('다운로드 기록 추가 시도:', downloadRecord);
 
-        supabase
+        Promise.resolve(supabase
             .from('resource_downloads')
-            .insert(downloadRecord)
+            .insert(downloadRecord))
             .then(({ data, error }) => {
                 if (error) {
                     console.error('다운로드 기록 추가 실패:', error);
@@ -106,11 +106,11 @@ export async function GET(
         const buffer = Buffer.from(arrayBuffer);
 
         // 다운로드 수 증가 (비동기) - 간단한 방법으로 수정
-        supabase
+        Promise.resolve(supabase
             .from('resources')
             .select('downloads_count')
             .eq('id', resourceId)
-            .single()
+            .single())
             .then(({ data: resourceData, error: selectError }) => {
                 if (selectError) {
                     console.error('다운로드 수 조회 오류:', selectError);
@@ -119,10 +119,10 @@ export async function GET(
                 if (resourceData) {
                     const newCount = (resourceData.downloads_count || 0) + 1;
                     console.log('다운로드 수 업데이트:', { resourceId, oldCount: resourceData.downloads_count, newCount });
-                    return supabase
+                    return Promise.resolve(supabase
                         .from('resources')
                         .update({ downloads_count: newCount })
-                        .eq('id', resourceId);
+                        .eq('id', resourceId));
                 }
             })
             .then((result) => {

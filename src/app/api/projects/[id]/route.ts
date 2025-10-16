@@ -110,7 +110,7 @@ export async function GET(
                 applicant_count: applicantCount
             }
         });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -184,7 +184,7 @@ export async function PATCH(
         }
 
         return NextResponse.json({ project: updatedProject });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -237,7 +237,7 @@ export async function DELETE(
         }
 
         return NextResponse.json({ message: '프로젝트가 삭제되었습니다.' });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

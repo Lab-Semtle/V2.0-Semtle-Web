@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: '잘못된 요청입니다.' }, { status: 400 });
         }
 
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

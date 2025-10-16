@@ -4,7 +4,6 @@ import { createServerSupabase } from '@/lib/supabase/server';
 // 관리자용 활동 목록 조회
 export async function GET(request: NextRequest) {
     try {
-        console.log('관리자 활동 API 시작');
         const supabase = await createServerSupabase();
 
         // 쿼리 파라미터 파싱
@@ -14,8 +13,6 @@ export async function GET(request: NextRequest) {
         const search = searchParams.get('search') || '';
         const status = searchParams.get('status') || 'all';
 
-        console.log('관리자 활동 API - 파라미터:', { page, limit, search, status });
-
         // 사용자 확인 (보안상 getUser 사용)
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -24,7 +21,7 @@ export async function GET(request: NextRequest) {
         }
 
         // 관리자 권한 확인
-        const { data: userProfile, error: profileError } = await supabase
+        const { data: userProfile } = await supabase
             .from('user_profiles')
             .select('role')
             .eq('id', user.id)
@@ -44,7 +41,6 @@ export async function GET(request: NextRequest) {
                 subtitle,
                 author_id,
                 status,
-                activity_status,
                 is_pinned,
                 is_featured,
                 views,
@@ -81,7 +77,6 @@ export async function GET(request: NextRequest) {
         const { data: activities, error, count } = await query;
 
         if (error) {
-            console.error('활동 조회 오류:', error);
             return NextResponse.json({ error: '활동을 조회하는데 실패했습니다.' }, { status: 500 });
         }
 
@@ -115,8 +110,7 @@ export async function GET(request: NextRequest) {
                 hasPrev: page > 1
             }
         });
-    } catch (error) {
-        console.error('관리자 활동 조회 서버 오류:', error);
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

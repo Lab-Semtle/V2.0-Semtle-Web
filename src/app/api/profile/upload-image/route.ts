@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         const filePath = `profile-images/${fileName}`;
 
         // Supabase Storage에 파일 업로드
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
             .from('avatars')
             .upload(filePath, file, {
                 cacheControl: '3600',
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
             message: '프로필 이미지가 업로드되었습니다.',
             imageUrl: publicUrl
         });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

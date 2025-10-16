@@ -140,7 +140,7 @@ export async function POST(
                 message: '좋아요가 추가되었습니다.'
             });
         }
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -174,7 +174,7 @@ export async function GET(
             .single();
 
         return NextResponse.json({ liked: !!like });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

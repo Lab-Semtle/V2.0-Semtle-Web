@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, FileText, Calendar, Shield, Users, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, FileText, Calendar, Shield, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function TermsPage() {
@@ -53,7 +53,7 @@ export default function TermsPage() {
                             </div>
                             <div className="pl-11">
                                 <p className="text-gray-700 leading-relaxed">
-                                    본 이용약관은 <strong className="text-gray-900">아치셈틀(이하 "학회")</strong>이 제공하는 서비스의 이용조건과 운영에 관한 사항을 규정하는 것을 목적으로 합니다.
+                                    본 이용약관은 <strong className="text-gray-900">아치셈틀(이하 &quot;학회&quot;)</strong>이 제공하는 서비스의 이용조건과 운영에 관한 사항을 규정하는 것을 목적으로 합니다.
                                 </p>
                             </div>
                         </section>
@@ -146,7 +146,7 @@ export default function TermsPage() {
                                         <span className="font-semibold text-gray-900">1.</span> 이용계약은 학회의 회원으로 가입하고자 하는 자가 본 약관 내용에 동의하고 가입 신청을 완료한 후, 학회의 승인을 받아 성립됩니다.
                                     </p>
                                     <p className="text-gray-700 leading-relaxed">
-                                        <span className="font-semibold text-gray-900">2.</span> 회원은 가입 신청 시 본 약관을 읽고 "동의합니다" 버튼을 선택함으로써 본 약관에 동의한 것으로 간주됩니다.
+                                        <span className="font-semibold text-gray-900">2.</span> 회원은 가입 신청 시 본 약관을 읽고 &quot;동의합니다&quot; 버튼을 선택함으로써 본 약관에 동의한 것으로 간주됩니다.
                                     </p>
                                 </div>
                             </div>

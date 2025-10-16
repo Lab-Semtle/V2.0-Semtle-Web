@@ -1,25 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-    User,
     Shield,
     Globe,
-    Eye,
-    EyeOff,
     Save,
     ArrowLeft,
     Settings,
     Mail,
-    Lock,
     Upload,
     X,
     Github,
@@ -87,7 +84,7 @@ export default function SettingsPage() {
                     ...prev,
                     privacy: { ...prev.privacy, ...privacy }
                 }));
-            } catch (error) {
+            } catch {
             }
         }
     }, [profile]);
@@ -152,7 +149,7 @@ export default function SettingsPage() {
                 const errorData = await response.json();
                 alert(`프로필 업데이트 실패: ${errorData.error || '알 수 없는 오류'}`);
             }
-        } catch (error) {
+        } catch {
             alert('오류가 발생했습니다.');
         }
     };
@@ -192,7 +189,7 @@ export default function SettingsPage() {
                     alert(errorData.error || '인증 코드 발송에 실패했습니다.');
                 }
             }
-        } catch (error) {
+        } catch {
             alert('오류가 발생했습니다.');
         } finally {
             setIsSendingCode(false);
@@ -242,7 +239,7 @@ export default function SettingsPage() {
                 const errorData = await response.json();
                 alert(`이미지 업로드 실패: ${errorData.error || '알 수 없는 오류'}\n${errorData.details ? `상세: ${errorData.details}` : ''}`);
             }
-        } catch (error) {
+        } catch {
             alert('오류가 발생했습니다.');
         } finally {
             setIsUploadingImage(false);
@@ -284,7 +281,7 @@ export default function SettingsPage() {
                 const errorData = await response.json();
                 alert(`이미지 제거 실패: ${errorData.error || '알 수 없는 오류'}`);
             }
-        } catch (error) {
+        } catch {
             alert('오류가 발생했습니다.');
         }
     };
@@ -310,8 +307,8 @@ export default function SettingsPage() {
             }
 
             alert('개인정보 설정이 저장되었습니다.');
-        } catch (error) {
-            alert(error instanceof Error ? error.message : '개인정보 설정 저장에 실패했습니다.');
+        } catch {
+            alert('개인정보 설정 저장에 실패했습니다.');
         }
     };
 
@@ -387,9 +384,11 @@ export default function SettingsPage() {
                                     <div className="flex items-center gap-6">
                                         <div className="relative">
                                             {formData.profile_image && !imageError ? (
-                                                <img
+                                                <Image
                                                     src={formData.profile_image}
                                                     alt="프로필 이미지"
+                                                    width={96}
+                                                    height={96}
                                                     className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
                                                     onLoad={() => setImageError(false)}
                                                     onError={() => setImageError(true)}

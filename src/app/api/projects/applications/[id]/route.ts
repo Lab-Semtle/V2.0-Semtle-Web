@@ -10,7 +10,7 @@ const supabaseAdmin = createClient(
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const supabase = await createServerSupabase();
@@ -21,7 +21,8 @@ export async function PUT(
             return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
         }
 
-        const applicationId = parseInt(params.id);
+        const resolvedParams = await params;
+        const applicationId = parseInt(resolvedParams.id);
         if (isNaN(applicationId)) {
             return NextResponse.json({ error: '유효하지 않은 신청 ID입니다.' }, { status: 400 });
         }
@@ -57,7 +58,7 @@ export async function PUT(
         }
 
         // 신청 상태 업데이트
-        const updateData: any = {
+        const updateData: Record<string, unknown> = {
             status,
             reviewed_at: new Date().toISOString(),
             reviewed_by: user.id

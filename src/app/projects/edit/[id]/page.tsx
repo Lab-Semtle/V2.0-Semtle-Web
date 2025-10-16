@@ -4,12 +4,32 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import ProjectPostForm from '@/components/forms/ProjectPostForm';
+import { JSONContent } from 'novel';
+
+interface ProjectPostFormData {
+    title: string;
+    description: string;
+    category: string;
+    thumbnail: string;
+    status?: string;
+    project_type_id?: number;
+    team_size?: number;
+    deadline?: string;
+    difficulty?: string;
+    location?: string;
+    project_status?: string;
+    project_goals?: string;
+    needed_skills?: string[];
+    tech_stack?: string[];
+    github_url?: string;
+    demo_url?: string;
+}
 
 interface ProjectData {
     id: number;
     title: string;
     subtitle: string;
-    content: any;
+    content: Record<string, unknown>;
     thumbnail: string;
     author_id: string;
     category: {
@@ -69,7 +89,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                     alert('프로젝트를 불러올 수 없습니다.');
                     router.push('/mypage');
                 }
-            } catch (error) {
+            } catch {
                 alert('프로젝트를 불러오는 중 오류가 발생했습니다.');
                 router.push('/mypage');
             } finally {
@@ -82,7 +102,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
         }
     }, [user, resolvedParams.id, router]);
 
-    const handleSave = async (formData: any, content: unknown) => {
+    const handleSave = async (formData: ProjectPostFormData, content: JSONContent) => {
         try {
             const response = await fetch(`/api/projects/${resolvedParams.id}`, {
                 method: 'PATCH',
@@ -102,7 +122,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                 throw new Error(errorData.error || '프로젝트 수정에 실패했습니다.');
             }
 
-            const result = await response.json();
+            await response.json();
 
             if (formData.status === 'draft') {
                 alert('프로젝트가 임시저장되었습니다!');
@@ -153,7 +173,6 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
                 difficulty: project.project_data?.difficulty || project.difficulty,
                 location: project.project_data?.location || project.location,
                 project_goals: project.project_data?.project_goals || project.project_goals || '',
-                project_status: project.project_data?.project_status || project.project_status || 'recruiting',
                 tech_stack: project.project_data?.tech_stack || project.tech_stack || [],
                 github_url: project.project_data?.github_url || project.github_url || '',
                 demo_url: project.project_data?.demo_url || project.demo_url || '',

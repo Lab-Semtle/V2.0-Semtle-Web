@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,10 +17,8 @@ import {
     AlertCircle,
     Eye,
     User,
-    ExternalLink,
     ChevronDown,
-    ChevronRight,
-    FileText
+    ChevronRight
 } from 'lucide-react';
 
 interface ProjectApplication {
@@ -202,7 +201,7 @@ export default function ProjectApplicationsPage() {
         router.push(`/projects/${projectId}`);
     };
 
-    const getProjectTypeColor = (projectType: any) => {
+    const getProjectTypeColor = (projectType: Record<string, unknown>) => {
         if (!projectType?.color) return '#3B82F6';
         return projectType.color;
     };
@@ -272,9 +271,11 @@ export default function ProjectApplicationsPage() {
                                         {/* 프로젝트 썸네일 */}
                                         <div className="flex-shrink-0">
                                             {project.thumbnail ? (
-                                                <img
+                                                <Image
                                                     src={project.thumbnail}
                                                     alt={project.title}
+                                                    width={128}
+                                                    height={96}
                                                     className="w-32 h-24 object-cover rounded-xl shadow-md"
                                                 />
                                             ) : (
@@ -310,13 +311,13 @@ export default function ProjectApplicationsPage() {
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-3 mb-2">
                                                         <h3 className="text-xl font-bold text-gray-900 truncate">{project.title}</h3>
-                                                        <Badge className={`px-3 py-1 ${project.applicant_count >= project.team_size
-                                                                ? 'bg-red-100 text-red-800'
-                                                                : project.applicant_count > 0
-                                                                    ? 'bg-yellow-100 text-yellow-800'
-                                                                    : 'bg-gray-100 text-gray-800'
+                                                        <Badge className={`px-3 py-1 ${project.applications.length >= project.team_size
+                                                            ? 'bg-red-100 text-red-800'
+                                                            : project.applications.length > 0
+                                                                ? 'bg-yellow-100 text-yellow-800'
+                                                                : 'bg-gray-100 text-gray-800'
                                                             }`}>
-                                                            대기중 {project.applicant_count}명
+                                                            대기중 {project.applications.length}명
                                                         </Badge>
                                                     </div>
 
@@ -383,17 +384,18 @@ export default function ProjectApplicationsPage() {
                                                                 <div key={application.id} className="bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-xl p-5 border border-gray-200/50">
                                                                     <div className="flex items-start justify-between mb-4">
                                                                         <div className="flex items-center gap-4">
-                                                                            {application.applicant?.profile_image ? (
-                                                                                <img
-                                                                                    src={application.applicant.profile_image}
-                                                                                    alt={application.applicant.nickname || '신청자'}
-                                                                                    className="w-12 h-12 rounded-full object-cover shadow-sm"
-                                                                                />
-                                                                            ) : (
-                                                                                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-sm">
+                                                                            <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-sm overflow-hidden">
+                                                                                {application.applicant?.profile_image ? (
+                                                                                    <Image
+                                                                                        src={application.applicant.profile_image}
+                                                                                        alt={application.applicant.nickname || '신청자'}
+                                                                                        fill
+                                                                                        className="object-cover rounded-full"
+                                                                                    />
+                                                                                ) : (
                                                                                     <User className="w-6 h-6 text-white" />
-                                                                                </div>
-                                                                            )}
+                                                                                )}
+                                                                            </div>
                                                                             <div>
                                                                                 <h4 className="font-bold text-gray-900 text-lg">
                                                                                     {application.applicant?.nickname || '알 수 없음'}

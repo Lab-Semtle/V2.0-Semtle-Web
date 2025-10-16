@@ -173,7 +173,7 @@ export default function RegisterPage() {
             } else {
                 setValidationErrors(prev => ({ ...prev, nickname: '' }));
             }
-        } catch (error) {
+        } catch {
             setNicknameAvailable(false);
             setValidationErrors(prev => ({ ...prev, nickname: '닉네임 확인 중 오류가 발생했습니다.' }));
         } finally {
@@ -384,7 +384,7 @@ export default function RegisterPage() {
                     }, 2000);
                 }
             }
-        } catch (error) {
+        } catch {
             setError('회원가입 중 오류가 발생했습니다.');
         } finally {
             setLoading(false);

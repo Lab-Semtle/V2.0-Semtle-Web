@@ -41,7 +41,7 @@ export async function GET() {
             }
         });
 
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { error: '서버 오류가 발생했습니다.' },
             { status: 500 }

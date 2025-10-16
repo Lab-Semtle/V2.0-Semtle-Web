@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { User } from '@supabase/supabase-js';
 import { UserProfile, UserProfileUpdate, UserRegistrationData } from '@/types/user';
@@ -30,27 +30,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string, retryCount = 0) => {
     try {
-      console.log('프로필 가져오기 시작:', userId);
-      
-      const promise = supabase
+      const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('id', userId)
         .single();
-      
-      console.log('Promise 생성됨:', promise);
-      
-      const { data, error } = await promise;
-
-      console.log('프로필 조회 결과:', { data, error });
 
       if (error) {
-        console.error('프로필 조회 에러:', error);
-        throw error;
+        // 재시도 로직 (최대 2번)
+        if (retryCount < 2) {
+          setTimeout(() => {
+            fetchProfile(userId, retryCount + 1);
+          }, 1000 * (retryCount + 1)); // 1초, 2초 간격으로 재시도
+          return;
+        }
+
+        // 최종 실패 시에도 사용자는 유지하고 프로필만 null로 설정
+        setProfile(null);
+        return;
       }
-      
+
       setProfile(data);
 
       if (data?.status === 'suspended') {
@@ -72,47 +73,92 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile({ ...data, status: 'active', suspended_until: null });
         }
       }
-    } catch (error) {
-      console.error('프로필 가져오기 실패:', error);
-      throw error;
+    } catch {
+      // 재시도 로직 (최대 2번)
+      if (retryCount < 2) {
+        setTimeout(() => {
+          fetchProfile(userId, retryCount + 1);
+        }, 1000 * (retryCount + 1));
+        return;
+      }
+
+      // 최종 실패 시에도 사용자는 유지
+      setProfile(null);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
+
     const getInitialSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          setUser(session.user);
-          await fetchProfile(session.user.id);
+        // 최대 5초 후에는 강제로 로딩 완료
+        timeoutId = setTimeout(() => {
+          if (isMounted) {
+            setLoading(false);
+          }
+        }, 5000);
+
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error) {
+          if (isMounted) {
+            setLoading(false);
+          }
+          return;
         }
-      } catch (error) {
-        console.error('세션 초기화 에러:', error);
+
+        if (session?.user && isMounted) {
+          setUser(session.user);
+          // 프로필 로딩은 비동기로 처리하되, 사용자 정보는 즉시 설정
+          fetchProfile(session.user.id).catch(() => {
+            // 프로필 로드 실패 시 무시
+          });
+        } else if (isMounted) {
+          // 세션이 없는 경우에도 로딩 완료
+          setUser(null);
+          setProfile(null);
+        }
+      } catch {
+        // 세션 초기화 에러 시 무시
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          clearTimeout(timeoutId);
+          setLoading(false);
+        }
       }
     };
 
     getInitialSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-      } else {
-        setProfile(null);
+      if (isMounted) {
+        setUser(session?.user ?? null);
+
+        if (session?.user) {
+          // 프로필 로딩은 비동기로 처리하되, 사용자 정보는 즉시 설정
+          fetchProfile(session.user.id).catch(() => {
+            // 프로필 로드 실패 시 무시
+          });
+        } else {
+          setProfile(null);
+        }
+
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchProfile]);
 
   const signUp = async (registrationData: UserRegistrationData) => {
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email: registrationData.email,
         password: registrationData.password,
         options: {
@@ -129,35 +175,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) return { error };
       return { error: null };
-    } catch (error) {
-      return { error: error as Error };
+    } catch (err) {
+      return { error: err as Error };
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
-      console.log('signIn 시작');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
-      console.log('signInWithPassword 결과:', { user: !!data.user, error });
-
       if (error) {
-        console.log('signIn 에러 반환:', error);
         return { error };
       }
       if (data.user) {
-        console.log('프로필 가져오기 호출 전');
         await fetchProfile(data.user.id);
-        console.log('프로필 가져오기 호출 후');
       }
-      console.log('signIn 성공 반환');
       return { error: null };
-    } catch (error) {
-      console.error('signIn 예외:', error);
-      return { error: error as Error };
+    } catch (err) {
+      return { error: err as Error };
     }
   };
 
@@ -168,8 +206,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error } = await supabase.auth.signOut();
       if (error) return { error };
       return { error: null };
-    } catch (error) {
-      return { error: error as Error };
+    } catch (err) {
+      return { error: err as Error };
     }
   };
 
@@ -187,14 +225,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) return { error };
       setProfile(data);
       return { error: null };
-    } catch (error) {
-      return { error: error as Error };
+    } catch (err) {
+      return { error: err as Error };
     }
   };
 
   const refreshProfile = async () => {
     if (user) {
-      await fetchProfile(user.id);
+      await fetchProfile(user.id, 0); // 재시도 로직 포함
     }
   };
 

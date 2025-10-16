@@ -13,10 +13,10 @@ import { ResourcePost } from '@/types/resource';
 
 export default function ResourcesPage() {
     const [resources, setResources] = useState<ResourcePost[]>([]);
-    const [categories, setCategories] = useState<any[]>([]);
-    const [types, setTypes] = useState<any[]>([]);
+    const [categories, setCategories] = useState<{ name: string }[]>([]);
+    const [availableYears, setAvailableYears] = useState<string[]>(["전체"]);
+    const [availableSemesters, setAvailableSemesters] = useState<string[]>(["전체", "1학기", "2학기", "여름학기", "겨울학기"]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [selectedCategory, setSelectedCategory] = useState("전체");
     const [selectedYear, setSelectedYear] = useState("전체");
     const [selectedSemester, setSelectedSemester] = useState("전체");
@@ -30,27 +30,40 @@ export default function ResourcesPage() {
         const fetchResources = async () => {
             try {
                 setLoading(true);
-                setError(null); // 이전 오류 상태 초기화
 
                 // 캐시 무효화를 위해 timestamp 추가
                 const response = await fetch(`/api/resources?t=${Date.now()}`);
                 const data = await response.json();
 
-                console.log('자료실 페이지 API 응답:', data);
-
                 if (!response.ok) {
-                    console.error('자료실 API 오류:', response.status, data);
                     // API 오류 시에도 빈 배열로 처리하여 정상 렌더링
                     setResources([]);
                 } else {
                     // 데이터가 없어도 정상적으로 처리
                     setResources(data.resources || []);
                     setCategories(data.categories || []);
-                    setTypes(data.types || []);
+
+                    // 실제 데이터에서 연도 추출
+                    const years: string[] = Array.from(new Set(
+                        (data.resources || [])
+                            .map((resource: ResourcePost) => resource.resource_data?.year)
+                            .filter((year: number | null) => year != null)
+                            .map((year: number) => year.toString())
+                            .sort((a: string, b: string) => parseInt(b) - parseInt(a)) // 최신 연도부터
+                    ));
+
+                    // 연도가 있으면 "전체"와 함께 표시, 없으면 "전체"만 표시
+                    setAvailableYears(years.length > 0 ? ["전체", ...years] : ["전체"]);
+
+                    // 학기는 하드코딩으로 고정
+                    setAvailableSemesters(["전체", "1학기", "2학기", "여름학기", "겨울학기"]);
                 }
-            } catch (err) {
+            } catch {
                 // 네트워크 오류 등도 빈 배열로 처리하여 정상 렌더링
                 setResources([]);
+                // 오류 시에도 기본값 설정
+                setAvailableYears(["전체"]);
+                setAvailableSemesters(["전체", "1학기", "2학기", "여름학기", "겨울학기"]);
             } finally {
                 setLoading(false);
             }
@@ -66,12 +79,12 @@ export default function ResourcesPage() {
 
     const filteredPosts = resources.filter(resource => {
         const matchesCategory = selectedCategory === "전체" || resource.category?.name === selectedCategory;
-        const matchesYear = selectedYear === "전체" || resource.year?.toString() === selectedYear;
-        const matchesSemester = selectedSemester === "전체" || resource.semester === selectedSemester;
+        const matchesYear = selectedYear === "전체" || resource.resource_data?.year?.toString() === selectedYear;
+        const matchesSemester = selectedSemester === "전체" || resource.resource_data?.semester === selectedSemester;
         const matchesSearch = resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (resource.subtitle && resource.subtitle.toLowerCase().includes(searchQuery.toLowerCase())) ||
-            (resource.subject && resource.subject.toLowerCase().includes(searchQuery.toLowerCase())) ||
-            (resource.professor && resource.professor.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            (resource.resource_data?.subject && resource.resource_data.subject.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            (resource.resource_data?.professor && resource.resource_data.professor.toLowerCase().includes(searchQuery.toLowerCase())) ||
             (resource.tags && resource.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())));
         return matchesCategory && matchesYear && matchesSemester && matchesSearch;
     });
@@ -87,10 +100,10 @@ export default function ResourcesPage() {
             return (b.likes_count || 0) - (a.likes_count || 0);
         }
         if (sortBy === "downloads") {
-            return (b.downloads_count || 0) - (a.downloads_count || 0);
+            return (b.resource_data?.downloads_count || 0) - (a.resource_data?.downloads_count || 0);
         }
         if (sortBy === "rating") {
-            return (b.rating || 0) - (a.rating || 0);
+            return (b.resource_data?.rating || 0) - (a.resource_data?.rating || 0);
         }
         return 0;
     });
@@ -184,7 +197,7 @@ export default function ResourcesPage() {
                                         <h3 className="text-sm font-semibold text-slate-700">연도</h3>
                                     </div>
                                     <FilterButtons
-                                        filters={["전체", "2024", "2023", "2022", "2021", "2020"]}
+                                        filters={availableYears}
                                         selectedFilter={selectedYear}
                                         onFilterChange={setSelectedYear}
                                         activeColor="green-500"
@@ -204,7 +217,7 @@ export default function ResourcesPage() {
                                         <h3 className="text-sm font-semibold text-slate-700">학기</h3>
                                     </div>
                                     <FilterButtons
-                                        filters={["전체", "1학기", "2학기", "여름학기", "겨울학기"]}
+                                        filters={availableSemesters}
                                         selectedFilter={selectedSemester}
                                         onFilterChange={setSelectedSemester}
                                         activeColor="orange-500"
@@ -253,7 +266,7 @@ export default function ResourcesPage() {
                     {pinnedPosts.length > 0 && (
                         <div className="mb-12">
                             <h2 className="text-2xl font-bold text-slate-900 mb-6">주요 자료</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
                                 {pinnedPosts.map(resource => (
                                     <ResourceCard key={resource.id} resource={resource} />
                                 ))}
@@ -287,7 +300,7 @@ export default function ResourcesPage() {
                             }
                         />
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
                             {currentItems.map(resource => (
                                 <ResourceCard key={resource.id} resource={resource} />
                             ))}

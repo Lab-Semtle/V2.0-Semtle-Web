@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const supabase = await createServerSupabase();
 
     try {
         const { suspendUntil } = await request.json();
-        const userId = await Promise.resolve(params.id);
+        const resolvedParams = await params;
+        const userId = resolvedParams.id;
 
         // 사용자 확인 (보안상 getUser 사용)
         const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -34,7 +35,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
         // 사용자 정지 처리
         const { data, error } = await supabase
             .from('user_profiles')
-            .update({ 
+            .update({
                 status: 'suspended',
                 suspended_until: suspendUntil,
                 suspended_at: new Date().toISOString()

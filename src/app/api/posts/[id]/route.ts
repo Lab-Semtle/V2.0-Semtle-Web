@@ -44,7 +44,7 @@ export async function GET(
             .eq('id', postId);
 
         return NextResponse.json({ post });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -139,7 +139,7 @@ export async function PUT(
         }
 
         return NextResponse.json({ post: updatedPost });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -203,7 +203,7 @@ export async function DELETE(
         }
 
         return NextResponse.json({ message: '게시물이 삭제되었습니다.' });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

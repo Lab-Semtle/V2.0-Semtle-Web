@@ -11,6 +11,11 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 # 주의: 이 키는 서버에서만 사용되며 클라이언트에 노출되면 안됩니다
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
 
+# Site URL Configuration
+# 프로덕션 환경에서는 실제 도메인을 입력하세요
+# 예: https://yourdomain.com
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
 # Supabase SMTP Configuration (권장)
 # 6. Supabase 대시보드 > Settings > Auth > SMTP Settings에서 설정
 # 7. Enable Custom SMTP를 활성화하고 이메일 서비스 설정

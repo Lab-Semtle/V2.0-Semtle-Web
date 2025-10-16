@@ -19,7 +19,7 @@ export async function GET() {
         }
 
         return NextResponse.json({ links });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
         }
 
         return NextResponse.json({ message: 'Footer 링크가 성공적으로 생성되었습니다.', data }, { status: 201 });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -55,7 +55,7 @@ export async function PATCH(request: Request) {
             return NextResponse.json({ error: '링크 ID가 필요합니다.' }, { status: 400 });
         }
 
-        const updateData: any = {};
+        const updateData: Record<string, unknown> = {};
         if (name !== undefined) updateData.name = name;
         if (url !== undefined) updateData.url = url;
         if (icon !== undefined) updateData.icon = icon;
@@ -75,7 +75,7 @@ export async function PATCH(request: Request) {
         }
 
         return NextResponse.json({ message: 'Footer 링크가 성공적으로 업데이트되었습니다.', data });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -99,7 +99,7 @@ export async function DELETE(request: Request) {
         }
 
         return NextResponse.json({ message: 'Footer 링크가 성공적으로 삭제되었습니다.' });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

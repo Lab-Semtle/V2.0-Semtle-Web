@@ -11,7 +11,7 @@ interface ProjectCardProps {
     views: number;
     likes: number;
     comments: number;
-    category: string;
+    category: Record<string, unknown>;
     status: string;
     difficulty: string;
     currentMembers: number;
@@ -43,16 +43,15 @@ export default function ProjectCard({
     isPinned,
     onClick
 }: ProjectCardProps) {
-    const getCategoryColor = (category: string) => {
-        const colors: { [key: string]: string } = {
-            "웹개발": "bg-blue-100 text-blue-800 border-blue-200",
-            "모바일": "bg-green-100 text-green-800 border-green-200",
-            "AI/ML": "bg-purple-100 text-purple-800 border-purple-200",
-            "게임": "bg-orange-100 text-orange-800 border-orange-200",
-            "데이터": "bg-pink-100 text-pink-800 border-pink-200",
-            "기타": "bg-gray-100 text-gray-800 border-gray-200"
-        };
-        return colors[category] || "bg-gray-100 text-gray-800 border-gray-200";
+    const getCategoryColor = (category: Record<string, unknown>) => {
+        // 데이터베이스에서 가져온 카테고리 정보가 있으면 사용
+        if (category?.color) {
+            const color = category.color as string;
+            return `bg-${color.replace('#', '')} text-white border-${color.replace('#', '')}`;
+        }
+
+        // fallback 색상
+        return "bg-gray-100 text-gray-800 border-gray-200";
     };
 
     const getStatusColor = (status: string) => {
@@ -74,16 +73,15 @@ export default function ProjectCard({
         return colors[difficulty] || "bg-gray-500";
     };
 
-    const getCategoryGradient = (category: string) => {
-        const gradients: { [key: string]: string } = {
-            "웹개발": "from-blue-500/20 via-indigo-500/20 to-purple-500/20",
-            "모바일": "from-green-500/20 via-emerald-500/20 to-teal-500/20",
-            "AI/ML": "from-purple-500/20 via-violet-500/20 to-fuchsia-500/20",
-            "게임": "from-orange-500/20 via-amber-500/20 to-yellow-500/20",
-            "데이터": "from-pink-500/20 via-rose-500/20 to-red-500/20",
-            "기타": "from-gray-500/20 via-slate-500/20 to-zinc-500/20"
-        };
-        return gradients[category] || "from-gray-500/20 via-slate-500/20 to-zinc-500/20";
+    const getCategoryGradient = (category: Record<string, unknown>) => {
+        // 데이터베이스에서 가져온 카테고리 정보가 있으면 사용
+        if (category?.color) {
+            const color = (category.color as string).replace('#', '');
+            return `from-${color}/20 via-${color}/30 to-${color}/40`;
+        }
+
+        // fallback 그라데이션
+        return "from-gray-500/20 via-slate-500/20 to-zinc-500/20";
     };
 
     return (
@@ -105,7 +103,7 @@ export default function ProjectCard({
                 {/* Category Badge */}
                 <div className="absolute top-4 left-4 z-10">
                     <div className={`rounded-2xl px-4 py-2 text-xs font-bold backdrop-blur-md border-0 shadow-xl transition-all duration-300 group-hover:scale-105 ${getCategoryColor(category)}`}>
-                        {category}
+                        {(category.name as string) || String(category)}
                     </div>
                 </div>
 

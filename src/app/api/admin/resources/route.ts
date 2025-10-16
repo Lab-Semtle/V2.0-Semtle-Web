@@ -4,7 +4,6 @@ import { createServerSupabase } from '@/lib/supabase/server';
 // 관리자용 자료실 목록 조회
 export async function GET(request: NextRequest) {
     try {
-        console.log('관리자 자료실 API 시작');
         const supabase = await createServerSupabase();
 
         // 쿼리 파라미터 파싱
@@ -14,36 +13,27 @@ export async function GET(request: NextRequest) {
         const search = searchParams.get('search') || '';
         const status = searchParams.get('status') || 'all';
 
-        console.log('관리자 자료실 API - 파라미터:', { page, limit, search, status });
 
         // 사용자 확인 (보안상 getUser 사용)
-        console.log('관리자 자료실 API - 사용자 확인 시작');
         const { data: { user }, error: authError } = await supabase.auth.getUser();
-        console.log('관리자 자료실 API - 사용자 결과:', { user: !!user, authError });
 
         if (authError || !user) {
-            console.log('관리자 자료실 API - 인증 실패:', authError);
             return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
         }
 
         // 관리자 권한 확인
-        console.log('관리자 자료실 API - 권한 확인 시작:', user.id);
-        const { data: userProfile, error: profileError } = await supabase
+        const { data: userProfile } = await supabase
             .from('user_profiles')
             .select('role')
             .eq('id', user.id)
             .single();
 
-        console.log('관리자 자료실 API - 프로필 결과:', { userProfile, profileError });
-
         const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'super_admin';
         if (!isAdmin) {
-            console.log('관리자 자료실 API - 관리자 권한 없음:', userProfile?.role);
             return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 });
         }
 
         // 자료실 목록 조회
-        console.log('관리자 자료실 API - 자료실 조회 시작');
         let query = supabase
             .from('resources')
             .select(`
@@ -87,29 +77,19 @@ export async function GET(request: NextRequest) {
 
         const { data: resources, error, count } = await query;
 
-        console.log('관리자 자료실 API - 자료실 조회 결과:', {
-            resourcesCount: resources?.length || 0,
-            totalCount: count,
-            error
-        });
+
 
         if (error) {
-            console.error('자료실 조회 오류:', error);
             return NextResponse.json({ error: '자료실을 조회하는데 실패했습니다.' }, { status: 500 });
         }
 
         // 작성자 정보를 별도로 조회
-        console.log('관리자 자료실 API - 작성자 정보 조회 시작');
         const authorIds = [...new Set(resources?.map(r => r.author_id) || [])];
-        const { data: authors, error: authorsError } = await supabase
+        const { data: authors } = await supabase
             .from('user_profiles')
             .select('id, nickname, profile_image')
             .in('id', authorIds);
 
-        console.log('관리자 자료실 API - 작성자 정보 조회 결과:', {
-            authorsCount: authors?.length || 0,
-            authorsError
-        });
 
         // 작성자 정보 매핑
         const resourcesWithAuthor = resources?.map(resource => {
@@ -123,13 +103,6 @@ export async function GET(request: NextRequest) {
             };
         }) || [];
 
-        console.log('관리자 자료실 API - 최종 결과:', {
-            totalResources: resourcesWithAuthor.length,
-            totalCount: count,
-            currentPage: page,
-            totalPages: Math.ceil((count || 0) / limit)
-        });
-
         return NextResponse.json({
             resources: resourcesWithAuthor,
             pagination: {
@@ -141,8 +114,7 @@ export async function GET(request: NextRequest) {
                 hasPrev: page > 1
             }
         });
-    } catch (error) {
-        console.error('관리자 자료실 조회 서버 오류:', error);
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

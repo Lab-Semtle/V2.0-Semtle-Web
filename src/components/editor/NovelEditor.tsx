@@ -74,7 +74,7 @@ const NovelEditor = ({
                         setTimeout(() => {
                             codeBlock.classList.remove('copied');
                         }, 1200);
-                    }).catch(err => {
+                    }).catch(() => {
                     });
                 }
             }
@@ -325,7 +325,8 @@ const NovelEditor = ({
                     key={editorKey}
                     data-testid="editor-content"
                     initialContent={propInitialContent || initialContent}
-                    extensions={extensions}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    extensions={extensions as unknown as any[]}
                     editable={editable}
                     immediatelyRender={false}
                     className={`relative min-h-[500px] w-full max-w-4xl bg-transparent sm:mb-[calc(20vh)] ${className}`}

@@ -48,6 +48,6 @@ export async function deleteVerificationCode(email: string): Promise<void> {
     try {
         const filePath = getFilePath(email);
         await unlink(filePath);
-    } catch (error) {
+    } catch {
     }
 }

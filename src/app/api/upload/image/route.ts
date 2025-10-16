@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
         const fileName = `${userId}/${timestamp}.${fileExt}`;
 
         // Supabase Storage에 업로드
-        const { data, error } = await supabase.storage
+        const { error } = await supabase.storage
             .from('projects')
             .upload(fileName, file, {
                 cacheControl: '3600',
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
             fileName: fileName
         });
 
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

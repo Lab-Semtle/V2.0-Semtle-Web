@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const supabase = await createServerSupabase();
     try {
-        const resourceId = await Promise.resolve(params.id);
+        const resolvedParams = await params;
+        const resourceId = resolvedParams.id;
 
         // 사용자 확인 (보안상 getUser 사용)
         const { data: { user }, error: authError } = await supabase.auth.getUser();

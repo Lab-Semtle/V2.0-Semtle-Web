@@ -4,11 +4,12 @@ import { createServerSupabase } from '@/lib/supabase/server';
 // 사용자 프로필 정보 조회
 export async function GET(
     request: NextRequest,
-    { params }: { params: { userId: string } }
+    { params }: { params: Promise<{ userId: string }> }
 ) {
     try {
         const supabase = await createServerSupabase();
-        const userId = params.userId;
+        const resolvedParams = await params;
+        const userId = resolvedParams.userId;
 
         // 사용자 프로필 조회
         const { data: profile, error: profileError } = await supabase
@@ -82,7 +83,7 @@ export async function GET(
                 stats
             }
         });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

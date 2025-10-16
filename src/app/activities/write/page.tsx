@@ -9,10 +9,8 @@ interface ActivityFormData {
   title: string;
   subtitle?: string;
   category_id: number;
-  activity_type_id: number;
   thumbnail?: string;
   status?: string;
-  activity_status?: string;
   location?: string;
   start_date?: string;
   end_date?: string;
@@ -20,6 +18,9 @@ interface ActivityFormData {
   participation_fee?: number;
   contact_info?: string;
   tags?: string[];
+  has_voting?: boolean;
+  vote_options?: { id: string; text: string; votes: number }[];
+  vote_deadline?: string;
 }
 
 export default function WriteActivityPage() {
@@ -44,8 +45,6 @@ export default function WriteActivityPage() {
         const errorData = await response.json();
         throw new Error(errorData.error || '활동 게시물 저장에 실패했습니다.');
       }
-
-      const result = await response.json();
 
       // 상태에 따라 다른 메시지 표시
       if (formData.status === 'draft') {

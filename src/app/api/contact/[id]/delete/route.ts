@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const supabase = await createServerSupabase();
 
     try {
-        const inquiryId = await Promise.resolve(params.id);
+        const resolvedParams = await params;
+        const inquiryId = resolvedParams.id;
 
         // 사용자 확인 (보안상 getUser 사용)
         const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -44,8 +45,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
             message: '문의가 성공적으로 삭제되었습니다.'
         });
 
-    } catch (error) {
-        console.error('문의 삭제 오류:', error);
+    } catch {
         return NextResponse.json(
             { error: '문의 삭제에 실패했습니다.' },
             { status: 500 }

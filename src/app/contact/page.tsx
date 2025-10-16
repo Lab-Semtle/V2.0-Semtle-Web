@@ -36,7 +36,7 @@ export default function ContactPage() {
                     const data = await response.json();
                     setRepresentativeAdmin(data.representativeAdmin);
                 }
-            } catch (error) {
+            } catch {
             }
         };
 

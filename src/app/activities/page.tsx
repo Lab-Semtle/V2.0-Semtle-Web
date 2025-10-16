@@ -14,10 +14,8 @@ import { ActivityPost } from '@/types/activity';
 
 export default function ActivitiesPage() {
     const [activities, setActivities] = useState<ActivityPost[]>([]);
-    const [categories, setCategories] = useState<any[]>([]);
-    const [types, setTypes] = useState<any[]>([]);
+    const [categories, setCategories] = useState<{ name: string }[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [selectedCategory, setSelectedCategory] = useState("전체");
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState("latest");
@@ -29,7 +27,6 @@ export default function ActivitiesPage() {
         const fetchActivities = async () => {
             try {
                 setLoading(true);
-                setError(null); // 이전 오류 상태 초기화
 
                 const response = await fetch('/api/activities');
                 const data = await response.json();
@@ -41,9 +38,8 @@ export default function ActivitiesPage() {
                     // 데이터가 없어도 정상적으로 처리
                     setActivities(data.activities || []);
                     setCategories(data.categories || []);
-                    setTypes(data.types || []);
                 }
-            } catch (err) {
+            } catch {
                 // 네트워크 오류 등도 빈 배열로 처리하여 정상 렌더링
                 setActivities([]);
             } finally {
@@ -67,7 +63,13 @@ export default function ActivitiesPage() {
             return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         }
         if (sortBy === "popular") {
-            return b.views - a.views;
+            return (b.views || 0) - (a.views || 0);
+        }
+        if (sortBy === "likes") {
+            return (b.likes_count || 0) - (a.likes_count || 0);
+        }
+        if (sortBy === "comments") {
+            return (b.comments_count || 0) - (a.comments_count || 0);
         }
         return 0;
     });
@@ -124,7 +126,7 @@ export default function ActivitiesPage() {
                         </div>
 
                         {/* Filter Buttons */}
-                        <div className="w-full">
+                        <div className="w-full flex justify-center">
                             <FilterButtons
                                 filters={["전체", ...categories.map(cat => cat.name)]}
                                 selectedFilter={selectedCategory}
@@ -144,7 +146,9 @@ export default function ActivitiesPage() {
                             <SortDropdown
                                 options={[
                                     { value: "latest", label: "최신순" },
-                                    { value: "popular", label: "인기순" }
+                                    { value: "popular", label: "조회순" },
+                                    { value: "likes", label: "좋아요순" },
+                                    { value: "comments", label: "댓글순" }
                                 ]}
                                 selectedValue={sortBy}
                                 onSortChange={setSortBy}
@@ -156,7 +160,7 @@ export default function ActivitiesPage() {
                     {pinnedPosts.length > 0 && (
                         <div className="mb-12">
                             <h2 className="text-2xl font-bold text-slate-900 mb-6">주요 활동</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
                                 {pinnedPosts.map(activity => (
                                     <ActivityCard key={activity.id} activity={activity} />
                                 ))}
@@ -188,7 +192,7 @@ export default function ActivitiesPage() {
                             }
                         />
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
                             {currentItems.map(activity => (
                                 <ActivityCard key={activity.id} activity={activity} />
                             ))}
@@ -196,15 +200,13 @@ export default function ActivitiesPage() {
                     )}
 
                     {/* Pagination */}
-                    {totalPages > 1 && (
-                        <div className="mt-12">
-                            <Pagination
-                                currentPage={currentPage}
-                                totalPages={totalPages}
-                                onPageChange={paginate}
-                            />
-                        </div>
-                    )}
+                    <div className="mt-12 mb-16">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={paginate}
+                        />
+                    </div>
                 </div>
             </main>
         </div>

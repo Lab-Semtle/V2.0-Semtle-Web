@@ -21,7 +21,6 @@ export async function GET(
             .select(`
                 *,
                 category:resource_categories(*),
-                resource_type:resource_types(id, name, description, icon, color, file_extensions, is_active, sort_order),
                 files:resource_files(*)
             `)
             .eq('id', resourceId)
@@ -86,7 +85,7 @@ export async function GET(
                 author: authorData
             }
         });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -144,7 +143,6 @@ export async function PATCH(
                 content: updateData.content || null,
                 thumbnail: updateData.thumbnail,
                 category_id,
-                resource_type_id: updateData.resource_type_id,
                 status: updateData.status === 'published' ? 'published' : 'draft',
                 subject: updateData.subject || '',
                 professor: updateData.professor || '',
@@ -168,7 +166,7 @@ export async function PATCH(
         }
 
         return NextResponse.json({ resource: updatedResource });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -215,7 +213,7 @@ export async function DELETE(
         }
 
         return NextResponse.json({ message: '자료가 삭제되었습니다.' });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 
 // 활동 목록 조회
-export async function GET(request: NextRequest) {
+export async function GET() {
     try {
         const supabase = await createServerSupabase();
 
@@ -11,8 +11,7 @@ export async function GET(request: NextRequest) {
             .from('activities')
             .select(`
                 *,
-                category:activity_categories(id, name, color, icon),
-                activity_type:activity_types(id, name, description, icon)
+                category:activity_categories(id, name, color, icon)
             `)
             .eq('status', 'published')
             .order('is_pinned', { ascending: false })
@@ -35,31 +34,21 @@ export async function GET(request: NextRequest) {
         }
 
         if (activitiesError) {
-            console.error('활동 조회 오류:', activitiesError);
             return NextResponse.json({ error: '활동을 조회하는데 실패했습니다.' }, { status: 500 });
         }
 
         // 카테고리 목록 조회
-        const { data: categories, error: categoriesError } = await supabase
+        const { data: categories } = await supabase
             .from('activity_categories')
-            .select('*')
-            .eq('is_active', true)
-            .order('sort_order');
-
-        // 활동 타입 목록 조회
-        const { data: types, error: typesError } = await supabase
-            .from('activity_types')
             .select('*')
             .eq('is_active', true)
             .order('sort_order');
 
         return NextResponse.json({
             activities: activities || [],
-            categories: categories || [],
-            types: types || []
+            categories: categories || []
         });
-    } catch (error) {
-        console.error('활동 조회 서버 오류:', error);
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -75,10 +64,8 @@ export async function POST(request: NextRequest) {
             subtitle,
             content,
             category_id,
-            activity_type_id,
             thumbnail,
             status = 'draft',
-            activity_status = 'upcoming',
             location,
             start_date,
             end_date,
@@ -86,7 +73,9 @@ export async function POST(request: NextRequest) {
             participation_fee,
             contact_info,
             tags,
-            author_id
+            has_voting,
+            vote_options,
+            vote_deadline
         } = body;
 
         // 사용자 확인 (보안상 getUser 사용)
@@ -120,10 +109,8 @@ export async function POST(request: NextRequest) {
                 subtitle,
                 content,
                 category_id,
-                activity_type_id,
                 thumbnail,
                 status,
-                activity_status,
                 location,
                 start_date,
                 end_date,
@@ -131,6 +118,9 @@ export async function POST(request: NextRequest) {
                 participation_fee: participation_fee || 0,
                 contact_info,
                 tags: tags || [],
+                has_voting: has_voting || false,
+                vote_options: vote_options || [],
+                vote_deadline,
                 author_id: user.id,
                 published_at: status === 'published' ? new Date().toISOString() : null
             })
@@ -138,7 +128,6 @@ export async function POST(request: NextRequest) {
             .single();
 
         if (activityError) {
-            console.error('활동 생성 오류:', activityError);
             throw activityError;
         }
 
@@ -147,8 +136,7 @@ export async function POST(request: NextRequest) {
             activity
         }, { status: 201 });
 
-    } catch (error) {
-        console.error('활동 생성 서버 오류:', error);
+    } catch {
         return NextResponse.json(
             { error: '활동 생성에 실패했습니다.' },
             { status: 500 }

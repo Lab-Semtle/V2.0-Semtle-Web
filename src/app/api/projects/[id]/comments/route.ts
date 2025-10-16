@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 
+interface Comment {
+    id: number;
+    user_id: string;
+    content: string;
+    created_at: string;
+    replies?: Comment[];
+}
+
 // 프로젝트 댓글 목록 조회
 export async function GET(
     request: NextRequest,
@@ -61,7 +69,7 @@ export async function GET(
         // 모든 댓글과 대댓글의 사용자 정보 조회
         const allCommentIds = [
             ...commentsWithReplies.map(c => c.user_id),
-            ...commentsWithReplies.flatMap(c => c.replies.map(r => r.user_id))
+            ...commentsWithReplies.flatMap(c => c.replies.map((r: Comment) => r.user_id))
         ];
         const uniqueUserIds = [...new Set(allCommentIds)];
 
@@ -78,7 +86,7 @@ export async function GET(
                 nickname: 'Unknown',
                 profile_image: null
             },
-            replies: comment.replies.map(reply => ({
+            replies: comment.replies.map((reply: Comment) => ({
                 ...reply,
                 user: users?.find(u => u.id === reply.user_id) || {
                     id: reply.user_id,

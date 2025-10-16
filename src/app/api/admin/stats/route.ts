@@ -1,16 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
     try {
-        console.log('관리자 시스템 통계 API 시작');
         const supabase = await createServerSupabase();
 
         // 사용자 확인 (보안상 getUser 사용)
         const { data: { user }, error: authError } = await supabase.auth.getUser();
-        
+
         if (!user || authError) {
-            console.log('관리자 시스템 통계 API - 인증 실패:', { user: !!user, authError });
             return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
         }
 
@@ -22,13 +20,11 @@ export async function GET(request: NextRequest) {
             .single();
 
         if (profileError || !userProfile) {
-            console.log('관리자 시스템 통계 API - 프로필 조회 실패:', profileError);
             return NextResponse.json({ error: '사용자 프로필을 찾을 수 없습니다.' }, { status: 401 });
         }
 
         const isAdmin = userProfile.role === 'admin' || userProfile.role === 'super_admin';
         if (!isAdmin) {
-            console.log('관리자 시스템 통계 API - 관리자 권한 없음:', userProfile.role);
             return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 });
         }
 
@@ -111,8 +107,7 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json(stats);
 
-    } catch (error) {
-        console.error('관리자 시스템 통계 서버 오류:', error);
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

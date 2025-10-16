@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
         }
 
         return NextResponse.json({ message: '카테고리가 성공적으로 생성되었습니다.', data }, { status: 201 });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -66,7 +66,7 @@ export async function PATCH(request: NextRequest) {
         }
 
         return NextResponse.json({ message: '카테고리가 성공적으로 수정되었습니다.', data });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
@@ -92,7 +92,7 @@ export async function DELETE(request: NextRequest) {
         }
 
         return NextResponse.json({ message: '카테고리가 성공적으로 삭제되었습니다.' });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

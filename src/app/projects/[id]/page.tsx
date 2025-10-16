@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import Navigation from '@/components/layout/Navigation';
 import NovelEditor from '@/components/editor/NovelEditor';
@@ -10,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useViewCount } from '@/hooks/useViewCount';
 import { ProjectPost } from '@/types/project';
 import { JSONContent } from 'novel';
-import { Heart, MessageCircle, Bookmark, Share, Users } from 'lucide-react';
+import { Heart, MessageCircle, Bookmark, Share } from 'lucide-react';
 
 export default function ProjectDetailPage() {
     const params = useParams();
@@ -21,7 +22,6 @@ export default function ProjectDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [hasApplied, setHasApplied] = useState(false);
-    const [isApplying, setIsApplying] = useState(false);
     const [showApplicationModal, setShowApplicationModal] = useState(false);
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [isBookmarking, setIsBookmarking] = useState(false);
@@ -32,24 +32,24 @@ export default function ProjectDetailPage() {
 
 
     // 조회수 훅
-    const { views, incrementView } = useViewCount({
+    const { views } = useViewCount({
         postType: 'project',
         postId: parseInt(id),
         initialViews: post?.views || 0
     });
 
     // 최신 좋아요 카운트만 가져오는 함수
-    const fetchLatestLikesCount = async () => {
+    const fetchLatestLikesCount = useCallback(async () => {
         try {
             const response = await fetch(`/api/projects/${id}`);
             const data = await response.json();
             if (response.ok && data.project) {
                 setPost(prev => prev ? { ...prev, likes_count: data.project.likes_count } : null);
             }
-        } catch (error) {
-            console.error('좋아요 카운트 업데이트 오류:', error);
+        } catch {
+
         }
-    };
+    }, [id]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -109,7 +109,7 @@ export default function ProjectDetailPage() {
     }, [id, authLoading, user]);
 
     // 프로젝트 데이터 새로고침 함수
-    const refreshProjectData = async () => {
+    const refreshProjectData = useCallback(async () => {
         try {
             const response = await fetch(`/api/projects/${id}?t=${Date.now()}`);
             const data = await response.json();
@@ -117,10 +117,10 @@ export default function ProjectDetailPage() {
             if (response.ok && data.project) {
                 setPost(data.project);
             }
-        } catch (error) {
-            console.error('프로젝트 데이터 새로고침 오류:', error);
+        } catch {
+
         }
-    };
+    }, [id]);
 
     // 페이지 포커스 시 최신 데이터 업데이트 (새로고침 효과)
     useEffect(() => {
@@ -134,7 +134,7 @@ export default function ProjectDetailPage() {
         return () => {
             window.removeEventListener('focus', handleFocus);
         };
-    }, [id]);
+    }, [id, fetchLatestLikesCount, refreshProjectData]);
 
     // 조회수는 useViewCount 훅에서 자동으로 처리됨 (세션당 1회)
 
@@ -187,7 +187,7 @@ export default function ProjectDetailPage() {
             }
 
             setIsBookmarked(data.isBookmarked);
-        } catch (error) {
+        } catch {
             alert('북마크 처리 중 오류가 발생했습니다.');
         } finally {
             setIsBookmarking(false);
@@ -216,17 +216,14 @@ export default function ProjectDetailPage() {
 
             if (response.ok) {
                 const data = await response.json();
-                console.log('좋아요 응답:', data);
                 setIsLiked(data.liked);
                 // 좋아요 수 업데이트
                 if (data.likes_count !== undefined) {
                     setPost(prev => prev ? { ...prev, likes_count: data.likes_count } : null);
                 }
             } else {
-                console.error('좋아요 응답:', response.status, response.statusText);
             }
-        } catch (error) {
-            console.error('좋아요 오류:', error);
+        } catch {
         } finally {
             setIsLiking(false);
         }
@@ -262,10 +259,8 @@ export default function ProjectDetailPage() {
                 const data = await response.json();
                 setIsFollowing(data.isFollowing);
             } else {
-                console.error('팔로우 응답:', response.status, response.statusText);
             }
-        } catch (error) {
-            console.error('팔로우 오류:', error);
+        } catch {
         } finally {
             setIsFollowingLoading(false);
         }
@@ -279,14 +274,14 @@ export default function ProjectDetailPage() {
                     text: post?.subtitle || '',
                     url: window.location.href,
                 });
-            } catch (error) {
+            } catch {
             }
         } else {
             // 클립보드에 URL 복사
             try {
                 await navigator.clipboard.writeText(window.location.href);
                 alert('링크가 클립보드에 복사되었습니다.');
-            } catch (error) {
+            } catch {
                 alert('링크 복사에 실패했습니다.');
             }
         }
@@ -294,23 +289,13 @@ export default function ProjectDetailPage() {
 
     // 프로젝트 타입별 기본 색상 가져오기
     const getProjectTypeColor = () => {
-        const projectType = (post as any)?.project_type;
+        const projectType = (post as unknown as Record<string, unknown>)?.project_type as Record<string, unknown>;
         if (projectType?.color) {
-            return projectType.color;
+            return projectType.color as string;
         }
 
-        // 기본 색상 매핑 (fallback)
-        const defaultColors: { [key: string]: string } = {
-            '개인프로젝트': '#3B82F6',
-            '팀프로젝트': '#10B981',
-            '해커톤': '#F59E0B',
-            '공모전': '#EC4899',
-            '연구프로젝트': '#8B5CF6',
-            '상업프로젝트': '#EF4444',
-            '오픈소스': '#6366F1'
-        };
-
-        return defaultColors[projectType?.name] || '#3B82F6';
+        // 기본 색상 (fallback)
+        return '#3B82F6';
     };
 
     if (loading) {
@@ -357,12 +342,14 @@ export default function ProjectDetailPage() {
                 <div className="max-w-5xl mx-auto relative">
                     {/* 프로젝트 대표 이미지 */}
                     <div className="mb-8">
-                        <div className="aspect-video w-full rounded-2xl overflow-hidden shadow-xl bg-gradient-to-br from-gray-50 to-gray-100">
+                        <div className="relative aspect-video w-full rounded-2xl overflow-hidden shadow-xl bg-gradient-to-br from-gray-50 to-gray-100">
                             {post.thumbnail ? (
-                                <img
+                                <Image
                                     src={post.thumbnail}
                                     alt={post.title}
-                                    className="w-full h-full object-cover"
+                                    fill
+                                    className="object-cover"
+                                    priority
                                 />
                             ) : (
                                 <div
@@ -409,13 +396,14 @@ export default function ProjectDetailPage() {
                                         <div className="flex items-center gap-2">
                                             <div
                                                 onClick={() => window.location.href = `/profile/${post.author?.nickname}`}
-                                                className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform duration-200"
+                                                className="relative w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform duration-200 overflow-hidden"
                                             >
                                                 {post.author.profile_image ? (
-                                                    <img
+                                                    <Image
                                                         src={post.author.profile_image}
                                                         alt={post.author.nickname}
-                                                        className="w-full h-full object-cover rounded-full"
+                                                        fill
+                                                        className="object-cover rounded-full"
                                                     />
                                                 ) : (
                                                     <span className="text-white text-sm font-bold">
@@ -529,18 +517,13 @@ export default function ProjectDetailPage() {
                                         <div className="mt-4 flex justify-center">
                                             <button
                                                 onClick={handleApply}
-                                                disabled={isApplying || hasApplied || !user || user.id === post.author_id}
+                                                disabled={hasApplied || !user || user.id === post.author_id}
                                                 className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-200 shadow-lg hover:shadow-xl ${!user || user.id === post.author_id || hasApplied
                                                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                                     : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white hover:-translate-y-1'
                                                     }`}
                                             >
-                                                {isApplying ? (
-                                                    <div className="flex items-center justify-center gap-2">
-                                                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                                                        신청 중...
-                                                    </div>
-                                                ) : hasApplied ? (
+                                                {hasApplied ? (
                                                     '신청 완료'
                                                 ) : (
                                                     '프로젝트 신청하기'
@@ -688,10 +671,9 @@ export default function ProjectDetailPage() {
                                     <div className="text-lg font-semibold text-gray-900">
                                         {post.project_data.project_status === 'recruiting' ? '모집중' :
                                             post.project_data.project_status === 'active' ? '진행중' :
-                                                post.project_data.project_status === 'in_progress' ? '진행중' :
-                                                    post.project_data.project_status === 'completed' ? '완료' :
-                                                        post.project_data.project_status === 'cancelled' ? '취소됨' :
-                                                            post.project_data.project_status}
+                                                post.project_data.project_status === 'completed' ? '완료' :
+                                                    post.project_data.project_status === 'cancelled' ? '취소됨' :
+                                                        post.project_data.project_status}
                                     </div>
                                 </div>
                             </div>
@@ -756,8 +738,6 @@ export default function ProjectDetailPage() {
                             <NovelEditor
                                 initialContent={post.content as JSONContent | null | undefined}
                                 editable={false}
-                                showToolbar={false}
-                                showStatus={false}
                                 className="!min-h-0"
                             />
                         </div>
@@ -818,7 +798,7 @@ export default function ProjectDetailPage() {
                                 new Date(post.project_data.deadline) > new Date() && (
                                     <button
                                         onClick={handleApply}
-                                        disabled={isApplying || hasApplied || !user || user.id === post.author_id}
+                                        disabled={hasApplied || !user || user.id === post.author_id}
                                         className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${!user || user.id === post.author_id || hasApplied
                                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                             : 'bg-blue-500 hover:bg-blue-600 text-white'

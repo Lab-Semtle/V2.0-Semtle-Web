@@ -45,7 +45,7 @@ function VerifyEmailForm() {
             } else {
                 setResendMessage(`오류: ${data.error}`);
             }
-        } catch (error) {
+        } catch {
             setResendMessage('이메일 재전송 중 오류가 발생했습니다.');
         } finally {
             setIsResending(false);

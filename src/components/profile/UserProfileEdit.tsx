@@ -86,7 +86,7 @@ export default function UserProfileEdit({ profile, onSave, onCancel }: UserProfi
         setLoading(true);
         try {
             await onSave(formData);
-        } catch (error) {
+        } catch {
         } finally {
             setLoading(false);
         }

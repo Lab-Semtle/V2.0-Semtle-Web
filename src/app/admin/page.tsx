@@ -1,14 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import {
-    Users, Shield, Settings, AlertTriangle, CheckCircle, XCircle,
-    FileText, BookOpen, Activity, BarChart3, Database,
-    MessageSquare, Heart, Bookmark, TrendingUp, Eye, Mail, Phone, Clock, Edit3, Trash2,
-    Link, Plus, ExternalLink, Github, Instagram, Youtube, Facebook, Twitter, Linkedin,
-    Twitch, Globe, Calendar, MapPin, ChevronDown, ChevronUp, FolderOpen
+    Users, Shield, FileText, Activity, BarChart3, Mail, Calendar, FolderOpen, X
 } from 'lucide-react';
 import ContactManagement from '@/components/admin/ContactManagement';
 
@@ -109,7 +106,6 @@ interface Activity {
         profile_image?: string;
     };
     status: 'published' | 'draft' | 'private';
-    activity_status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
     is_pinned: boolean;
     is_featured: boolean;
     views: number;
@@ -124,18 +120,31 @@ interface Activity {
     updated_at: string;
 }
 
+interface Participant {
+    id: string;
+    user_id: string;
+    status: string;
+    joined_at: string;
+    notes?: string;
+    user_profiles?: {
+        id: string;
+        nickname: string;
+        name: string;
+        profile_image?: string;
+        student_id?: string;
+        major?: string;
+        grade?: string;
+    };
+}
+
 export default function AdminPage() {
     const { user, profile, isAdmin } = useAuth();
     const router = useRouter();
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'contact' | 'activities' | 'projects' | 'resources'>('overview');
 
     // 사용자 관리 상태
     const [users, setUsers] = useState<User[]>([]);
-    const [selectedUser, setSelectedUser] = useState<User | null>(null);
-    const [showRoleModal, setShowRoleModal] = useState(false);
-    const [newRole, setNewRole] = useState<'member' | 'admin' | 'super_admin'>('member');
 
     // 시스템 통계 상태
     const [systemStats, setSystemStats] = useState<SystemStats | null>(null);
@@ -186,6 +195,128 @@ export default function AdminPage() {
         hasPrev: false
     });
 
+    // 참가자 관리 상태
+    const [showParticipantsModal, setShowParticipantsModal] = useState(false);
+    const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
+    const [participants, setParticipants] = useState<Participant[]>([]);
+    const [participantsLoading, setParticipantsLoading] = useState(false);
+
+    const fetchUsers = useCallback(async () => {
+        try {
+            const response = await fetch('/api/admin/users');
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`사용자 목록을 가져오는데 실패했습니다. (${response.status}: ${errorData.error || response.statusText})`);
+            }
+
+            const data = await response.json();
+            setUsers(data.users || []);
+        } catch {
+            // 오류가 발생해도 빈 배열로 설정
+            setUsers([]);
+        }
+    }, []);
+
+    const fetchSystemStats = useCallback(async () => {
+        try {
+            const response = await fetch('/api/admin/stats');
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`시스템 통계를 가져오는데 실패했습니다. (${response.status}: ${errorData.error || response.statusText})`);
+            }
+
+            const data = await response.json();
+
+            // 데이터 유효성 검사
+            if (!data || typeof data !== 'object') {
+                throw new Error('서버에서 잘못된 데이터를 반환했습니다.');
+            }
+
+            setSystemStats(data);
+        } catch {
+            // 오류가 발생해도 기본값으로 설정
+            setSystemStats({
+                totalUsers: 0,
+                totalAdmins: 0,
+                totalProjects: 0,
+                totalResources: 0,
+                totalActivities: 0,
+                totalLikes: 0,
+                totalBookmarks: 0
+            });
+        }
+    }, []);
+
+    const fetchPostStats = useCallback(async () => {
+        try {
+            const response = await fetch('/api/admin/post-stats');
+
+            if (!response.ok) {
+                const errorData = await response.json();
+
+                throw new Error(`게시물 통계를 가져오는데 실패했습니다. (${response.status}: ${errorData.error || response.statusText})`);
+            }
+
+            const data = await response.json();
+            setPostStats(data);
+        } catch {
+            // 게시물 통계 가져오기 오류 시 무시
+        }
+    }, []);
+
+    const fetchProjects = useCallback(async (page: number = projectPage, search: string = projectSearch, status: string = projectFilter) => {
+        try {
+            setProjectsLoading(true);
+
+            const params = new URLSearchParams({
+                page: page.toString(),
+                limit: '10',
+                ...(search && { search }),
+                ...(status !== 'all' && { status })
+            });
+
+            const response = await fetch(`/api/admin/projects?${params}`);
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`프로젝트를 가져오는데 실패했습니다. (${response.status}: ${errorData.error || response.statusText})`);
+            }
+
+            const data = await response.json();
+            setProjects(data.projects || []);
+            setProjectPagination(data.pagination || {
+                page: 1,
+                limit: 10,
+                total: 0,
+                totalPages: 0,
+                hasNext: false,
+                hasPrev: false
+            });
+        } catch {
+            // 프로젝트 가져오기 오류 시 무시
+        } finally {
+            setProjectsLoading(false);
+        }
+    }, [projectPage, projectSearch, projectFilter]);
+
+    const fetchAllData = useCallback(async () => {
+        try {
+            setLoading(true);
+            await Promise.all([
+                fetchUsers(),
+                fetchSystemStats(),
+                fetchPostStats(),
+                fetchProjects()
+            ]);
+        } catch {
+            // 데이터 로딩 오류 시 무시
+        } finally {
+            setLoading(false);
+        }
+    }, [fetchUsers, fetchSystemStats, fetchPostStats, fetchProjects]);
+
     // 관리자 권한 확인
     useEffect(() => {
         if (!user) {
@@ -200,114 +331,11 @@ export default function AdminPage() {
 
         fetchAllData();
         setLoading(false);
-    }, [user, isAdmin, router]);
+    }, [user, isAdmin, router, fetchAllData]);
 
-    const fetchAllData = async () => {
+    const fetchActivities = useCallback(async (page: number = activityPage, search: string = activitySearch, status: string = activityFilter) => {
         try {
-            setLoading(true);
-            await Promise.all([
-                fetchUsers(),
-                fetchSystemStats(),
-                fetchPostStats(),
-                fetchProjects()
-            ]);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : '데이터 로딩 중 오류가 발생했습니다.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // 활동 탭 활성화 시 데이터 로드
-    useEffect(() => {
-        if (activeTab === 'activities' && activities.length === 0) {
-            fetchActivities();
-        }
-    }, [activeTab]);
-
-    const fetchUsers = async () => {
-        try {
-            console.log('관리자 페이지 - 사용자 목록 조회 시작');
-            const response = await fetch('/api/admin/users');
-            console.log('관리자 페이지 - 사용자 목록 API 응답:', response.status, response.statusText);
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                console.error('관리자 페이지 - 사용자 목록 API 오류:', errorData);
-                throw new Error(`사용자 목록을 가져오는데 실패했습니다. (${response.status}: ${errorData.error || response.statusText})`);
-            }
-
-            const data = await response.json();
-            console.log('관리자 페이지 - 사용자 목록 데이터:', data);
-            setUsers(data.users || []);
-        } catch (error) {
-            console.error('사용자 가져오기 오류:', error);
-            // 오류가 발생해도 빈 배열로 설정
-            setUsers([]);
-        }
-    };
-
-    const fetchSystemStats = async () => {
-        try {
-            console.log('관리자 페이지 - 시스템 통계 조회 시작');
-            const response = await fetch('/api/admin/stats');
-            console.log('관리자 페이지 - 시스템 통계 API 응답:', response.status, response.statusText);
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                console.error('관리자 페이지 - 시스템 통계 API 오류:', errorData);
-                throw new Error(`시스템 통계를 가져오는데 실패했습니다. (${response.status}: ${errorData.error || response.statusText})`);
-            }
-
-            const data = await response.json();
-            console.log('관리자 페이지 - 시스템 통계 데이터:', data);
-
-            // 데이터 유효성 검사
-            if (!data || typeof data !== 'object') {
-                console.error('관리자 페이지 - 잘못된 데이터 형식:', data);
-                throw new Error('서버에서 잘못된 데이터를 반환했습니다.');
-            }
-
-            setSystemStats(data);
-        } catch (error) {
-            console.error('시스템 통계 가져오기 오류:', error);
-            // 오류가 발생해도 기본값으로 설정
-            setSystemStats({
-                totalUsers: 0,
-                totalAdmins: 0,
-                totalProjects: 0,
-                totalResources: 0,
-                totalActivities: 0,
-                totalLikes: 0,
-                totalBookmarks: 0
-            });
-        }
-    };
-
-    const fetchPostStats = async () => {
-        try {
-            console.log('관리자 페이지 - 게시물 통계 조회 시작');
-            const response = await fetch('/api/admin/post-stats');
-            console.log('관리자 페이지 - 게시물 통계 API 응답:', response.status, response.statusText);
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                console.error('관리자 페이지 - 게시물 통계 API 오류:', errorData);
-                throw new Error(`게시물 통계를 가져오는데 실패했습니다. (${response.status}: ${errorData.error || response.statusText})`);
-            }
-
-            const data = await response.json();
-            console.log('관리자 페이지 - 게시물 통계 데이터:', data);
-            setPostStats(data);
-        } catch (error) {
-            console.error('게시물 통계 가져오기 오류:', error);
-        }
-    };
-
-    const fetchProjects = async (page: number = projectPage, search: string = projectSearch, status: string = projectFilter) => {
-        try {
-            setProjectsLoading(true);
-            console.log('관리자 페이지 - 프로젝트 조회 시작:', { page, search, status });
+            setActivitiesLoading(true);
 
             const params = new URLSearchParams({
                 page: page.toString(),
@@ -316,19 +344,15 @@ export default function AdminPage() {
                 ...(status !== 'all' && { status })
             });
 
-            const response = await fetch(`/api/admin/projects?${params}`);
-            console.log('관리자 페이지 - 프로젝트 API 응답:', response.status, response.statusText);
+            const response = await fetch(`/api/admin/activities?${params}`);
 
             if (!response.ok) {
-                const errorData = await response.json();
-                console.error('관리자 페이지 - 프로젝트 API 오류:', errorData);
-                throw new Error(`프로젝트를 가져오는데 실패했습니다. (${response.status}: ${errorData.error || response.statusText})`);
+                throw new Error('활동을 가져오는데 실패했습니다.');
             }
 
             const data = await response.json();
-            console.log('관리자 페이지 - 프로젝트 데이터:', data);
-            setProjects(data.projects || []);
-            setProjectPagination(data.pagination || {
+            setActivities(data.activities || []);
+            setActivityPagination(data.pagination || {
                 page: 1,
                 limit: 10,
                 total: 0,
@@ -336,13 +360,69 @@ export default function AdminPage() {
                 hasNext: false,
                 hasPrev: false
             });
-        } catch (error) {
-            console.error('프로젝트 가져오기 오류:', error);
-            setError(`프로젝트를 가져오는데 실패했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+        } catch {
+            // 활동 가져오기 오류 시 무시
         } finally {
-            setProjectsLoading(false);
+            setActivitiesLoading(false);
         }
-    };
+    }, [activityPage, activitySearch, activityFilter]);
+
+    // 활동 탭 활성화 시 데이터 로드
+    useEffect(() => {
+        if (activeTab === 'activities' && activities.length === 0) {
+            fetchActivities();
+        }
+    }, [activeTab, activities.length, fetchActivities]);
+
+    const fetchResources = useCallback(async (page: number = resourcePage, search: string = resourceSearch, status: string = resourceFilter) => {
+        try {
+            setResourcesLoading(true);
+
+            const params = new URLSearchParams({
+                page: page.toString(),
+                limit: '10',
+                ...(search && { search }),
+                ...(status !== 'all' && { status })
+            });
+
+            const response = await fetch(`/api/admin/resources?${params}`);
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`자료실을 가져오는데 실패했습니다. (${response.status}: ${errorData.error || response.statusText})`);
+            }
+
+            const data = await response.json();
+            setResources(data.resources || []);
+            setResourcePagination(data.pagination || {
+                page: 1,
+                limit: 10,
+                total: 0,
+                totalPages: 0,
+                hasNext: false,
+                hasPrev: false
+            });
+        } catch {
+            // 자료실 가져오기 오류 시 무시
+        } finally {
+            setResourcesLoading(false);
+        }
+    }, [resourcePage, resourceSearch, resourceFilter]);
+
+    // 자료실 탭 활성화 시 데이터 로드
+    useEffect(() => {
+        if (activeTab === 'resources' && resources.length === 0) {
+            fetchResources();
+        }
+    }, [activeTab, resources.length, fetchResources]);
+
+    // 프로젝트 탭 활성화 시 데이터 로드
+    useEffect(() => {
+        if (activeTab === 'projects' && projects.length === 0) {
+            fetchProjects();
+        }
+    }, [activeTab, projects.length, fetchProjects]);
+
 
     const handleProjectSearch = (search: string) => {
         setProjectSearch(search);
@@ -387,8 +467,7 @@ export default function AdminPage() {
             );
 
             alert(result.message);
-        } catch (error) {
-            console.error('프로젝트 고정 오류:', error);
+        } catch {
             alert('프로젝트 고정 상태 변경에 실패했습니다.');
         }
     };
@@ -399,8 +478,6 @@ export default function AdminPage() {
                 return;
             }
 
-            console.log('상태 변경 요청:', { projectId, status });
-
             const response = await fetch(`/api/projects/${projectId}/status`, {
                 method: 'POST',
                 headers: {
@@ -410,7 +487,6 @@ export default function AdminPage() {
             });
 
             const result = await response.json();
-            console.log('상태 변경 응답:', result);
 
             if (!response.ok) {
                 throw new Error(result.error || '프로젝트 상태 변경에 실패했습니다.');
@@ -426,9 +502,8 @@ export default function AdminPage() {
             );
 
             alert(result.message);
-        } catch (error) {
-            console.error('프로젝트 상태 변경 오류:', error);
-            alert(error instanceof Error ? error.message : '프로젝트 상태 변경에 실패했습니다.');
+        } catch {
+            alert('프로젝트 상태 변경에 실패했습니다.');
         }
     };
 
@@ -462,9 +537,8 @@ export default function AdminPage() {
             );
 
             alert(result.message);
-        } catch (error) {
-            console.error('사용자 권한 변경 오류:', error);
-            alert(error instanceof Error ? error.message : '사용자 권한 변경에 실패했습니다.');
+        } catch {
+            alert('사용자 권한 변경에 실패했습니다.');
         }
     };
 
@@ -512,9 +586,8 @@ export default function AdminPage() {
             );
 
             alert(result.message);
-        } catch (error) {
-            console.error('사용자 상태 변경 오류:', error);
-            alert(error instanceof Error ? error.message : '사용자 상태 변경에 실패했습니다.');
+        } catch {
+            alert('사용자 상태 변경에 실패했습니다.');
         }
     };
 
@@ -538,52 +611,11 @@ export default function AdminPage() {
             setProjects(prev => prev.filter(project => project.id !== projectId));
 
             alert(result.message);
-        } catch (error) {
-            console.error('프로젝트 삭제 오류:', error);
+        } catch {
             alert('프로젝트 삭제에 실패했습니다.');
         }
     };
 
-    // 자료실 관리 함수들
-    const fetchResources = async (page: number = resourcePage, search: string = resourceSearch, status: string = resourceFilter) => {
-        try {
-            setResourcesLoading(true);
-            console.log('관리자 페이지 - 자료실 조회 시작:', { page, search, status });
-
-            const params = new URLSearchParams({
-                page: page.toString(),
-                limit: '10',
-                ...(search && { search }),
-                ...(status !== 'all' && { status })
-            });
-
-            const response = await fetch(`/api/admin/resources?${params}`);
-            console.log('관리자 페이지 - 자료실 API 응답:', response.status, response.statusText);
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                console.error('관리자 페이지 - 자료실 API 오류:', errorData);
-                throw new Error(`자료실을 가져오는데 실패했습니다. (${response.status}: ${errorData.error || response.statusText})`);
-            }
-
-            const data = await response.json();
-            console.log('관리자 페이지 - 자료실 데이터:', data);
-            setResources(data.resources || []);
-            setResourcePagination(data.pagination || {
-                page: 1,
-                limit: 10,
-                total: 0,
-                totalPages: 0,
-                hasNext: false,
-                hasPrev: false
-            });
-        } catch (error) {
-            console.error('자료실 가져오기 오류:', error);
-            setError(`자료실을 가져오는데 실패했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
-        } finally {
-            setResourcesLoading(false);
-        }
-    };
 
     const handleResourceSearch = (search: string) => {
         setResourceSearch(search);
@@ -628,8 +660,7 @@ export default function AdminPage() {
             );
 
             alert(result.message);
-        } catch (error) {
-            console.error('자료 고정 오류:', error);
+        } catch {
             alert('자료 고정 상태 변경에 실패했습니다.');
         }
     };
@@ -664,9 +695,8 @@ export default function AdminPage() {
             );
 
             alert(result.message);
-        } catch (error) {
-            console.error('자료 상태 변경 오류:', error);
-            alert(error instanceof Error ? error.message : '자료 상태 변경에 실패했습니다.');
+        } catch {
+            alert('자료 상태 변경에 실패했습니다.');
         }
     };
 
@@ -690,47 +720,11 @@ export default function AdminPage() {
             setResources(prev => prev.filter(resource => resource.id !== resourceId));
 
             alert(result.message);
-        } catch (error) {
-            console.error('자료 삭제 오류:', error);
+        } catch {
             alert('자료 삭제에 실패했습니다.');
         }
     };
 
-    // 활동 관리 함수들
-    const fetchActivities = async (page: number = activityPage, search: string = activitySearch, status: string = activityFilter) => {
-        try {
-            setActivitiesLoading(true);
-
-            const params = new URLSearchParams({
-                page: page.toString(),
-                limit: '10',
-                ...(search && { search }),
-                ...(status !== 'all' && { status })
-            });
-
-            const response = await fetch(`/api/admin/activities?${params}`);
-
-            if (!response.ok) {
-                throw new Error('활동을 가져오는데 실패했습니다.');
-            }
-
-            const data = await response.json();
-            setActivities(data.activities || []);
-            setActivityPagination(data.pagination || {
-                page: 1,
-                limit: 10,
-                total: 0,
-                totalPages: 0,
-                hasNext: false,
-                hasPrev: false
-            });
-        } catch (error) {
-            console.error('활동 가져오기 오류:', error);
-            setError(`활동을 가져오는데 실패했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
-        } finally {
-            setActivitiesLoading(false);
-        }
-    };
 
     const handleActivitySearch = (search: string) => {
         setActivitySearch(search);
@@ -774,8 +768,7 @@ export default function AdminPage() {
             );
 
             alert(result.message);
-        } catch (error) {
-            console.error('활동 고정 오류:', error);
+        } catch {
             alert('활동 고정 상태 변경에 실패했습니다.');
         }
     };
@@ -809,9 +802,8 @@ export default function AdminPage() {
             );
 
             alert(result.message);
-        } catch (error) {
-            console.error('활동 상태 변경 오류:', error);
-            alert(error instanceof Error ? error.message : '활동 상태 변경에 실패했습니다.');
+        } catch {
+            alert('활동 상태 변경에 실패했습니다.');
         }
     };
 
@@ -834,10 +826,37 @@ export default function AdminPage() {
             setActivities(prev => prev.filter(activity => activity.id !== activityId));
 
             alert(result.message);
-        } catch (error) {
-            console.error('활동 삭제 오류:', error);
+        } catch {
             alert('활동 삭제에 실패했습니다.');
         }
+    };
+
+    // 참가자 관리 함수들
+    const fetchParticipants = async (activityId: number) => {
+        try {
+            setParticipantsLoading(true);
+            const response = await fetch(`/api/activities/${activityId}/participants`);
+
+            if (!response.ok) {
+                const result = await response.json();
+                throw new Error(result.error || '참가자 목록을 가져오는데 실패했습니다.');
+            }
+
+            const data = await response.json();
+            setParticipants(data.participants || []);
+        } catch {
+            // 오류가 발생해도 빈 배열로 설정하여 UI가 깨지지 않도록 함
+            setParticipants([]);
+            // 알림창 제거 - 참가자가 0명인 경우는 정상적인 상태
+        } finally {
+            setParticipantsLoading(false);
+        }
+    };
+
+    const handleShowParticipants = (activity: Activity) => {
+        setSelectedActivity(activity);
+        setShowParticipantsModal(true);
+        fetchParticipants(activity.id);
     };
 
     if (loading) {
@@ -856,14 +875,14 @@ export default function AdminPage() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-32">
                 {/* 헤더 */}
                 <div className="mb-10">
-                        <div className="flex items-center justify-between">
-                            <div>
+                    <div className="flex items-center justify-between">
+                        <div>
                             <h1 className="text-3xl font-semibold text-gray-900 mb-1">
-                                    아치셈틀 공홈 관리
-                                </h1>
+                                아치셈틀 공홈 관리
+                            </h1>
                             <p className="text-gray-500">시스템 관리 및 모니터링 대시보드</p>
-                            </div>
-                            <div className="hidden md:flex items-center space-x-4">
+                        </div>
+                        <div className="hidden md:flex items-center space-x-4">
                             <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
                                 <Shield className="w-5 h-5 text-white" />
                             </div>
@@ -874,74 +893,68 @@ export default function AdminPage() {
                 {/* 모바일/태블릿 탭 네비게이션 */}
                 <div className="mb-8 lg:hidden">
                     <nav className="flex flex-wrap gap-2 bg-white p-4 rounded-lg border border-gray-200">
-                                <button
-                                    onClick={() => setActiveTab('overview')}
-                            className={`flex items-center gap-2 py-2 px-3 text-sm font-medium rounded-md ${
-                                activeTab === 'overview'
-                                    ? 'bg-blue-50 text-blue-700'
-                                    : 'text-gray-600 hover:bg-gray-50'
-                            }`}
+                        <button
+                            onClick={() => setActiveTab('overview')}
+                            className={`flex items-center gap-2 py-2 px-3 text-sm font-medium rounded-md ${activeTab === 'overview'
+                                ? 'bg-blue-50 text-blue-700'
+                                : 'text-gray-600 hover:bg-gray-50'
+                                }`}
                         >
                             <BarChart3 className="w-4 h-4" />
-                                    개요
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('users')}
-                            className={`flex items-center gap-2 py-2 px-3 text-sm font-medium rounded-md ${
-                                activeTab === 'users'
-                                    ? 'bg-blue-50 text-blue-700'
-                                    : 'text-gray-600 hover:bg-gray-50'
-                            }`}
+                            개요
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('users')}
+                            className={`flex items-center gap-2 py-2 px-3 text-sm font-medium rounded-md ${activeTab === 'users'
+                                ? 'bg-blue-50 text-blue-700'
+                                : 'text-gray-600 hover:bg-gray-50'
+                                }`}
                         >
                             <Users className="w-4 h-4" />
-                                    사용자
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('contact')}
-                            className={`flex items-center gap-2 py-2 px-3 text-sm font-medium rounded-md ${
-                                activeTab === 'contact'
-                                    ? 'bg-blue-50 text-blue-700'
-                                    : 'text-gray-600 hover:bg-gray-50'
-                            }`}
+                            사용자
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('contact')}
+                            className={`flex items-center gap-2 py-2 px-3 text-sm font-medium rounded-md ${activeTab === 'contact'
+                                ? 'bg-blue-50 text-blue-700'
+                                : 'text-gray-600 hover:bg-gray-50'
+                                }`}
                         >
                             <Mail className="w-4 h-4" />
-                                    문의
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('activities')}
-                            className={`flex items-center gap-2 py-2 px-3 text-sm font-medium rounded-md ${
-                                activeTab === 'activities'
-                                    ? 'bg-blue-50 text-blue-700'
-                                    : 'text-gray-600 hover:bg-gray-50'
-                            }`}
+                            문의
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('activities')}
+                            className={`flex items-center gap-2 py-2 px-3 text-sm font-medium rounded-md ${activeTab === 'activities'
+                                ? 'bg-blue-50 text-blue-700'
+                                : 'text-gray-600 hover:bg-gray-50'
+                                }`}
                         >
                             <Calendar className="w-4 h-4" />
-                                    활동
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('projects')}
-                            className={`flex items-center gap-2 py-2 px-3 text-sm font-medium rounded-md ${
-                                activeTab === 'projects'
-                                    ? 'bg-blue-50 text-blue-700'
-                                    : 'text-gray-600 hover:bg-gray-50'
-                            }`}
+                            활동
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('projects')}
+                            className={`flex items-center gap-2 py-2 px-3 text-sm font-medium rounded-md ${activeTab === 'projects'
+                                ? 'bg-blue-50 text-blue-700'
+                                : 'text-gray-600 hover:bg-gray-50'
+                                }`}
                         >
                             <FolderOpen className="w-4 h-4" />
-                                    프로젝트
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('resources')}
-                            className={`flex items-center gap-2 py-2 px-3 text-sm font-medium rounded-md ${
-                                activeTab === 'resources'
-                                    ? 'bg-blue-50 text-blue-700'
-                                    : 'text-gray-600 hover:bg-gray-50'
-                            }`}
+                            프로젝트
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('resources')}
+                            className={`flex items-center gap-2 py-2 px-3 text-sm font-medium rounded-md ${activeTab === 'resources'
+                                ? 'bg-blue-50 text-blue-700'
+                                : 'text-gray-600 hover:bg-gray-50'
+                                }`}
                         >
                             <FileText className="w-4 h-4" />
-                                    자료실
-                                </button>
-                        </nav>
-                    </div>
+                            자료실
+                        </button>
+                    </nav>
+                </div>
 
                 <div className="flex flex-col lg:flex-row gap-6">
                     {/* 데스크톱 사이드바 */}
@@ -949,66 +962,60 @@ export default function AdminPage() {
                         <nav className="space-y-1">
                             <button
                                 onClick={() => setActiveTab('overview')}
-                                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                                    activeTab === 'overview'
-                                        ? 'bg-blue-50 text-blue-700'
-                                        : 'text-gray-600 hover:bg-gray-50'
-                                }`}
+                                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'overview'
+                                    ? 'bg-blue-50 text-blue-700'
+                                    : 'text-gray-600 hover:bg-gray-50'
+                                    }`}
                             >
                                 <BarChart3 className="w-5 h-5 mr-3" />
                                 개요
                             </button>
                             <button
                                 onClick={() => setActiveTab('users')}
-                                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                                    activeTab === 'users'
-                                        ? 'bg-blue-50 text-blue-700'
-                                        : 'text-gray-600 hover:bg-gray-50'
-                                }`}
+                                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'users'
+                                    ? 'bg-blue-50 text-blue-700'
+                                    : 'text-gray-600 hover:bg-gray-50'
+                                    }`}
                             >
                                 <Users className="w-5 h-5 mr-3" />
                                 사용자 관리
                             </button>
                             <button
                                 onClick={() => setActiveTab('contact')}
-                                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                                    activeTab === 'contact'
-                                        ? 'bg-blue-50 text-blue-700'
-                                        : 'text-gray-600 hover:bg-gray-50'
-                                }`}
+                                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'contact'
+                                    ? 'bg-blue-50 text-blue-700'
+                                    : 'text-gray-600 hover:bg-gray-50'
+                                    }`}
                             >
                                 <Mail className="w-5 h-5 mr-3" />
                                 문의 관리
                             </button>
                             <button
                                 onClick={() => setActiveTab('activities')}
-                                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                                    activeTab === 'activities'
-                                        ? 'bg-blue-50 text-blue-700'
-                                        : 'text-gray-600 hover:bg-gray-50'
-                                }`}
+                                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'activities'
+                                    ? 'bg-blue-50 text-blue-700'
+                                    : 'text-gray-600 hover:bg-gray-50'
+                                    }`}
                             >
                                 <Calendar className="w-5 h-5 mr-3" />
                                 활동게시판 관리
                             </button>
                             <button
                                 onClick={() => setActiveTab('projects')}
-                                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                                    activeTab === 'projects'
-                                        ? 'bg-blue-50 text-blue-700'
-                                        : 'text-gray-600 hover:bg-gray-50'
-                                }`}
+                                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'projects'
+                                    ? 'bg-blue-50 text-blue-700'
+                                    : 'text-gray-600 hover:bg-gray-50'
+                                    }`}
                             >
                                 <FolderOpen className="w-5 h-5 mr-3" />
                                 프로젝트 관리
                             </button>
                             <button
                                 onClick={() => setActiveTab('resources')}
-                                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                                    activeTab === 'resources'
-                                        ? 'bg-blue-50 text-blue-700'
-                                        : 'text-gray-600 hover:bg-gray-50'
-                                }`}
+                                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'resources'
+                                    ? 'bg-blue-50 text-blue-700'
+                                    : 'text-gray-600 hover:bg-gray-50'
+                                    }`}
                             >
                                 <FileText className="w-5 h-5 mr-3" />
                                 자료실 관리
@@ -1044,34 +1051,34 @@ export default function AdminPage() {
                                                     <div className="w-8 h-8 bg-blue-50 rounded-md flex items-center justify-center mr-3">
                                                         <Users className="h-4 w-4 text-blue-600" />
                                                     </div>
-                                                <div>
+                                                    <div>
                                                         <p className="text-sm font-medium text-gray-500">총 사용자</p>
                                                         <p className="text-2xl font-semibold text-gray-900">{systemStats?.totalUsers || 0}</p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
 
                                             <div className="bg-white rounded-lg border border-gray-200 p-4">
                                                 <div className="flex items-center">
                                                     <div className="w-8 h-8 bg-green-50 rounded-md flex items-center justify-center mr-3">
                                                         <Shield className="h-4 w-4 text-green-600" />
                                                     </div>
-                                                <div>
+                                                    <div>
                                                         <p className="text-sm font-medium text-gray-500">관리자</p>
                                                         <p className="text-2xl font-semibold text-gray-900">{systemStats?.totalAdmins || 0}</p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
 
                                             <div className="bg-white rounded-lg border border-gray-200 p-4">
                                                 <div className="flex items-center">
                                                     <div className="w-8 h-8 bg-purple-50 rounded-md flex items-center justify-center mr-3">
                                                         <FileText className="h-4 w-4 text-purple-600" />
                                                     </div>
-                                                <div>
+                                                    <div>
                                                         <p className="text-sm font-medium text-gray-500">총 게시물</p>
                                                         <p className="text-2xl font-semibold text-gray-900">{(systemStats?.totalProjects || 0) + (systemStats?.totalResources || 0) + (systemStats?.totalActivities || 0)}</p>
-                                                </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -1083,20 +1090,20 @@ export default function AdminPage() {
                                             <div className="mb-4">
                                                 <h2 className="text-base font-medium text-gray-900">게시물 통계</h2>
                                                 <p className="mt-1 text-sm text-gray-500">카테고리별 상세 현황</p>
-                                                    </div>
+                                            </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                                                 <div className="bg-white rounded-lg border border-gray-200 p-4">
                                                     <div className="flex items-center mb-4">
                                                         <div className="w-8 h-8 bg-blue-50 rounded-md flex items-center justify-center mr-3">
                                                             <FolderOpen className="h-4 w-4 text-blue-600" />
-                                                    </div>
+                                                        </div>
                                                         <h3 className="text-sm font-medium text-gray-900">프로젝트</h3>
-                                                </div>
+                                                    </div>
                                                     <div className="space-y-3">
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-sm text-gray-500">총 게시물</span>
                                                             <span className="text-sm font-medium text-gray-900">{postStats.projects.total || 0}</span>
-                                            </div>
+                                                        </div>
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-sm text-gray-500">발행됨</span>
                                                             <span className="text-sm font-medium text-green-600">{postStats.projects.published || 0}</span>
@@ -1104,9 +1111,9 @@ export default function AdminPage() {
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-sm text-gray-500">임시저장</span>
                                                             <span className="text-sm font-medium text-orange-600">{postStats.projects.drafts || 0}</span>
-                                                            </div>
                                                         </div>
                                                     </div>
+                                                </div>
 
                                                 <div className="bg-white rounded-lg border border-gray-200 p-4">
                                                     <div className="flex items-center mb-4">
@@ -1114,12 +1121,12 @@ export default function AdminPage() {
                                                             <FileText className="h-4 w-4 text-green-600" />
                                                         </div>
                                                         <h3 className="text-sm font-medium text-gray-900">자료실</h3>
-                                                            </div>
+                                                    </div>
                                                     <div className="space-y-3">
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-sm text-gray-500">총 게시물</span>
                                                             <span className="text-sm font-medium text-gray-900">{postStats.resources.total || 0}</span>
-                                                            </div>
+                                                        </div>
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-sm text-gray-500">발행됨</span>
                                                             <span className="text-sm font-medium text-green-600">{postStats.resources.published || 0}</span>
@@ -1128,8 +1135,8 @@ export default function AdminPage() {
                                                             <span className="text-sm text-gray-500">임시저장</span>
                                                             <span className="text-sm font-medium text-orange-600">{postStats.resources.drafts || 0}</span>
                                                         </div>
-                                                        </div>
                                                     </div>
+                                                </div>
 
                                                 <div className="bg-white rounded-lg border border-gray-200 p-4">
                                                     <div className="flex items-center mb-4">
@@ -1137,12 +1144,12 @@ export default function AdminPage() {
                                                             <Calendar className="h-4 w-4 text-purple-600" />
                                                         </div>
                                                         <h3 className="text-sm font-medium text-gray-900">활동</h3>
-                                                            </div>
+                                                    </div>
                                                     <div className="space-y-3">
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-sm text-gray-500">총 게시물</span>
                                                             <span className="text-sm font-medium text-gray-900">{postStats.activities.total || 0}</span>
-                                                            </div>
+                                                        </div>
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-sm text-gray-500">발행됨</span>
                                                             <span className="text-sm font-medium text-green-600">{postStats.activities.published || 0}</span>
@@ -1164,11 +1171,11 @@ export default function AdminPage() {
                                     <div className="p-4 sm:p-6 border-b border-gray-200">
                                         <h2 className="text-base font-medium text-gray-900">사용자 관리</h2>
                                         <p className="mt-1 text-sm text-gray-500">전체 사용자 목록과 권한을 관리합니다</p>
-                                        </div>
-                                    
+                                    </div>
+
                                     {/* 데스크톱 테이블 뷰 */}
                                     <div className="hidden lg:block overflow-x-auto">
-                                                <table className="min-w-full divide-y divide-gray-200">
+                                        <table className="min-w-full divide-y divide-gray-200">
                                             <thead>
                                                 <tr>
                                                     <th scope="col" className="py-3.5 pl-6 pr-3 text-left text-sm font-medium text-gray-900">사용자</th>
@@ -1178,51 +1185,49 @@ export default function AdminPage() {
                                                     <th scope="col" className="relative py-3.5 pl-3 pr-6">
                                                         <span className="sr-only">액션</span>
                                                     </th>
-                                                        </tr>
-                                                    </thead>
+                                                </tr>
+                                            </thead>
                                             <tbody className="divide-y divide-gray-200">
-                                                        {users.map((user) => (
-                                                            <tr key={user.id}>
+                                                {users.map((user) => (
+                                                    <tr key={user.id}>
                                                         <td className="whitespace-nowrap py-4 pl-6 pr-3">
                                                             <div className="flex items-center gap-3">
                                                                 <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
                                                                     <span className="text-sm font-medium text-gray-600">
-                                                                                    {user.nickname.charAt(0).toUpperCase()}
-                                                                                </span>
-                                                                            </div>
+                                                                        {user.nickname.charAt(0).toUpperCase()}
+                                                                    </span>
+                                                                </div>
                                                                 <div>
-                                                                            <div className="text-sm font-medium text-gray-900">{user.nickname}</div>
-                                                                            <div className="text-sm text-gray-500">{user.email}</div>
-                                                                        </div>
-                                                                    </div>
-                                                                </td>
+                                                                    <div className="text-sm font-medium text-gray-900">{user.nickname}</div>
+                                                                    <div className="text-sm text-gray-500">{user.email}</div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
                                                         <td className="whitespace-nowrap px-3 py-4">
-                                                            <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${
-                                                                user.role === 'super_admin' 
-                                                                    ? 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20' 
-                                                                    : user.role === 'admin' 
-                                                                        ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
-                                                                        : 'bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/20'
-                                                                        }`}>
-                                                                        {user.role === 'super_admin' ? '슈퍼 관리자' :
-                                                                            user.role === 'admin' ? '관리자' : '일반 사용자'}
-                                                                    </span>
-                                                                </td>
+                                                            <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${user.role === 'super_admin'
+                                                                ? 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
+                                                                : user.role === 'admin'
+                                                                    ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
+                                                                    : 'bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/20'
+                                                                }`}>
+                                                                {user.role === 'super_admin' ? '슈퍼 관리자' :
+                                                                    user.role === 'admin' ? '관리자' : '일반 사용자'}
+                                                            </span>
+                                                        </td>
                                                         <td className="whitespace-nowrap px-3 py-4">
-                                                            <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${
-                                                                user.status === 'active'
-                                                                    ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20'
-                                                                    : user.status === 'suspended'
-                                                                        ? 'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20'
-                                                                        : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
-                                                                        }`}>
-                                                                        {user.status === 'active' ? '활성' :
-                                                                            user.status === 'suspended' ? '정지' : '차단'}
-                                                                    </span>
-                                                                </td>
+                                                            <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${user.status === 'active'
+                                                                ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20'
+                                                                : user.status === 'suspended'
+                                                                    ? 'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20'
+                                                                    : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
+                                                                }`}>
+                                                                {user.status === 'active' ? '활성' :
+                                                                    user.status === 'suspended' ? '정지' : '차단'}
+                                                            </span>
+                                                        </td>
                                                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                                    {new Date(user.created_at).toLocaleDateString()}
-                                                                </td>
+                                                            {new Date(user.created_at).toLocaleDateString()}
+                                                        </td>
                                                         <td className="whitespace-nowrap py-4 pl-3 pr-6 text-right text-sm">
                                                             <div className="flex items-center gap-2">
                                                                 {profile?.role === 'super_admin' && user.role !== 'super_admin' && (
@@ -1245,12 +1250,12 @@ export default function AdminPage() {
                                                                     <option value="banned">차단 (영구 제재)</option>
                                                                 </select>
                                                             </div>
-                                                                </td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
 
                                     {/* 모바일 카드 뷰 */}
                                     <div className="lg:hidden p-4 space-y-4">
@@ -1261,36 +1266,34 @@ export default function AdminPage() {
                                                         <span className="text-sm font-medium text-gray-600">
                                                             {user.nickname.charAt(0).toUpperCase()}
                                                         </span>
-                                        </div>
+                                                    </div>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="text-sm font-medium text-gray-900 truncate">{user.nickname}</div>
                                                         <div className="text-xs text-gray-500 truncate">{user.email}</div>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div className="space-y-2 mb-3">
                                                     <div className="flex items-center justify-between text-sm">
                                                         <span className="text-gray-500">권한</span>
-                                                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${
-                                                            user.role === 'super_admin' 
-                                                                ? 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20' 
-                                                                : user.role === 'admin' 
-                                                                    ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
-                                                                    : 'bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/20'
-                                                        }`}>
+                                                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${user.role === 'super_admin'
+                                                            ? 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
+                                                            : user.role === 'admin'
+                                                                ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
+                                                                : 'bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/20'
+                                                            }`}>
                                                             {user.role === 'super_admin' ? '슈퍼 관리자' :
                                                                 user.role === 'admin' ? '관리자' : '일반 사용자'}
                                                         </span>
                                                     </div>
                                                     <div className="flex items-center justify-between text-sm">
                                                         <span className="text-gray-500">상태</span>
-                                                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${
-                                                            user.status === 'active'
-                                                                ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20'
-                                                                : user.status === 'suspended'
-                                                                    ? 'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20'
-                                                                    : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
-                                                        }`}>
+                                                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${user.status === 'active'
+                                                            ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20'
+                                                            : user.status === 'suspended'
+                                                                ? 'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20'
+                                                                : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
+                                                            }`}>
                                                             {user.status === 'active' ? '활성' :
                                                                 user.status === 'suspended' ? '정지' : '차단'}
                                                         </span>
@@ -1359,41 +1362,37 @@ export default function AdminPage() {
                                             <div className="flex flex-wrap gap-2">
                                                 <button
                                                     onClick={() => handleActivityFilterChange('all')}
-                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${
-                                                        activityFilter === 'all'
-                                                            ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
-                                                            : 'text-gray-700 hover:bg-gray-50'
-                                                    }`}
+                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${activityFilter === 'all'
+                                                        ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
+                                                        : 'text-gray-700 hover:bg-gray-50'
+                                                        }`}
                                                 >
                                                     전체
                                                 </button>
                                                 <button
                                                     onClick={() => handleActivityFilterChange('published')}
-                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${
-                                                        activityFilter === 'published'
-                                                            ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
-                                                            : 'text-gray-700 hover:bg-gray-50'
-                                                    }`}
+                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${activityFilter === 'published'
+                                                        ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
+                                                        : 'text-gray-700 hover:bg-gray-50'
+                                                        }`}
                                                 >
                                                     발행됨
                                                 </button>
                                                 <button
                                                     onClick={() => handleActivityFilterChange('draft')}
-                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${
-                                                        activityFilter === 'draft'
-                                                            ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
-                                                            : 'text-gray-700 hover:bg-gray-50'
-                                                    }`}
+                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${activityFilter === 'draft'
+                                                        ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
+                                                        : 'text-gray-700 hover:bg-gray-50'
+                                                        }`}
                                                 >
                                                     임시저장
                                                 </button>
                                                 <button
                                                     onClick={() => handleActivityFilterChange('private')}
-                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${
-                                                        activityFilter === 'private'
-                                                            ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
-                                                            : 'text-gray-700 hover:bg-gray-50'
-                                                    }`}
+                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${activityFilter === 'private'
+                                                        ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
+                                                        : 'text-gray-700 hover:bg-gray-50'
+                                                        }`}
                                                 >
                                                     비공개
                                                 </button>
@@ -1441,25 +1440,13 @@ export default function AdminPage() {
                                                                                 고정
                                                                             </span>
                                                                         )}
-                                                                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${
-                                                                            activity.status === 'published'
-                                                                                ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20'
-                                                                                : activity.status === 'draft'
-                                                                                    ? 'bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/20'
-                                                                                    : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
-                                                                        }`}>
+                                                                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${activity.status === 'published'
+                                                                            ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20'
+                                                                            : activity.status === 'draft'
+                                                                                ? 'bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/20'
+                                                                                : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
+                                                                            }`}>
                                                                             {activity.status === 'published' ? '발행됨' : activity.status === 'draft' ? '임시저장' : '비공개'}
-                                                                        </span>
-                                                                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${
-                                                                            activity.activity_status === 'upcoming'
-                                                                                ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
-                                                                                : activity.activity_status === 'ongoing'
-                                                                                    ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20'
-                                                                                    : activity.activity_status === 'completed'
-                                                                                        ? 'bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/20'
-                                                                                        : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
-                                                                        }`}>
-                                                                            {activity.activity_status === 'upcoming' ? '예정' : activity.activity_status === 'ongoing' ? '진행중' : activity.activity_status === 'completed' ? '완료' : '취소'}
                                                                         </span>
                                                                     </div>
                                                                     <h3 className="text-sm font-medium text-gray-900 mb-1">{activity.title}</h3>
@@ -1494,11 +1481,10 @@ export default function AdminPage() {
                                                                     </button>
                                                                     <button
                                                                         onClick={() => handleActivityTogglePin(activity.id, !activity.is_pinned)}
-                                                                        className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap ${
-                                                                            activity.is_pinned
-                                                                                ? 'text-yellow-700 bg-yellow-50 border border-yellow-300 hover:bg-yellow-100'
-                                                                                : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                                                                        }`}
+                                                                        className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap ${activity.is_pinned
+                                                                            ? 'text-yellow-700 bg-yellow-50 border border-yellow-300 hover:bg-yellow-100'
+                                                                            : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                                                                            }`}
                                                                     >
                                                                         {activity.is_pinned ? '고정 해제' : '고정'}
                                                                     </button>
@@ -1508,6 +1494,14 @@ export default function AdminPage() {
                                                                     >
                                                                         {activity.status === 'published' ? '비공개' : '공개'}
                                                                     </button>
+                                                                    {activity.max_participants && (
+                                                                        <button
+                                                                            onClick={() => handleShowParticipants(activity)}
+                                                                            className="px-3 py-1.5 text-xs sm:text-sm font-medium text-blue-700 bg-blue-50 border border-blue-300 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap"
+                                                                        >
+                                                                            참가자 ({activity.current_participants}/{activity.max_participants})
+                                                                        </button>
+                                                                    )}
                                                                     <button
                                                                         onClick={() => handleActivityDelete(activity.id)}
                                                                         className="px-3 py-1.5 text-xs sm:text-sm font-medium text-red-700 bg-red-50 border border-red-300 rounded-md hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 whitespace-nowrap"
@@ -1553,48 +1547,44 @@ export default function AdminPage() {
                                     <div className="p-4 sm:p-6 border-b border-gray-200">
                                         <h2 className="text-base font-medium text-gray-900">자료실 관리</h2>
                                         <p className="mt-1 text-sm text-gray-500">자료를 고정하거나 상태를 관리할 수 있습니다</p>
-                                        </div>
+                                    </div>
                                     <div className="p-4 sm:p-6">
                                         {/* 필터 및 검색 */}
                                         <div className="mb-6 flex flex-col sm:flex-row gap-4">
                                             <div className="flex flex-wrap gap-2">
                                                 <button
                                                     onClick={() => handleResourceFilterChange('all')}
-                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${
-                                                        resourceFilter === 'all'
-                                                            ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
-                                                            : 'text-gray-700 hover:bg-gray-50'
-                                                    }`}
+                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${resourceFilter === 'all'
+                                                        ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
+                                                        : 'text-gray-700 hover:bg-gray-50'
+                                                        }`}
                                                 >
                                                     전체
                                                 </button>
                                                 <button
                                                     onClick={() => handleResourceFilterChange('published')}
-                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${
-                                                        resourceFilter === 'published'
-                                                            ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
-                                                            : 'text-gray-700 hover:bg-gray-50'
-                                                    }`}
+                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${resourceFilter === 'published'
+                                                        ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
+                                                        : 'text-gray-700 hover:bg-gray-50'
+                                                        }`}
                                                 >
                                                     발행됨
                                                 </button>
                                                 <button
                                                     onClick={() => handleResourceFilterChange('draft')}
-                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${
-                                                        resourceFilter === 'draft'
-                                                            ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
-                                                            : 'text-gray-700 hover:bg-gray-50'
-                                                    }`}
+                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${resourceFilter === 'draft'
+                                                        ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
+                                                        : 'text-gray-700 hover:bg-gray-50'
+                                                        }`}
                                                 >
                                                     임시저장
                                                 </button>
                                                 <button
                                                     onClick={() => handleResourceFilterChange('private')}
-                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${
-                                                        resourceFilter === 'private'
-                                                            ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
-                                                            : 'text-gray-700 hover:bg-gray-50'
-                                                    }`}
+                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${resourceFilter === 'private'
+                                                        ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
+                                                        : 'text-gray-700 hover:bg-gray-50'
+                                                        }`}
                                                 >
                                                     비공개
                                                 </button>
@@ -1614,15 +1604,15 @@ export default function AdminPage() {
                                                 >
                                                     검색
                                                 </button>
+                                            </div>
                                         </div>
-                                    </div>
 
                                         {/* 자료실 목록 */}
                                         {resourcesLoading ? (
                                             <div className="text-center py-8">
                                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                                                 <p className="mt-2 text-sm text-gray-500">자료를 불러오는 중...</p>
-                                </div>
+                                            </div>
                                         ) : (
                                             <div className="space-y-3">
                                                 {resources.map((resource) => (
@@ -1640,13 +1630,12 @@ export default function AdminPage() {
                                                                             검증됨
                                                                         </span>
                                                                     )}
-                                                                    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${
-                                                                        resource.status === 'published'
-                                                                            ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20'
-                                                                            : resource.status === 'draft'
-                                                                                ? 'bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/20'
-                                                                                : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
-                                                                    }`}>
+                                                                    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${resource.status === 'published'
+                                                                        ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20'
+                                                                        : resource.status === 'draft'
+                                                                            ? 'bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/20'
+                                                                            : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
+                                                                        }`}>
                                                                         {resource.status === 'published' ? '발행됨' : resource.status === 'draft' ? '임시저장' : '비공개'}
                                                                     </span>
                                                                 </div>
@@ -1664,21 +1653,19 @@ export default function AdminPage() {
                                                             <div className="flex flex-wrap items-center gap-2 lg:ml-4">
                                                                 <button
                                                                     onClick={() => handleResourceTogglePin(resource.id, !resource.is_pinned)}
-                                                                    className={`px-2.5 py-1.5 text-xs font-medium rounded-md whitespace-nowrap ${
-                                                                        resource.is_pinned
-                                                                            ? 'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20 hover:bg-yellow-100'
-                                                                            : 'text-gray-700 hover:bg-gray-50 ring-1 ring-inset ring-gray-300'
-                                                                    }`}
+                                                                    className={`px-2.5 py-1.5 text-xs font-medium rounded-md whitespace-nowrap ${resource.is_pinned
+                                                                        ? 'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20 hover:bg-yellow-100'
+                                                                        : 'text-gray-700 hover:bg-gray-50 ring-1 ring-inset ring-gray-300'
+                                                                        }`}
                                                                 >
                                                                     {resource.is_pinned ? '고정 해제' : '고정하기'}
                                                                 </button>
                                                                 <button
                                                                     onClick={() => handleResourceStatusChange(resource.id, resource.status === 'private' ? 'published' : 'private')}
-                                                                    className={`px-2.5 py-1.5 text-xs font-medium rounded-md whitespace-nowrap ${
-                                                                        resource.status === 'private'
-                                                                            ? 'bg-purple-50 text-purple-700 ring-1 ring-inset ring-purple-600/20 hover:bg-purple-100'
-                                                                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100 ring-1 ring-inset ring-gray-300'
-                                                                    }`}
+                                                                    className={`px-2.5 py-1.5 text-xs font-medium rounded-md whitespace-nowrap ${resource.status === 'private'
+                                                                        ? 'bg-purple-50 text-purple-700 ring-1 ring-inset ring-purple-600/20 hover:bg-purple-100'
+                                                                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100 ring-1 ring-inset ring-gray-300'
+                                                                        }`}
                                                                 >
                                                                     {resource.status === 'private' ? '공개하기' : '비공개'}
                                                                 </button>
@@ -1706,7 +1693,7 @@ export default function AdminPage() {
                                                         <FileText className="mx-auto h-12 w-12 text-gray-400" />
                                                         <h3 className="mt-2 text-sm font-medium text-gray-900">자료 없음</h3>
                                                         <p className="mt-1 text-sm text-gray-500">조건에 맞는 자료가 없습니다.</p>
-                                        </div>
+                                                    </div>
                                                 )}
 
                                                 {/* 페이지네이션 */}
@@ -1729,9 +1716,9 @@ export default function AdminPage() {
                                                         >
                                                             다음
                                                         </button>
-                                            </div>
+                                                    </div>
                                                 )}
-                                        </div>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -1752,138 +1739,130 @@ export default function AdminPage() {
                                     <div className="p-4 sm:p-6 border-b border-gray-200">
                                         <h2 className="text-base font-medium text-gray-900">프로젝트 관리</h2>
                                         <p className="mt-1 text-sm text-gray-500">프로젝트를 고정하거나 상태를 관리할 수 있습니다</p>
-                                        </div>
+                                    </div>
                                     <div className="p-4 sm:p-6">
-                                            {/* 필터 및 검색 */}
-                                            <div className="mb-6 flex flex-col sm:flex-row gap-4">
+                                        {/* 필터 및 검색 */}
+                                        <div className="mb-6 flex flex-col sm:flex-row gap-4">
                                             <div className="flex flex-wrap gap-2">
-                                                    <button
-                                                        onClick={() => handleProjectFilterChange('all')}
-                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${
-                                                        projectFilter === 'all'
-                                                            ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
-                                                            : 'text-gray-700 hover:bg-gray-50'
-                                                            }`}
-                                                    >
-                                                        전체
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleProjectFilterChange('published')}
-                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${
-                                                        projectFilter === 'published'
-                                                            ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
-                                                            : 'text-gray-700 hover:bg-gray-50'
-                                                            }`}
-                                                    >
-                                                        발행됨
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleProjectFilterChange('draft')}
-                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${
-                                                        projectFilter === 'draft'
-                                                            ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
-                                                            : 'text-gray-700 hover:bg-gray-50'
-                                                            }`}
-                                                    >
-                                                        임시저장
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleProjectFilterChange('private')}
-                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${
-                                                        projectFilter === 'private'
-                                                            ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
-                                                            : 'text-gray-700 hover:bg-gray-50'
-                                                            }`}
-                                                    >
-                                                        비공개
-                                                    </button>
-                                                </div>
-                                                <div className="flex gap-2 flex-1">
-                                                    <input
-                                                        type="text"
-                                                        placeholder="프로젝트 검색..."
-                                                        value={projectSearch}
-                                                        onChange={(e) => setProjectSearch(e.target.value)}
-                                                        onKeyPress={(e) => e.key === 'Enter' && handleProjectSearch(projectSearch)}
-                                                    className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                    />
-                                                    <button
-                                                        onClick={() => handleProjectSearch(projectSearch)}
-                                                    className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                    >
-                                                        검색
-                                                    </button>
-                                                </div>
+                                                <button
+                                                    onClick={() => handleProjectFilterChange('all')}
+                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${projectFilter === 'all'
+                                                        ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
+                                                        : 'text-gray-700 hover:bg-gray-50'
+                                                        }`}
+                                                >
+                                                    전체
+                                                </button>
+                                                <button
+                                                    onClick={() => handleProjectFilterChange('published')}
+                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${projectFilter === 'published'
+                                                        ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
+                                                        : 'text-gray-700 hover:bg-gray-50'
+                                                        }`}
+                                                >
+                                                    발행됨
+                                                </button>
+                                                <button
+                                                    onClick={() => handleProjectFilterChange('draft')}
+                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${projectFilter === 'draft'
+                                                        ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
+                                                        : 'text-gray-700 hover:bg-gray-50'
+                                                        }`}
+                                                >
+                                                    임시저장
+                                                </button>
+                                                <button
+                                                    onClick={() => handleProjectFilterChange('private')}
+                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${projectFilter === 'private'
+                                                        ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
+                                                        : 'text-gray-700 hover:bg-gray-50'
+                                                        }`}
+                                                >
+                                                    비공개
+                                                </button>
                                             </div>
+                                            <div className="flex gap-2 flex-1">
+                                                <input
+                                                    type="text"
+                                                    placeholder="프로젝트 검색..."
+                                                    value={projectSearch}
+                                                    onChange={(e) => setProjectSearch(e.target.value)}
+                                                    onKeyPress={(e) => e.key === 'Enter' && handleProjectSearch(projectSearch)}
+                                                    className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                />
+                                                <button
+                                                    onClick={() => handleProjectSearch(projectSearch)}
+                                                    className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                    검색
+                                                </button>
+                                            </div>
+                                        </div>
 
-                                            {/* 프로젝트 목록 */}
-                                            {projectsLoading ? (
-                                                <div className="text-center py-8">
-                                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                                        {/* 프로젝트 목록 */}
+                                        {projectsLoading ? (
+                                            <div className="text-center py-8">
+                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                                                 <p className="mt-2 text-sm text-gray-500">프로젝트를 불러오는 중...</p>
-                                                </div>
-                                            ) : (
+                                            </div>
+                                        ) : (
                                             <div className="space-y-3">
-                                                    {projects.map((project) => (
+                                                {projects.map((project) => (
                                                     <div key={project.id} className={`border rounded-lg p-4 ${project.is_pinned ? 'bg-yellow-50 border-yellow-200' : 'border-gray-200'}`}>
                                                         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
                                                             <div className="flex-1 min-w-0">
                                                                 <div className="flex flex-wrap items-center gap-2 mb-2">
-                                                                        {project.is_pinned && (
+                                                                    {project.is_pinned && (
                                                                         <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-yellow-50 text-yellow-800 ring-1 ring-inset ring-yellow-600/20">
                                                                             고정
                                                                         </span>
                                                                     )}
-                                                                    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${
-                                                                        project.status === 'published'
+                                                                    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${project.status === 'published'
+                                                                        ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20'
+                                                                        : project.status === 'draft'
+                                                                            ? 'bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/20'
+                                                                            : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
+                                                                        }`}>
+                                                                        {project.status === 'published' ? '발행됨' : project.status === 'draft' ? '임시저장' : '비공개'}
+                                                                    </span>
+                                                                    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${project.project_status === 'recruiting'
+                                                                        ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
+                                                                        : project.project_status === 'active'
                                                                             ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20'
-                                                                            : project.status === 'draft'
+                                                                            : project.project_status === 'completed'
                                                                                 ? 'bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/20'
                                                                                 : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
-                                                                            }`}>
-                                                                            {project.status === 'published' ? '발행됨' : project.status === 'draft' ? '임시저장' : '비공개'}
-                                                                        </span>
-                                                                    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${
-                                                                        project.project_status === 'recruiting'
-                                                                            ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
-                                                                            : project.project_status === 'active'
-                                                                                ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20'
-                                                                                : project.project_status === 'completed'
-                                                                                    ? 'bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/20'
-                                                                                    : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
-                                                                            }`}>
-                                                                            {project.project_status === 'recruiting' ? '모집중' :
-                                                                                project.project_status === 'active' ? '진행중' :
-                                                                                    project.project_status === 'completed' ? '완료' : '취소'}
-                                                                        </span>
-                                                                    </div>
+                                                                        }`}>
+                                                                        {project.project_status === 'recruiting' ? '모집중' :
+                                                                            project.project_status === 'active' ? '진행중' :
+                                                                                project.project_status === 'completed' ? '완료' : '취소'}
+                                                                    </span>
+                                                                </div>
                                                                 <h3 className="text-sm font-medium text-gray-900 mb-1 truncate">{project.title}</h3>
                                                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-500">
-                                                                        <span>작성자: {project.author.nickname}</span>
-                                                                        <span>조회: {project.views || 0}</span>
-                                                                        <span>좋아요: {project.likes_count || 0}</span>
-                                                                        <span>댓글: {project.comments_count || 0}</span>
+                                                                    <span>작성자: {project.author.nickname}</span>
+                                                                    <span>조회: {project.views || 0}</span>
+                                                                    <span>좋아요: {project.likes_count || 0}</span>
+                                                                    <span>댓글: {project.comments_count || 0}</span>
                                                                     <span className="hidden sm:inline">작성일: {new Date(project.created_at).toLocaleDateString()}</span>
-                                                                    </div>
                                                                 </div>
+                                                            </div>
                                                             <div className="flex flex-wrap items-center gap-2 lg:ml-4">
-                                                                    <button
-                                                                        onClick={() => handleTogglePin(project.id, !project.is_pinned)}
-                                                                    className={`px-2.5 py-1.5 text-xs font-medium rounded-md whitespace-nowrap ${
-                                                                        project.is_pinned
-                                                                            ? 'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20 hover:bg-yellow-100'
-                                                                            : 'text-gray-700 hover:bg-gray-50 ring-1 ring-inset ring-gray-300'
-                                                                            }`}
-                                                                    >
-                                                                        {project.is_pinned ? '고정 해제' : '고정하기'}
-                                                                    </button>
+                                                                <button
+                                                                    onClick={() => handleTogglePin(project.id, !project.is_pinned)}
+                                                                    className={`px-2.5 py-1.5 text-xs font-medium rounded-md whitespace-nowrap ${project.is_pinned
+                                                                        ? 'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20 hover:bg-yellow-100'
+                                                                        : 'text-gray-700 hover:bg-gray-50 ring-1 ring-inset ring-gray-300'
+                                                                        }`}
+                                                                >
+                                                                    {project.is_pinned ? '고정 해제' : '고정하기'}
+                                                                </button>
                                                                 <button
                                                                     onClick={() => handleStatusChange(project.id, project.status === 'private' ? 'published' : 'private')}
-                                                                    className={`px-2.5 py-1.5 text-xs font-medium rounded-md whitespace-nowrap ${
-                                                                        project.status === 'private'
-                                                                            ? 'bg-purple-50 text-purple-700 ring-1 ring-inset ring-purple-600/20 hover:bg-purple-100'
-                                                                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100 ring-1 ring-inset ring-gray-300'
-                                                                    }`}
+                                                                    className={`px-2.5 py-1.5 text-xs font-medium rounded-md whitespace-nowrap ${project.status === 'private'
+                                                                        ? 'bg-purple-50 text-purple-700 ring-1 ring-inset ring-purple-600/20 hover:bg-purple-100'
+                                                                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100 ring-1 ring-inset ring-gray-300'
+                                                                        }`}
                                                                 >
                                                                     {project.status === 'private' ? '공개하기' : '비공개'}
                                                                 </button>
@@ -1892,21 +1871,21 @@ export default function AdminPage() {
                                                                     className="px-2.5 py-1.5 text-xs font-medium rounded-md bg-red-50 text-red-700 hover:bg-red-100 ring-1 ring-inset ring-red-600/20 whitespace-nowrap"
                                                                 >
                                                                     삭제
-                                                                    </button>
-                                                                    <a
-                                                                        href={`/projects/${project.id}`}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
+                                                                </button>
+                                                                <a
+                                                                    href={`/projects/${project.id}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
                                                                     className="px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50 rounded-md ring-1 ring-inset ring-blue-600/20 whitespace-nowrap"
-                                                                    >
-                                                                        보기
-                                                                    </a>
-                                                                </div>
+                                                                >
+                                                                    보기
+                                                                </a>
                                                             </div>
                                                         </div>
-                                                    ))}
+                                                    </div>
+                                                ))}
 
-                                                    {projects.length === 0 && (
+                                                {projects.length === 0 && (
                                                     <div className="text-center py-8">
                                                         <div className="rounded-lg border-2 border-dashed border-gray-200 p-8">
                                                             <FolderOpen className="mx-auto h-10 w-10 text-gray-400" />
@@ -1915,65 +1894,62 @@ export default function AdminPage() {
                                                                 {projectSearch ? '검색 결과가 없습니다.' : '등록된 프로젝트가 없습니다.'}
                                                             </p>
                                                         </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
 
-                                            {/* 페이지네이션 */}
-                                            {projectPagination.totalPages > 1 && (
-                                                <div className="mt-6 flex items-center justify-between">
+                                        {/* 페이지네이션 */}
+                                        {projectPagination.totalPages > 1 && (
+                                            <div className="mt-6 flex items-center justify-between">
                                                 <div className="text-sm text-gray-500">
-                                                        총 {projectPagination.total || 0}개의 프로젝트 중 {((projectPagination.page - 1) * projectPagination.limit) + 1}-{Math.min(projectPagination.page * projectPagination.limit, projectPagination.total || 0)}개 표시
-                                                    </div>
-                                                <div className="flex items-center gap-2">
-                                                        <button
-                                                            onClick={() => handleProjectPageChange(projectPagination.page - 1)}
-                                                            disabled={!projectPagination.hasPrev}
-                                                        className={`px-2.5 py-1.5 text-xs font-medium rounded-md ${
-                                                            projectPagination.hasPrev
-                                                                ? 'text-gray-700 hover:bg-gray-50'
-                                                                : 'text-gray-400 cursor-not-allowed'
-                                                                }`}
-                                                        >
-                                                            이전
-                                                        </button>
-
-                                                        {/* 페이지 번호들 */}
-                                                        {Array.from({ length: Math.min(5, projectPagination.totalPages) }, (_, i) => {
-                                                            const startPage = Math.max(1, projectPagination.page - 2);
-                                                            const pageNum = startPage + i;
-                                                            if (pageNum > projectPagination.totalPages) return null;
-
-                                                            return (
-                                                                <button
-                                                                    key={pageNum}
-                                                                    onClick={() => handleProjectPageChange(pageNum)}
-                                                                className={`px-2.5 py-1.5 text-xs font-medium rounded-md ${
-                                                                    pageNum === projectPagination.page
-                                                                        ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
-                                                                        : 'text-gray-700 hover:bg-gray-50'
-                                                                        }`}
-                                                                >
-                                                                    {pageNum}
-                                                                </button>
-                                                            );
-                                                        })}
-
-                                                        <button
-                                                            onClick={() => handleProjectPageChange(projectPagination.page + 1)}
-                                                            disabled={!projectPagination.hasNext}
-                                                        className={`px-2.5 py-1.5 text-xs font-medium rounded-md ${
-                                                            projectPagination.hasNext
-                                                                ? 'text-gray-700 hover:bg-gray-50'
-                                                                : 'text-gray-400 cursor-not-allowed'
-                                                                }`}
-                                                        >
-                                                            다음
-                                                        </button>
-                                                    </div>
+                                                    총 {projectPagination.total || 0}개의 프로젝트 중 {((projectPagination.page - 1) * projectPagination.limit) + 1}-{Math.min(projectPagination.page * projectPagination.limit, projectPagination.total || 0)}개 표시
                                                 </div>
-                                            )}
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => handleProjectPageChange(projectPagination.page - 1)}
+                                                        disabled={!projectPagination.hasPrev}
+                                                        className={`px-2.5 py-1.5 text-xs font-medium rounded-md ${projectPagination.hasPrev
+                                                            ? 'text-gray-700 hover:bg-gray-50'
+                                                            : 'text-gray-400 cursor-not-allowed'
+                                                            }`}
+                                                    >
+                                                        이전
+                                                    </button>
+
+                                                    {/* 페이지 번호들 */}
+                                                    {Array.from({ length: Math.min(5, projectPagination.totalPages) }, (_, i) => {
+                                                        const startPage = Math.max(1, projectPagination.page - 2);
+                                                        const pageNum = startPage + i;
+                                                        if (pageNum > projectPagination.totalPages) return null;
+
+                                                        return (
+                                                            <button
+                                                                key={pageNum}
+                                                                onClick={() => handleProjectPageChange(pageNum)}
+                                                                className={`px-2.5 py-1.5 text-xs font-medium rounded-md ${pageNum === projectPagination.page
+                                                                    ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
+                                                                    : 'text-gray-700 hover:bg-gray-50'
+                                                                    }`}
+                                                            >
+                                                                {pageNum}
+                                                            </button>
+                                                        );
+                                                    })}
+
+                                                    <button
+                                                        onClick={() => handleProjectPageChange(projectPagination.page + 1)}
+                                                        disabled={!projectPagination.hasNext}
+                                                        className={`px-2.5 py-1.5 text-xs font-medium rounded-md ${projectPagination.hasNext
+                                                            ? 'text-gray-700 hover:bg-gray-50'
+                                                            : 'text-gray-400 cursor-not-allowed'
+                                                            }`}
+                                                    >
+                                                        다음
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -2013,7 +1989,7 @@ export default function AdminPage() {
                                                 <button
                                                     onClick={async () => {
                                                         if (!selectedUserId) return;
-                                                        
+
                                                         const suspendUntil = new Date();
                                                         suspendUntil.setDate(suspendUntil.getDate() + parseInt(suspendDuration));
 
@@ -2042,9 +2018,8 @@ export default function AdminPage() {
                                                             );
 
                                                             alert(`사용자가 ${suspendDuration}일 동안 정지되었습니다.`);
-                                                        } catch (error) {
-                                                            console.error('사용자 정지 오류:', error);
-                                                            alert(error instanceof Error ? error.message : '사용자 정지 처리에 실패했습니다.');
+                                                        } catch {
+                                                            alert('사용자 정지 처리에 실패했습니다.');
                                                         }
 
                                                         setShowSuspendModal(false);
@@ -2062,6 +2037,125 @@ export default function AdminPage() {
                     </div>
                 </div>
             </div>
+
+            {/* 참가자 모달 */}
+            {showParticipantsModal && selectedActivity && (
+                <div
+                    className="fixed inset-0 flex items-center justify-center z-50"
+                    style={{
+                        backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                        backdropFilter: 'blur(4px)',
+                        WebkitBackdropFilter: 'blur(4px)'
+                    }}
+                >
+                    <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-200">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-semibold text-gray-900">
+                                    참가자 목록 - {selectedActivity.title}
+                                </h3>
+                                <button
+                                    onClick={() => setShowParticipantsModal(false)}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+                            <p className="text-sm text-gray-500 mt-1">
+                                총 {participants.length}명 / 최대 {selectedActivity.max_participants}명
+                            </p>
+                        </div>
+
+                        <div className="p-6 overflow-y-auto max-h-[60vh]">
+                            {participantsLoading ? (
+                                <div className="text-center py-8">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                                    <p className="mt-2 text-sm text-gray-500">참가자를 불러오는 중...</p>
+                                </div>
+                            ) : participants.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <Users className="mx-auto h-12 w-12 text-gray-400" />
+                                    <p className="mt-2 text-sm font-medium text-gray-900">참가자가 없습니다</p>
+                                    <p className="mt-1 text-sm text-gray-500">아직 참가한 사용자가 없습니다.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {participants.map((participant) => (
+                                        <div key={participant.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                            <div className="flex items-center space-x-4">
+                                                <div className="relative flex-shrink-0 w-10 h-10">
+                                                    {participant.user_profiles?.profile_image ? (
+                                                        <Image
+                                                            src={participant.user_profiles.profile_image}
+                                                            alt={participant.user_profiles?.nickname || '사용자'}
+                                                            fill
+                                                            className="rounded-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                                            <span className="text-blue-600 font-medium text-sm">
+                                                                {participant.user_profiles?.nickname?.charAt(0) || '?'}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center space-x-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                if (participant.user_profiles?.nickname) {
+                                                                    router.push(`/profile/${participant.user_profiles.nickname}`);
+                                                                }
+                                                            }}
+                                                            disabled={!participant.user_profiles?.nickname}
+                                                            className={`text-sm font-medium hover:underline ${participant.user_profiles?.nickname
+                                                                ? 'text-gray-900 hover:text-blue-600 cursor-pointer'
+                                                                : 'text-gray-400 cursor-not-allowed'
+                                                                }`}
+                                                        >
+                                                            {participant.user_profiles?.nickname || '익명 사용자'}
+                                                        </button>
+                                                        {participant.user_profiles?.name && (
+                                                            <span className="text-sm text-gray-500">
+                                                                ({participant.user_profiles.name})
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center space-x-4 text-xs text-gray-500">
+                                                        {participant.user_profiles?.student_id && (
+                                                            <span>학번: {participant.user_profiles.student_id}</span>
+                                                        )}
+                                                        {participant.user_profiles?.major && (
+                                                            <span>전공: {participant.user_profiles.major}</span>
+                                                        )}
+                                                        {participant.user_profiles?.grade && (
+                                                            <span>학년: {participant.user_profiles.grade}</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center space-x-3">
+                                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${participant.status === 'registered'
+                                                    ? 'bg-blue-100 text-blue-800'
+                                                    : participant.status === 'attended'
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : 'bg-red-100 text-red-800'
+                                                    }`}>
+                                                    {participant.status === 'registered' ? '등록됨' :
+                                                        participant.status === 'attended' ? '참석' : '취소됨'}
+                                                </span>
+                                                <span className="text-xs text-gray-500">
+                                                    {new Date(participant.joined_at).toLocaleDateString('ko-KR')}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

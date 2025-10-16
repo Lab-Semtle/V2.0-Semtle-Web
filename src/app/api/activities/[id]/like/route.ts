@@ -3,7 +3,7 @@ import { createServerSupabase } from '@/lib/supabase/server';
 
 // 활동 게시물 좋아요 토글
 export async function POST(
-    request: NextRequest,
+    _request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
@@ -41,8 +41,26 @@ export async function POST(
                 return NextResponse.json({ error: '좋아요 취소에 실패했습니다.' }, { status: 500 });
             }
 
+            // 실제 DB에서 좋아요 수를 계산해서 가져오기
+            const { data: likeCountData } = await supabase
+                .from('activity_likes')
+                .select('id', { count: 'exact' })
+                .eq('activity_id', activityId);
+
+            const actualLikesCount = likeCountData?.length || 0;
+
+            // activities 테이블의 likes_count를 실제 값으로 업데이트
+            await supabase
+                .from('activities')
+                .update({
+                    likes_count: actualLikesCount
+                })
+                .eq('id', activityId);
+
+
             return NextResponse.json({
                 liked: false,
+                likes_count: actualLikesCount,
                 message: '좋아요가 취소되었습니다.'
             });
         } else {
@@ -58,49 +76,59 @@ export async function POST(
                 return NextResponse.json({ error: '좋아요 추가에 실패했습니다.' }, { status: 500 });
             }
 
+
+            // 실제 DB에서 좋아요 수를 계산해서 가져오기
+            const { data: likeCountData } = await supabase
+                .from('activity_likes')
+                .select('id', { count: 'exact' })
+                .eq('activity_id', activityId);
+
+            const actualLikesCount = likeCountData?.length || 0;
+
+            // activities 테이블의 likes_count를 실제 값으로 업데이트
+            await supabase
+                .from('activities')
+                .update({
+                    likes_count: actualLikesCount
+                })
+                .eq('id', activityId);
+
             // 알림 생성 (작성자에게)
-            const { data: activity } = await supabase
-                .from('activity_posts')
-                .select('post_id')
-                .eq('post_id', activityId)
+            const { data: activityData } = await supabase
+                .from('activities')
+                .select('author_id, title')
+                .eq('id', activityId)
                 .single();
 
-            if (activity) {
-                const { data: post } = await supabase
-                    .from('posts')
-                    .select('author_id, title')
-                    .eq('id', activity.post_id)
-                    .single();
-
-                if (post && post.author_id !== user.id) {
-                    await supabase
-                        .from('notifications')
-                        .insert({
-                            user_id: post.author_id,
-                            type: 'like',
-                            title: '새로운 좋아요',
-                            message: `"${post.title}" 활동에 좋아요를 받았습니다.`,
-                            data: {
-                                post_id: activity.post_id,
-                                liker_id: user.id
-                            }
-                        });
-                }
+            if (activityData && activityData.author_id !== user.id) {
+                await supabase
+                    .from('notifications')
+                    .insert({
+                        user_id: activityData.author_id,
+                        type: 'like',
+                        title: '새로운 좋아요',
+                        message: `"${activityData.title}" 활동에 좋아요를 받았습니다.`,
+                        data: {
+                            activity_id: activityId,
+                            liker_id: user.id
+                        }
+                    });
             }
 
             return NextResponse.json({
                 liked: true,
+                likes_count: actualLikesCount,
                 message: '좋아요가 추가되었습니다.'
             });
         }
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
 
 // 활동 게시물 좋아요 상태 확인
 export async function GET(
-    request: NextRequest,
+    _request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
@@ -127,8 +155,7 @@ export async function GET(
             .single();
 
         return NextResponse.json({ liked: !!like });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
-

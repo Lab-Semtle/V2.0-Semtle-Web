@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 
 // 사용자의 임시저장된 자료 목록 조회
-export async function GET(request: NextRequest) {
+export async function GET() {
     try {
         const supabase = await createServerSupabase();
 
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
         }
 
         return NextResponse.json({ drafts: drafts || [] });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

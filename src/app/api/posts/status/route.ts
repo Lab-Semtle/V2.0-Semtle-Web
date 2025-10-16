@@ -47,46 +47,41 @@ export async function PATCH(request: NextRequest) {
             );
         }
 
-        postAuthorId: post.author_id,
-            requestUserId: userId,
-                isMatch: post.author_id === userId
-    });
+        if (post.author_id !== userId) {
+            return NextResponse.json(
+                { error: '수정 권한이 없습니다.' },
+                { status: 403 }
+            );
+        }
 
-    if (post.author_id !== userId) {
+        // 상태 업데이트
+        const updateData: Record<string, unknown> = { status };
+
+        // published로 변경할 때만 published_at 설정
+        if (status === 'published') {
+            updateData.published_at = new Date().toISOString();
+        } else {
+            updateData.published_at = null;
+        }
+
+        const { error: updateError } = await supabase
+            .from(tableName)
+            .update(updateData)
+            .eq('id', postId);
+
+        if (updateError) {
+            return NextResponse.json(
+                { error: '상태 변경에 실패했습니다.' },
+                { status: 500 }
+            );
+        }
+
+        return NextResponse.json({ success: true });
+
+    } catch {
         return NextResponse.json(
-            { error: '수정 권한이 없습니다.' },
-            { status: 403 }
-        );
-    }
-
-    // 상태 업데이트
-    const updateData: any = { status };
-
-    // published로 변경할 때만 published_at 설정
-    if (status === 'published') {
-        updateData.published_at = new Date().toISOString();
-    } else {
-        updateData.published_at = null;
-    }
-
-    const { error: updateError } = await supabase
-        .from(tableName)
-        .update(updateData)
-        .eq('id', postId);
-
-    if (updateError) {
-        return NextResponse.json(
-            { error: '상태 변경에 실패했습니다.' },
+            { error: '서버 오류가 발생했습니다.' },
             { status: 500 }
         );
     }
-
-    return NextResponse.json({ success: true });
-
-} catch (error) {
-    return NextResponse.json(
-        { error: '서버 오류가 발생했습니다.' },
-        { status: 500 }
-    );
-}
 }
