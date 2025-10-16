@@ -34,7 +34,7 @@ export default function ContactPage() {
                 const response = await fetch('/api/admin/representative');
                 if (response.ok) {
                     const data = await response.json();
-                    setRepresentativeAdmin(data.representativeAdmin);
+                    setRepresentativeAdmin(data.representative);
                 }
             } catch {
             }
@@ -126,7 +126,7 @@ export default function ContactPage() {
                                                 <Mail className="w-5 h-5 text-blue-600" />
                                             </div>
                                             <div>
-                                                <h3 className="font-semibold text-gray-900">대표 이메일</h3>
+                                                <h3 className="font-semibold text-gray-900">회장 이메일</h3>
                                                 <p className="text-gray-600 text-sm">{representativeAdmin.email}</p>
                                                 <p className="text-gray-500 text-xs mt-1">{representativeAdmin.name}</p>
                                             </div>

@@ -36,7 +36,7 @@ const Footer: React.FC = () => {
 
                 if (response.ok) {
                     const data = await response.json();
-                    setRepresentativeAdmin(data.representativeAdmin);
+                    setRepresentativeAdmin(data.representative);
                 }
             } catch {
                 // API 호출 실패 시 기본값 유지
@@ -141,7 +141,7 @@ const Footer: React.FC = () => {
                                                 <Mail className="w-3 h-3 text-blue-400" />
                                             </div>
                                             <div>
-                                                <p className="text-slate-300 text-sm font-medium">대표 이메일</p>
+                                                <p className="text-slate-300 text-sm font-medium">회장 이메일</p>
                                                 <p className="text-slate-400 text-xs">{representativeAdmin.email}</p>
                                                 <p className="text-slate-500 text-xs">{representativeAdmin.name}</p>
                                             </div>

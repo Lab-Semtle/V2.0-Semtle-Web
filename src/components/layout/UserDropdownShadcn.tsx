@@ -55,6 +55,7 @@ export default function UserDropdownShadcn() {
                                     src={profile.profile_image}
                                     alt={profile.nickname || profile.name || '사용자'}
                                     fill
+                                    sizes="32px"
                                     className="object-cover"
                                 />
                             ) : (
@@ -95,6 +96,7 @@ export default function UserDropdownShadcn() {
                                     src={profile.profile_image}
                                     alt={profile.nickname || profile.name || '사용자'}
                                     fill
+                                    sizes="40px"
                                     className="object-cover"
                                 />
                             ) : (

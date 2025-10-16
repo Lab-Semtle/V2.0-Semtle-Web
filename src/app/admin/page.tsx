@@ -15,6 +15,10 @@ interface User {
     nickname: string;
     name: string;
     email: string;
+    profile_image?: string;
+    birth_date?: string;
+    major?: string;
+    grade?: string;
     role: 'member' | 'admin' | 'super_admin';
     status: 'active' | 'suspended' | 'banned';
     email_verified: boolean;
@@ -145,6 +149,12 @@ export default function AdminPage() {
 
     // 사용자 관리 상태
     const [users, setUsers] = useState<User[]>([]);
+    const [representativeAdmin, setRepresentativeAdmin] = useState<{
+        id: string;
+        nickname: string;
+        email: string;
+    } | null>(null);
+    const [isUpdatingRepresentative, setIsUpdatingRepresentative] = useState(false);
 
     // 시스템 통계 상태
     const [systemStats, setSystemStats] = useState<SystemStats | null>(null);
@@ -215,6 +225,20 @@ export default function AdminPage() {
         } catch {
             // 오류가 발생해도 빈 배열로 설정
             setUsers([]);
+        }
+    }, []);
+
+    const fetchRepresentativeAdmin = useCallback(async () => {
+        try {
+            const response = await fetch('/api/admin/representative');
+
+            if (response.ok) {
+                const data = await response.json();
+                setRepresentativeAdmin(data.representative);
+            }
+        } catch {
+            // 오류가 발생해도 null로 설정
+            setRepresentativeAdmin(null);
         }
     }, []);
 
@@ -306,6 +330,7 @@ export default function AdminPage() {
             setLoading(true);
             await Promise.all([
                 fetchUsers(),
+                fetchRepresentativeAdmin(),
                 fetchSystemStats(),
                 fetchPostStats(),
                 fetchProjects()
@@ -315,7 +340,7 @@ export default function AdminPage() {
         } finally {
             setLoading(false);
         }
-    }, [fetchUsers, fetchSystemStats, fetchPostStats, fetchProjects]);
+    }, [fetchUsers, fetchRepresentativeAdmin, fetchSystemStats, fetchPostStats, fetchProjects]);
 
     // 관리자 권한 확인
     useEffect(() => {
@@ -542,24 +567,126 @@ export default function AdminPage() {
         }
     };
 
-    const [showSuspendModal, setShowSuspendModal] = useState(false);
-    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-    const [suspendDuration, setSuspendDuration] = useState('7'); // 기본값 7일
-
-    const handleUserStatusChange = async (userId: string, status: 'active' | 'suspended' | 'banned') => {
+    const handleSuperAdminToggle = async (userId: string, action: 'grant' | 'revoke') => {
         try {
-            if (status === 'suspended') {
-                setSelectedUserId(userId);
-                setShowSuspendModal(true);
+            const actionText = action === 'grant' ? '대표 관리자 권한을 부여' : '대표 관리자 권한을 해제';
+            if (!confirm(`정말로 ${actionText}하시겠습니까?`)) {
                 return;
             }
 
-            const message = status === 'active'
-                ? '사용자의 제재를 해제하고 정상 이용 상태로 변경하시겠습니까?'
-                : '사용자를 영구적으로 차단하시겠습니까?\n차단된 사용자는 관리자가 해제하기 전까지 로그인이 불가능합니다.';
+            const response = await fetch(`/api/users/${userId}/super-admin`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ action })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || '대표 관리자 권한 변경에 실패했습니다.');
+            }
+
+            // 사용자 목록 업데이트
+            setUsers(prev =>
+                prev.map(user =>
+                    user.id === userId
+                        ? { ...user, role: result.newRole }
+                        : user
+                )
+            );
+
+            alert(result.message);
+        } catch {
+            alert('대표 관리자 권한 변경에 실패했습니다.');
+        }
+    };
+
+    const handleRepresentativeAdminSet = async (userId: string) => {
+        try {
+            console.log('=== handleRepresentativeAdminSet 시작 ===');
+            console.log('선택된 userId:', userId);
+
+            // 관리자 권한 체크
+            if (profile?.role !== 'admin' && profile?.role !== 'super_admin') {
+                alert('관리자 권한이 필요합니다.');
+                return;
+            }
+
+            let message = '';
+            if (userId === '') {
+                message = '현재 표시 관리자를 해제하시겠습니까?';
+            } else {
+                message = '이 사용자를 표시 관리자로 설정하시겠습니까?';
+            }
+
+            if (!confirm(message)) {
+                console.log('사용자가 취소함');
+                return;
+            }
+
+            setIsUpdatingRepresentative(true);
+            console.log('API 호출 시작 - userId:', userId);
+
+            const response = await fetch('/api/admin/representative', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userId: userId || null })
+            });
+
+            console.log('API 응답 상태:', response.status);
+            const result = await response.json();
+            console.log('API 응답 데이터:', result);
+
+            if (!response.ok) {
+                throw new Error(result.error || '표시 관리자 설정에 실패했습니다.');
+            }
+
+            // 성공 시 서버 응답의 사용자 정보로 상태 업데이트
+            if (userId === '') {
+                console.log('표시 관리자 해제');
+                setRepresentativeAdmin(null);
+            } else if (result.representative) {
+                console.log('표시 관리자 설정:', result.representative);
+                setRepresentativeAdmin(result.representative);
+            }
+
+            console.log('=== handleRepresentativeAdminSet 성공 완료 ===');
+            alert(result.message);
+        } catch (error) {
+            console.log('handleRepresentativeAdminSet 오류:', error);
+            alert('표시 관리자 설정에 실패했습니다.');
+        } finally {
+            setIsUpdatingRepresentative(false);
+        }
+    };
+
+
+    const handleUserStatusChange = async (userId: string, status: 'active' | 'suspended' | 'banned', duration?: number) => {
+        try {
+            let message = '';
+
+            if (status === 'active') {
+                message = '사용자의 제재를 해제하고 정상 이용 상태로 변경하시겠습니까?';
+            } else if (status === 'suspended') {
+                message = `사용자를 ${duration}일간 정지하시겠습니까?`;
+            } else {
+                message = '사용자를 영구적으로 차단하시겠습니까?\n차단된 사용자는 관리자가 해제하기 전까지 로그인이 불가능합니다.';
+            }
 
             if (!confirm(message)) {
                 return;
+            }
+
+            let requestBody: any = { status };
+
+            if (status === 'suspended' && duration) {
+                const suspendUntil = new Date();
+                suspendUntil.setDate(suspendUntil.getDate() + duration);
+                requestBody.suspendUntil = suspendUntil.toISOString();
             }
 
             const response = await fetch(`/api/users/${userId}/status`, {
@@ -567,7 +694,7 @@ export default function AdminPage() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ status })
+                body: JSON.stringify(requestBody)
             });
 
             const result = await response.json();
@@ -1171,6 +1298,47 @@ export default function AdminPage() {
                                     <div className="p-4 sm:p-6 border-b border-gray-200">
                                         <h2 className="text-base font-medium text-gray-900">사용자 관리</h2>
                                         <p className="mt-1 text-sm text-gray-500">전체 사용자 목록과 권한을 관리합니다</p>
+
+                                        {/* 표시 관리자 선택 */}
+                                        <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                                            <div className="flex items-center gap-3">
+                                                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                                                    표시 관리자:
+                                                </label>
+                                                <select
+                                                    value={representativeAdmin?.id || ''}
+                                                    onChange={async (e) => {
+                                                        const selectedUserId = e.target.value;
+                                                        console.log('선택박스 변경:', selectedUserId);
+                                                        if (selectedUserId === '') {
+                                                            await handleRepresentativeAdminSet('');
+                                                        } else {
+                                                            await handleRepresentativeAdminSet(selectedUserId);
+                                                        }
+                                                    }}
+                                                    disabled={isUpdatingRepresentative}
+                                                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    <option value="">표시 관리자 선택</option>
+                                                    {users
+                                                        .filter(user => user.role === 'admin' || user.role === 'super_admin')
+                                                        .map(user => (
+                                                            <option key={user.id} value={user.id}>
+                                                                {user.nickname} ({user.name}) - {user.role === 'super_admin' ? '대표 관리자' : '관리자'}
+                                                            </option>
+                                                        ))}
+                                                </select>
+                                                {isUpdatingRepresentative && (
+                                                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                                )}
+                                            </div>
+                                            {representativeAdmin && (
+                                                <div className="mt-2 text-xs text-gray-600">
+                                                    현재: {representativeAdmin.nickname} ({representativeAdmin.email})
+                                                </div>
+                                            )}
+                                        </div>
+
                                     </div>
 
                                     {/* 데스크톱 테이블 뷰 */}
@@ -1179,12 +1347,14 @@ export default function AdminPage() {
                                             <thead>
                                                 <tr>
                                                     <th scope="col" className="py-3.5 pl-6 pr-3 text-left text-sm font-medium text-gray-900">사용자</th>
+                                                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-medium text-gray-900">이름</th>
+                                                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-medium text-gray-900">이메일</th>
+                                                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-medium text-gray-900">생년월일</th>
+                                                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-medium text-gray-900">전공</th>
+                                                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-medium text-gray-900">학년</th>
                                                     <th scope="col" className="px-3 py-3.5 text-left text-sm font-medium text-gray-900">역할</th>
                                                     <th scope="col" className="px-3 py-3.5 text-left text-sm font-medium text-gray-900">상태</th>
                                                     <th scope="col" className="px-3 py-3.5 text-left text-sm font-medium text-gray-900">가입일</th>
-                                                    <th scope="col" className="relative py-3.5 pl-3 pr-6">
-                                                        <span className="sr-only">액션</span>
-                                                    </th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-200">
@@ -1192,64 +1362,130 @@ export default function AdminPage() {
                                                     <tr key={user.id}>
                                                         <td className="whitespace-nowrap py-4 pl-6 pr-3">
                                                             <div className="flex items-center gap-3">
-                                                                <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
-                                                                    <span className="text-sm font-medium text-gray-600">
-                                                                        {user.nickname.charAt(0).toUpperCase()}
-                                                                    </span>
+                                                                <div className="h-8 w-8 rounded-full bg-gray-400 flex items-center justify-center overflow-hidden relative">
+                                                                    {user.profile_image ? (
+                                                                        <Image
+                                                                            src={user.profile_image}
+                                                                            alt={user.nickname}
+                                                                            fill
+                                                                            sizes="32px"
+                                                                            className="object-cover"
+                                                                        />
+                                                                    ) : (
+                                                                        <span className="text-white text-sm font-semibold">
+                                                                            {user.nickname.charAt(0).toUpperCase()}
+                                                                        </span>
+                                                                    )}
                                                                 </div>
-                                                                <div>
-                                                                    <div className="text-sm font-medium text-gray-900">{user.nickname}</div>
-                                                                    <div className="text-sm text-gray-500">{user.email}</div>
+                                                                <div
+                                                                    className="text-sm font-medium text-gray-900 cursor-pointer hover:text-blue-600 transition-colors duration-200"
+                                                                    onClick={() => router.push(`/profile/${user.nickname}`)}
+                                                                >
+                                                                    {user.nickname}
                                                                 </div>
                                                             </div>
                                                         </td>
-                                                        <td className="whitespace-nowrap px-3 py-4">
-                                                            <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${user.role === 'super_admin'
-                                                                ? 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
-                                                                : user.role === 'admin'
-                                                                    ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
-                                                                    : 'bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/20'
-                                                                }`}>
-                                                                {user.role === 'super_admin' ? '슈퍼 관리자' :
-                                                                    user.role === 'admin' ? '관리자' : '일반 사용자'}
-                                                            </span>
+                                                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900">
+                                                            {user.name}
+                                                        </td>
+                                                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                                            {user.email}
+                                                        </td>
+                                                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                                            {user.birth_date ? new Date(user.birth_date).toLocaleDateString() : '-'}
+                                                        </td>
+                                                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                                            {user.major || '-'}
+                                                        </td>
+                                                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                                            {user.grade || '-'}
                                                         </td>
                                                         <td className="whitespace-nowrap px-3 py-4">
-                                                            <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${user.status === 'active'
-                                                                ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20'
-                                                                : user.status === 'suspended'
-                                                                    ? 'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20'
-                                                                    : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
-                                                                }`}>
-                                                                {user.status === 'active' ? '활성' :
-                                                                    user.status === 'suspended' ? '정지' : '차단'}
-                                                            </span>
+                                                            {/* 역할 선택박스 */}
+                                                            {profile?.role === 'super_admin' && user.id !== profile?.id ? (
+                                                                // 슈퍼 관리자: 모든 역할 변경 가능
+                                                                <select
+                                                                    value={user.role}
+                                                                    onChange={(e) => {
+                                                                        const newRole = e.target.value as 'member' | 'admin' | 'super_admin';
+
+                                                                        if (newRole === 'super_admin') {
+                                                                            handleSuperAdminToggle(user.id, 'grant');
+                                                                        } else if (user.role === 'super_admin') {
+                                                                            handleSuperAdminToggle(user.id, 'revoke');
+                                                                        } else {
+                                                                            handleUserRoleChange(user.id, newRole);
+                                                                        }
+                                                                    }}
+                                                                    className="px-3 py-1.5 text-xs font-medium rounded-lg border-0 shadow-sm bg-gradient-to-r from-blue-50 to-purple-50 text-gray-700 hover:from-blue-100 hover:to-purple-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 cursor-pointer"
+                                                                >
+                                                                    <option value="member">일반 사용자</option>
+                                                                    <option value="admin">관리자</option>
+                                                                    <option value="super_admin">대표 관리자</option>
+                                                                </select>
+                                                            ) : profile?.role === 'admin' && user.role === 'member' && user.id !== profile?.id ? (
+                                                                // 일반 관리자: 일반 사용자만 관리자로 변경 가능
+                                                                <select
+                                                                    value={user.role}
+                                                                    onChange={(e) => handleUserRoleChange(user.id, e.target.value as 'member' | 'admin')}
+                                                                    className="px-3 py-1.5 text-xs font-medium rounded-lg border-0 shadow-sm bg-gradient-to-r from-gray-50 to-slate-50 text-gray-700 hover:from-gray-100 hover:to-slate-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 cursor-pointer"
+                                                                >
+                                                                    <option value="member">일반 사용자</option>
+                                                                    <option value="admin">관리자</option>
+                                                                </select>
+                                                            ) : (
+                                                                // 읽기 전용
+                                                                <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${user.role === 'super_admin'
+                                                                    ? 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
+                                                                    : user.role === 'admin'
+                                                                        ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
+                                                                        : 'bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/20'
+                                                                    }`}>
+                                                                    {user.role === 'super_admin' ? '대표 관리자' :
+                                                                        user.role === 'admin' ? '관리자' : '일반 사용자'}
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="whitespace-nowrap px-3 py-4">
+                                                            {/* 상태 선택박스 */}
+                                                            {user.id !== profile?.id ? (
+                                                                <select
+                                                                    value={user.status}
+                                                                    onChange={(e) => {
+                                                                        const value = e.target.value;
+                                                                        if (value.startsWith('suspended_')) {
+                                                                            const duration = parseInt(value.split('_')[1]);
+                                                                            handleUserStatusChange(user.id, 'suspended', duration);
+                                                                        } else {
+                                                                            handleUserStatusChange(user.id, value as 'active' | 'banned');
+                                                                        }
+                                                                    }}
+                                                                    className="px-3 py-1.5 text-xs font-medium rounded-lg border-0 shadow-sm bg-gradient-to-r from-green-50 to-emerald-50 text-gray-700 hover:from-green-100 hover:to-emerald-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 cursor-pointer"
+                                                                >
+                                                                    <option value="active">활성</option>
+                                                                    <option value="suspended_1">정지(1일)</option>
+                                                                    <option value="suspended_3">정지(3일)</option>
+                                                                    <option value="suspended_7">정지(7일)</option>
+                                                                    <option value="suspended_15">정지(15일)</option>
+                                                                    <option value="suspended_30">정지(30일)</option>
+                                                                    <option value="suspended_90">정지(90일)</option>
+                                                                    <option value="banned">차단</option>
+                                                                </select>
+                                                            ) : (
+                                                                // 본인은 읽기 전용
+                                                                <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${user.status === 'active'
+                                                                    ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20'
+                                                                    : user.status === 'suspended'
+                                                                        ? 'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20'
+                                                                        : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
+                                                                    }`}>
+                                                                    {user.status === 'active' ? '활성' :
+                                                                        user.status === 'suspended' ? '정지' : '차단'}
+                                                                </span>
+                                                            )}
                                                         </td>
                                                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                                             {new Date(user.created_at).toLocaleDateString()}
-                                                        </td>
-                                                        <td className="whitespace-nowrap py-4 pl-3 pr-6 text-right text-sm">
-                                                            <div className="flex items-center gap-2">
-                                                                {profile?.role === 'super_admin' && user.role !== 'super_admin' && (
-                                                                    <select
-                                                                        value={user.role}
-                                                                        onChange={(e) => handleUserRoleChange(user.id, e.target.value as 'member' | 'admin')}
-                                                                        className="text-sm border border-gray-300 rounded-md px-2 py-1"
-                                                                    >
-                                                                        <option value="member">일반 사용자</option>
-                                                                        <option value="admin">관리자</option>
-                                                                    </select>
-                                                                )}
-                                                                <select
-                                                                    value={user.status}
-                                                                    onChange={(e) => handleUserStatusChange(user.id, e.target.value as 'active' | 'suspended' | 'banned')}
-                                                                    className="text-sm border border-gray-300 rounded-md px-2 py-1"
-                                                                >
-                                                                    <option value="active">활성 (정상 이용)</option>
-                                                                    <option value="suspended">정지 (일시적 제재)</option>
-                                                                    <option value="banned">차단 (영구 제재)</option>
-                                                                </select>
-                                                            </div>
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -1262,41 +1498,121 @@ export default function AdminPage() {
                                         {users.map((user) => (
                                             <div key={user.id} className="bg-white border border-gray-200 rounded-lg p-4">
                                                 <div className="flex items-start gap-3 mb-3">
-                                                    <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                                                        <span className="text-sm font-medium text-gray-600">
-                                                            {user.nickname.charAt(0).toUpperCase()}
-                                                        </span>
+                                                    <div className="h-10 w-10 rounded-full bg-gray-400 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+                                                        {user.profile_image ? (
+                                                            <Image
+                                                                src={user.profile_image}
+                                                                alt={user.nickname}
+                                                                fill
+                                                                className="object-cover"
+                                                            />
+                                                        ) : (
+                                                            <span className="text-white text-sm font-semibold">
+                                                                {user.nickname.charAt(0).toUpperCase()}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <div className="text-sm font-medium text-gray-900 truncate">{user.nickname}</div>
+                                                        <div
+                                                            className="text-sm font-medium text-gray-900 truncate cursor-pointer hover:text-blue-600 transition-colors duration-200"
+                                                            onClick={() => router.push(`/profile/${user.nickname}`)}
+                                                        >
+                                                            {user.nickname}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500 truncate">{user.name}</div>
                                                         <div className="text-xs text-gray-500 truncate">{user.email}</div>
+                                                        <div className="text-xs text-gray-500 truncate">
+                                                            {user.birth_date ? new Date(user.birth_date).toLocaleDateString() : '-'} |
+                                                            {user.major || '-'} |
+                                                            {user.grade || '-'}
+                                                        </div>
                                                     </div>
                                                 </div>
 
                                                 <div className="space-y-2 mb-3">
                                                     <div className="flex items-center justify-between text-sm">
                                                         <span className="text-gray-500">권한</span>
-                                                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${user.role === 'super_admin'
-                                                            ? 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
-                                                            : user.role === 'admin'
-                                                                ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
-                                                                : 'bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/20'
-                                                            }`}>
-                                                            {user.role === 'super_admin' ? '슈퍼 관리자' :
-                                                                user.role === 'admin' ? '관리자' : '일반 사용자'}
-                                                        </span>
+                                                        {profile?.role === 'super_admin' && user.id !== profile?.id ? (
+                                                            // 슈퍼 관리자: 모든 역할 변경 가능
+                                                            <select
+                                                                value={user.role}
+                                                                onChange={(e) => {
+                                                                    const newRole = e.target.value as 'member' | 'admin' | 'super_admin';
+
+                                                                    if (newRole === 'super_admin') {
+                                                                        handleSuperAdminToggle(user.id, 'grant');
+                                                                    } else if (user.role === 'super_admin') {
+                                                                        handleSuperAdminToggle(user.id, 'revoke');
+                                                                    } else {
+                                                                        handleUserRoleChange(user.id, newRole);
+                                                                    }
+                                                                }}
+                                                                className="px-3 py-1.5 text-xs font-medium rounded-lg border-0 shadow-sm bg-gradient-to-r from-blue-50 to-purple-50 text-gray-700 hover:from-blue-100 hover:to-purple-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 cursor-pointer"
+                                                            >
+                                                                <option value="member">일반 사용자</option>
+                                                                <option value="admin">관리자</option>
+                                                                <option value="super_admin">대표 관리자</option>
+                                                            </select>
+                                                        ) : profile?.role === 'admin' && user.role === 'member' && user.id !== profile?.id ? (
+                                                            // 일반 관리자: 일반 사용자만 관리자로 변경 가능
+                                                            <select
+                                                                value={user.role}
+                                                                onChange={(e) => handleUserRoleChange(user.id, e.target.value as 'member' | 'admin')}
+                                                                className="px-3 py-1.5 text-xs font-medium rounded-lg border-0 shadow-sm bg-gradient-to-r from-gray-50 to-slate-50 text-gray-700 hover:from-gray-100 hover:to-slate-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 cursor-pointer"
+                                                            >
+                                                                <option value="member">일반 사용자</option>
+                                                                <option value="admin">관리자</option>
+                                                            </select>
+                                                        ) : (
+                                                            // 읽기 전용
+                                                            <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${user.role === 'super_admin'
+                                                                ? 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
+                                                                : user.role === 'admin'
+                                                                    ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
+                                                                    : 'bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/20'
+                                                                }`}>
+                                                                {user.role === 'super_admin' ? '대표 관리자' :
+                                                                    user.role === 'admin' ? '관리자' : '일반 사용자'}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <div className="flex items-center justify-between text-sm">
                                                         <span className="text-gray-500">상태</span>
-                                                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${user.status === 'active'
-                                                            ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20'
-                                                            : user.status === 'suspended'
-                                                                ? 'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20'
-                                                                : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
-                                                            }`}>
-                                                            {user.status === 'active' ? '활성' :
-                                                                user.status === 'suspended' ? '정지' : '차단'}
-                                                        </span>
+                                                        {user.id !== profile?.id ? (
+                                                            <select
+                                                                value={user.status}
+                                                                onChange={(e) => {
+                                                                    const value = e.target.value;
+                                                                    if (value.startsWith('suspended_')) {
+                                                                        const duration = parseInt(value.split('_')[1]);
+                                                                        handleUserStatusChange(user.id, 'suspended', duration);
+                                                                    } else {
+                                                                        handleUserStatusChange(user.id, value as 'active' | 'banned');
+                                                                    }
+                                                                }}
+                                                                className="px-3 py-1.5 text-xs font-medium rounded-lg border-0 shadow-sm bg-gradient-to-r from-green-50 to-emerald-50 text-gray-700 hover:from-green-100 hover:to-emerald-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 cursor-pointer"
+                                                            >
+                                                                <option value="active">활성</option>
+                                                                <option value="suspended_1">정지(1일)</option>
+                                                                <option value="suspended_3">정지(3일)</option>
+                                                                <option value="suspended_7">정지(7일)</option>
+                                                                <option value="suspended_15">정지(15일)</option>
+                                                                <option value="suspended_30">정지(30일)</option>
+                                                                <option value="suspended_90">정지(90일)</option>
+                                                                <option value="banned">차단</option>
+                                                            </select>
+                                                        ) : (
+                                                            // 본인은 읽기 전용
+                                                            <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${user.status === 'active'
+                                                                ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20'
+                                                                : user.status === 'suspended'
+                                                                    ? 'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20'
+                                                                    : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
+                                                                }`}>
+                                                                {user.status === 'active' ? '활성' :
+                                                                    user.status === 'suspended' ? '정지' : '차단'}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <div className="flex items-center justify-between text-sm">
                                                         <span className="text-gray-500">가입일</span>
@@ -1304,33 +1620,6 @@ export default function AdminPage() {
                                                     </div>
                                                 </div>
 
-                                                <div className="space-y-2 pt-3 border-t border-gray-200">
-                                                    {profile?.role === 'super_admin' && user.role !== 'super_admin' && (
-                                                        <div>
-                                                            <label className="block text-xs text-gray-500 mb-1">권한 변경</label>
-                                                            <select
-                                                                value={user.role}
-                                                                onChange={(e) => handleUserRoleChange(user.id, e.target.value as 'member' | 'admin')}
-                                                                className="w-full text-sm border border-gray-300 rounded-md px-3 py-2"
-                                                            >
-                                                                <option value="member">일반 사용자</option>
-                                                                <option value="admin">관리자</option>
-                                                            </select>
-                                                        </div>
-                                                    )}
-                                                    <div>
-                                                        <label className="block text-xs text-gray-500 mb-1">상태 변경</label>
-                                                        <select
-                                                            value={user.status}
-                                                            onChange={(e) => handleUserStatusChange(user.id, e.target.value as 'active' | 'suspended' | 'banned')}
-                                                            className="w-full text-sm border border-gray-300 rounded-md px-3 py-2"
-                                                        >
-                                                            <option value="active">활성 (정상 이용)</option>
-                                                            <option value="suspended">정지 (일시적 제재)</option>
-                                                            <option value="banned">차단 (영구 제재)</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -1954,85 +2243,6 @@ export default function AdminPage() {
                                 </div>
                             )}
 
-                            {/* 정지 기간 선택 모달 */}
-                            {showSuspendModal && (
-                                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                                    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-                                        <h3 className="text-lg font-medium text-gray-900 mb-4">
-                                            사용자 정지 기간 설정
-                                        </h3>
-                                        <div className="space-y-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    정지 기간 선택
-                                                </label>
-                                                <select
-                                                    value={suspendDuration}
-                                                    onChange={(e) => setSuspendDuration(e.target.value)}
-                                                    className="w-full border border-gray-300 rounded-md px-3 py-2"
-                                                >
-                                                    <option value="1">1일</option>
-                                                    <option value="3">3일</option>
-                                                    <option value="7">7일</option>
-                                                    <option value="15">15일</option>
-                                                    <option value="30">30일</option>
-                                                    <option value="90">90일</option>
-                                                </select>
-                                            </div>
-                                            <div className="flex justify-end gap-3">
-                                                <button
-                                                    onClick={() => setShowSuspendModal(false)}
-                                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-                                                >
-                                                    취소
-                                                </button>
-                                                <button
-                                                    onClick={async () => {
-                                                        if (!selectedUserId) return;
-
-                                                        const suspendUntil = new Date();
-                                                        suspendUntil.setDate(suspendUntil.getDate() + parseInt(suspendDuration));
-
-                                                        try {
-                                                            const response = await fetch(`/api/users/${selectedUserId}/suspend`, {
-                                                                method: 'POST',
-                                                                headers: {
-                                                                    'Content-Type': 'application/json',
-                                                                },
-                                                                body: JSON.stringify({ suspendUntil: suspendUntil.toISOString() })
-                                                            });
-
-                                                            const result = await response.json();
-
-                                                            if (!response.ok) {
-                                                                throw new Error(result.error || '사용자 정지 처리에 실패했습니다.');
-                                                            }
-
-                                                            // 사용자 목록 업데이트
-                                                            setUsers(prev =>
-                                                                prev.map(user =>
-                                                                    user.id === selectedUserId
-                                                                        ? { ...user, status: 'suspended' }
-                                                                        : user
-                                                                )
-                                                            );
-
-                                                            alert(`사용자가 ${suspendDuration}일 동안 정지되었습니다.`);
-                                                        } catch {
-                                                            alert('사용자 정지 처리에 실패했습니다.');
-                                                        }
-
-                                                        setShowSuspendModal(false);
-                                                    }}
-                                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-                                                >
-                                                    정지하기
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>
