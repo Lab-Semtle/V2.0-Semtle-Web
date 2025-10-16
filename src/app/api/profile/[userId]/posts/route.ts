@@ -136,7 +136,7 @@ export async function GET(
                 query = query.eq('status', 'published');
             }
 
-            const { data: resources, error: resourcesError } = await query.order('published_at', { ascending: false });
+            const { data: resources } = await query.order('published_at', { ascending: false });
 
 
             if (resources && resources.length > 0) {

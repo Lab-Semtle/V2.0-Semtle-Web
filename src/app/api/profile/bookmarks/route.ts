@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
             if (bookmarkedProjectIds && bookmarkedProjectIds.length > 0) {
                 const projectIds = bookmarkedProjectIds.map(b => b.project_id);
 
-                const { data: projects, error: projectsError } = await supabase
+                const { data: projects } = await supabase
                     .from('projects')
                     .select(`
                         id, title, subtitle, thumbnail, views, likes_count, comments_count, bookmarks_count,
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
             if (bookmarkedResourceIds && bookmarkedResourceIds.length > 0) {
                 const resourceIds = bookmarkedResourceIds.map(b => b.resource_id);
 
-                const { data: resources, error: resourcesError } = await supabase
+                const { data: resources } = await supabase
                     .from('resources')
                     .select(`
                         id, title, subtitle, thumbnail, views, likes_count, comments_count, bookmarks_count,
@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
             if (bookmarkedActivityIds && bookmarkedActivityIds.length > 0) {
                 const activityIds = bookmarkedActivityIds.map(b => b.activity_id);
 
-                const { data: activities, error: activitiesError } = await supabase
+                const { data: activities } = await supabase
                     .from('activities')
                     .select(`
                         id, title, subtitle, thumbnail, views, likes_count, comments_count, bookmarks_count,
