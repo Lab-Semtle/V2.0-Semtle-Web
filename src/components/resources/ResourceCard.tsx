@@ -17,6 +17,7 @@ export default function ResourceCard({ resource, className = '' }: ResourceCardP
     const { user } = useAuth();
 
     const checkLikeStatus = useCallback(async () => {
+        if (!user) return; // 사용자가 로그인되어 있지 않으면 API 호출하지 않음
         try {
             const response = await fetch(`/api/resources/${resource.id}/like`);
             if (response.ok) {
@@ -25,9 +26,10 @@ export default function ResourceCard({ resource, className = '' }: ResourceCardP
             }
         } catch {
         }
-    }, [resource.id]);
+    }, [resource.id, user]);
 
     const checkBookmarkStatus = useCallback(async () => {
+        if (!user) return; // 사용자가 로그인되어 있지 않으면 API 호출하지 않음
         try {
             const response = await fetch(`/api/resources/${resource.id}/bookmark`);
             if (response.ok) {
@@ -36,7 +38,7 @@ export default function ResourceCard({ resource, className = '' }: ResourceCardP
             }
         } catch {
         }
-    }, [resource.id]);
+    }, [resource.id, user]);
 
     // 좋아요 및 북마크 상태 확인
     useEffect(() => {

@@ -94,6 +94,7 @@ export default function ProfilePostCard({ post, isOwnPost = false, onEdit, onDel
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
     const [isChangingStatus, setIsChangingStatus] = useState(false);
     const [currentStatus, setCurrentStatus] = useState(post.status || 'draft');
+    const [isDeleting, setIsDeleting] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const { views, incrementView } = useViewCount({
         postType: post.post_type as 'project' | 'activity' | 'resource',
@@ -652,14 +653,24 @@ export default function ProfilePostCard({ post, isOwnPost = false, onEdit, onDel
                                         <Button
                                             size="sm"
                                             variant="destructive"
-                                            onClick={(e) => {
+                                            onClick={async (e) => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
-                                                onDelete(post.id, post.post_type);
+                                                setIsDeleting(true);
+                                                try {
+                                                    await onDelete(post.id, post.post_type);
+                                                } finally {
+                                                    setIsDeleting(false);
+                                                }
                                             }}
-                                            className="h-8 px-3 rounded-lg border-0 shadow-none bg-red-100 text-red-600 hover:bg-red-200 transition-all duration-200"
+                                            disabled={isDeleting}
+                                            className="h-8 px-3 rounded-lg border-0 shadow-none bg-red-100 text-red-600 hover:bg-red-200 transition-all duration-200 disabled:opacity-50"
                                         >
-                                            <Trash2 className="w-3 h-3" />
+                                            {isDeleting ? (
+                                                <div className="animate-spin rounded-full h-3 w-3 border-2 border-current border-t-transparent"></div>
+                                            ) : (
+                                                <Trash2 className="w-3 h-3" />
+                                            )}
                                         </Button>
                                     )}
                                 </div>

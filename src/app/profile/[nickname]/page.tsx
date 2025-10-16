@@ -312,7 +312,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
     // 북마크한 게시물 로드 (내 프로필인 경우만)
     useEffect(() => {
         const fetchBookmarkedPosts = async () => {
-            if (!isOwnProfile) return;
+            if (!isOwnProfile || !user) return; // 사용자가 로그인되어 있지 않으면 API 호출하지 않음
 
             try {
                 const response = await fetch('/api/profile/bookmarks?type=all', {
@@ -332,7 +332,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
         if (isOwnProfile) {
             fetchBookmarkedPosts();
         }
-    }, [isOwnProfile, error]);
+    }, [isOwnProfile, error, user]);
 
     const handleEditProfile = () => {
         router.push('/settings');
@@ -350,6 +350,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
                 });
 
                 if (response.ok) {
+                    // 즉시 UI에서 제거
                     setMyPosts(prev => prev.filter(post => !(post.id === postId && post.post_type === postType)));
                     alert('게시물이 삭제되었습니다.');
                 } else {

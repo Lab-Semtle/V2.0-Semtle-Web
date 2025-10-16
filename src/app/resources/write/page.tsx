@@ -24,7 +24,7 @@ interface PostFormData {
 }
 
 export default function WriteResourcePage() {
-  const { user, loading } = useAuth();
+  const { user, loading, profile } = useAuth();
   const router = useRouter();
 
   const handleSave = async (formData: PostFormData, content: unknown) => {
@@ -53,7 +53,12 @@ export default function WriteResourcePage() {
         alert('자료가 임시저장되었습니다!');
       } else {
         alert('자료가 성공적으로 등록되었습니다!');
-        router.push('/resources');
+        // 사용자 프로필 페이지로 이동
+        if (profile?.nickname) {
+          router.push(`/profile/${profile.nickname}`);
+        } else {
+          router.push('/mypage');
+        }
       }
     } catch (error) {
       throw error;

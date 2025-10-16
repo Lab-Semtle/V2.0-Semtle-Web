@@ -73,10 +73,15 @@ export default function FileUpload({
             isExisting: false // 새로 업로드되는 파일
         };
 
+        if (!userId) {
+            uploadedFile.error = '로그인이 필요합니다.';
+            return uploadedFile;
+        }
+
         try {
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('userId', userId || '');
+            formData.append('userId', userId);
 
             const response = await fetch('/api/upload/resource', {
                 method: 'POST',
