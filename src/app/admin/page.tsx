@@ -988,30 +988,34 @@ export default function AdminPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center pt-28">
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center pt-24">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">로딩 중...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-600 mx-auto mb-4"></div>
+                    <p className="text-slate-600">로딩 중...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-32">
+        <div className="min-h-screen bg-slate-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
                 {/* 헤더 */}
-                <div className="mb-10">
+                <div className="mb-8">
                     <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-3xl font-semibold text-gray-900 mb-1">
-                                아치셈틀 공홈 관리
+                        <div className="space-y-1">
+                            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+                                관리자 대시보드
                             </h1>
-                            <p className="text-gray-500">시스템 관리 및 모니터링 대시보드</p>
+                            <p className="text-slate-500 text-sm">시스템 관리 및 모니터링</p>
                         </div>
-                        <div className="hidden md:flex items-center space-x-4">
-                            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                                <Shield className="w-5 h-5 text-white" />
+                        <div className="flex items-center space-x-4">
+                            <div className="flex items-center space-x-2 px-3 py-2 bg-slate-100 rounded-lg">
+                                <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                                <span className="text-sm font-medium text-slate-700">시스템 정상</span>
+                            </div>
+                            <div className="w-10 h-10 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl flex items-center justify-center">
+                                <Shield className="w-5 h-5 text-slate-600" />
                             </div>
                         </div>
                     </div>
@@ -1019,12 +1023,12 @@ export default function AdminPage() {
 
                 {/* 모바일/태블릿 탭 네비게이션 */}
                 <div className="mb-8 lg:hidden">
-                    <nav className="flex flex-wrap gap-2 bg-white p-4 rounded-lg border border-gray-200">
+                    <nav className="flex flex-wrap gap-2 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
                         <button
                             onClick={() => setActiveTab('overview')}
-                            className={`flex items-center gap-2 py-2 px-3 text-sm font-medium rounded-md ${activeTab === 'overview'
-                                ? 'bg-blue-50 text-blue-700'
-                                : 'text-gray-600 hover:bg-gray-50'
+                            className={`flex items-center gap-2 py-2.5 px-4 text-sm font-medium rounded-lg transition-all duration-200 ${activeTab === 'overview'
+                                ? 'bg-slate-900 text-white shadow-sm'
+                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                                 }`}
                         >
                             <BarChart3 className="w-4 h-4" />
@@ -1032,9 +1036,9 @@ export default function AdminPage() {
                         </button>
                         <button
                             onClick={() => setActiveTab('users')}
-                            className={`flex items-center gap-2 py-2 px-3 text-sm font-medium rounded-md ${activeTab === 'users'
-                                ? 'bg-blue-50 text-blue-700'
-                                : 'text-gray-600 hover:bg-gray-50'
+                            className={`flex items-center gap-2 py-2.5 px-4 text-sm font-medium rounded-lg transition-all duration-200 ${activeTab === 'users'
+                                ? 'bg-slate-900 text-white shadow-sm'
+                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                                 }`}
                         >
                             <Users className="w-4 h-4" />
@@ -1042,9 +1046,9 @@ export default function AdminPage() {
                         </button>
                         <button
                             onClick={() => setActiveTab('contact')}
-                            className={`flex items-center gap-2 py-2 px-3 text-sm font-medium rounded-md ${activeTab === 'contact'
-                                ? 'bg-blue-50 text-blue-700'
-                                : 'text-gray-600 hover:bg-gray-50'
+                            className={`flex items-center gap-2 py-2.5 px-4 text-sm font-medium rounded-lg transition-all duration-200 ${activeTab === 'contact'
+                                ? 'bg-slate-900 text-white shadow-sm'
+                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                                 }`}
                         >
                             <Mail className="w-4 h-4" />
@@ -1052,9 +1056,9 @@ export default function AdminPage() {
                         </button>
                         <button
                             onClick={() => setActiveTab('activities')}
-                            className={`flex items-center gap-2 py-2 px-3 text-sm font-medium rounded-md ${activeTab === 'activities'
-                                ? 'bg-blue-50 text-blue-700'
-                                : 'text-gray-600 hover:bg-gray-50'
+                            className={`flex items-center gap-2 py-2.5 px-4 text-sm font-medium rounded-lg transition-all duration-200 ${activeTab === 'activities'
+                                ? 'bg-slate-900 text-white shadow-sm'
+                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                                 }`}
                         >
                             <Calendar className="w-4 h-4" />
@@ -1062,9 +1066,9 @@ export default function AdminPage() {
                         </button>
                         <button
                             onClick={() => setActiveTab('projects')}
-                            className={`flex items-center gap-2 py-2 px-3 text-sm font-medium rounded-md ${activeTab === 'projects'
-                                ? 'bg-blue-50 text-blue-700'
-                                : 'text-gray-600 hover:bg-gray-50'
+                            className={`flex items-center gap-2 py-2.5 px-4 text-sm font-medium rounded-lg transition-all duration-200 ${activeTab === 'projects'
+                                ? 'bg-slate-900 text-white shadow-sm'
+                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                                 }`}
                         >
                             <FolderOpen className="w-4 h-4" />
@@ -1072,9 +1076,9 @@ export default function AdminPage() {
                         </button>
                         <button
                             onClick={() => setActiveTab('resources')}
-                            className={`flex items-center gap-2 py-2 px-3 text-sm font-medium rounded-md ${activeTab === 'resources'
-                                ? 'bg-blue-50 text-blue-700'
-                                : 'text-gray-600 hover:bg-gray-50'
+                            className={`flex items-center gap-2 py-2.5 px-4 text-sm font-medium rounded-lg transition-all duration-200 ${activeTab === 'resources'
+                                ? 'bg-slate-900 text-white shadow-sm'
+                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                                 }`}
                         >
                             <FileText className="w-4 h-4" />
@@ -1083,128 +1087,130 @@ export default function AdminPage() {
                     </nav>
                 </div>
 
-                <div className="flex flex-col lg:flex-row gap-6">
+                <div className="flex flex-col lg:flex-row gap-8">
                     {/* 데스크톱 사이드바 */}
-                    <div className="hidden lg:block w-48 flex-shrink-0">
-                        <nav className="space-y-1">
-                            <button
-                                onClick={() => setActiveTab('overview')}
-                                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'overview'
-                                    ? 'bg-blue-50 text-blue-700'
-                                    : 'text-gray-600 hover:bg-gray-50'
-                                    }`}
-                            >
-                                <BarChart3 className="w-5 h-5 mr-3" />
-                                개요
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('users')}
-                                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'users'
-                                    ? 'bg-blue-50 text-blue-700'
-                                    : 'text-gray-600 hover:bg-gray-50'
-                                    }`}
-                            >
-                                <Users className="w-5 h-5 mr-3" />
-                                사용자 관리
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('contact')}
-                                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'contact'
-                                    ? 'bg-blue-50 text-blue-700'
-                                    : 'text-gray-600 hover:bg-gray-50'
-                                    }`}
-                            >
-                                <Mail className="w-5 h-5 mr-3" />
-                                문의 관리
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('activities')}
-                                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'activities'
-                                    ? 'bg-blue-50 text-blue-700'
-                                    : 'text-gray-600 hover:bg-gray-50'
-                                    }`}
-                            >
-                                <Calendar className="w-5 h-5 mr-3" />
-                                활동게시판 관리
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('projects')}
-                                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'projects'
-                                    ? 'bg-blue-50 text-blue-700'
-                                    : 'text-gray-600 hover:bg-gray-50'
-                                    }`}
-                            >
-                                <FolderOpen className="w-5 h-5 mr-3" />
-                                프로젝트 관리
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('resources')}
-                                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${activeTab === 'resources'
-                                    ? 'bg-blue-50 text-blue-700'
-                                    : 'text-gray-600 hover:bg-gray-50'
-                                    }`}
-                            >
-                                <FileText className="w-5 h-5 mr-3" />
-                                자료실 관리
-                            </button>
-                        </nav>
+                    <div className="hidden lg:block w-64 flex-shrink-0">
+                        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                            <nav className="space-y-2">
+                                <button
+                                    onClick={() => setActiveTab('overview')}
+                                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${activeTab === 'overview'
+                                        ? 'bg-slate-900 text-white shadow-sm'
+                                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                        }`}
+                                >
+                                    <BarChart3 className="w-4 h-4 mr-3" />
+                                    개요
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('users')}
+                                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${activeTab === 'users'
+                                        ? 'bg-slate-900 text-white shadow-sm'
+                                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                        }`}
+                                >
+                                    <Users className="w-4 h-4 mr-3" />
+                                    사용자 관리
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('contact')}
+                                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${activeTab === 'contact'
+                                        ? 'bg-slate-900 text-white shadow-sm'
+                                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                        }`}
+                                >
+                                    <Mail className="w-4 h-4 mr-3" />
+                                    문의 관리
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('activities')}
+                                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${activeTab === 'activities'
+                                        ? 'bg-slate-900 text-white shadow-sm'
+                                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                        }`}
+                                >
+                                    <Calendar className="w-4 h-4 mr-3" />
+                                    활동게시판 관리
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('projects')}
+                                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${activeTab === 'projects'
+                                        ? 'bg-slate-900 text-white shadow-sm'
+                                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                        }`}
+                                >
+                                    <FolderOpen className="w-4 h-4 mr-3" />
+                                    프로젝트 관리
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('resources')}
+                                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${activeTab === 'resources'
+                                        ? 'bg-slate-900 text-white shadow-sm'
+                                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                        }`}
+                                >
+                                    <FileText className="w-4 h-4 mr-3" />
+                                    자료실 관리
+                                </button>
+                            </nav>
+                        </div>
                     </div>
 
                     {/* 메인 콘텐츠 */}
                     <div className="flex-1">
-                        <div className="bg-white rounded-lg border border-gray-200">
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
                             {activeTab === 'overview' && (
-                                <div className="divide-y divide-gray-200">
+                                <div className="divide-y divide-slate-100">
                                     {/* 환영 메시지 */}
-                                    <div className="p-4 sm:p-6">
+                                    <div className="p-8">
                                         <div className="flex items-center justify-between">
-                                            <div>
-                                                <h2 className="text-lg font-medium text-gray-900">시스템 현황</h2>
-                                                <p className="mt-1 text-sm text-gray-500">전체 시스템 상태를 확인할 수 있습니다</p>
+                                            <div className="space-y-2">
+                                                <h2 className="text-xl font-bold text-slate-900">시스템 현황</h2>
+                                                <p className="text-slate-500 text-sm">전체 시스템 상태를 확인할 수 있습니다</p>
                                             </div>
                                             <div className="hidden md:block">
-                                                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                                    <BarChart3 className="w-5 h-5 text-blue-600" />
+                                                <div className="w-12 h-12 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl flex items-center justify-center">
+                                                    <BarChart3 className="w-6 h-6 text-slate-600" />
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* 시스템 통계 */}
-                                    <div className="p-4 sm:p-6">
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                                            <div className="bg-white rounded-lg border border-gray-200 p-4">
-                                                <div className="flex items-center">
-                                                    <div className="w-8 h-8 bg-blue-50 rounded-md flex items-center justify-center mr-3">
-                                                        <Users className="h-4 w-4 text-blue-600" />
-                                                    </div>
+                                    <div className="p-8">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-6 border border-slate-200">
+                                                <div className="flex items-center justify-between">
                                                     <div>
-                                                        <p className="text-sm font-medium text-gray-500">총 사용자</p>
-                                                        <p className="text-2xl font-semibold text-gray-900">{systemStats?.totalUsers || 0}</p>
+                                                        <p className="text-sm font-medium text-slate-600 mb-1">총 사용자</p>
+                                                        <p className="text-3xl font-bold text-slate-900">{systemStats?.totalUsers || 0}</p>
+                                                    </div>
+                                                    <div className="w-12 h-12 bg-slate-200 rounded-xl flex items-center justify-center">
+                                                        <Users className="h-6 w-6 text-slate-600" />
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div className="bg-white rounded-lg border border-gray-200 p-4">
-                                                <div className="flex items-center">
-                                                    <div className="w-8 h-8 bg-green-50 rounded-md flex items-center justify-center mr-3">
-                                                        <Shield className="h-4 w-4 text-green-600" />
-                                                    </div>
+                                            <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-6 border border-slate-200">
+                                                <div className="flex items-center justify-between">
                                                     <div>
-                                                        <p className="text-sm font-medium text-gray-500">관리자</p>
-                                                        <p className="text-2xl font-semibold text-gray-900">{systemStats?.totalAdmins || 0}</p>
+                                                        <p className="text-sm font-medium text-slate-600 mb-1">관리자</p>
+                                                        <p className="text-3xl font-bold text-slate-900">{systemStats?.totalAdmins || 0}</p>
+                                                    </div>
+                                                    <div className="w-12 h-12 bg-slate-200 rounded-xl flex items-center justify-center">
+                                                        <Shield className="h-6 w-6 text-slate-600" />
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div className="bg-white rounded-lg border border-gray-200 p-4">
-                                                <div className="flex items-center">
-                                                    <div className="w-8 h-8 bg-purple-50 rounded-md flex items-center justify-center mr-3">
-                                                        <FileText className="h-4 w-4 text-purple-600" />
-                                                    </div>
+                                            <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-6 border border-slate-200">
+                                                <div className="flex items-center justify-between">
                                                     <div>
-                                                        <p className="text-sm font-medium text-gray-500">총 게시물</p>
-                                                        <p className="text-2xl font-semibold text-gray-900">{(systemStats?.totalProjects || 0) + (systemStats?.totalResources || 0) + (systemStats?.totalActivities || 0)}</p>
+                                                        <p className="text-sm font-medium text-slate-600 mb-1">총 게시물</p>
+                                                        <p className="text-3xl font-bold text-slate-900">{(systemStats?.totalProjects || 0) + (systemStats?.totalResources || 0) + (systemStats?.totalActivities || 0)}</p>
+                                                    </div>
+                                                    <div className="w-12 h-12 bg-slate-200 rounded-xl flex items-center justify-center">
+                                                        <FileText className="h-6 w-6 text-slate-600" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -1213,77 +1219,77 @@ export default function AdminPage() {
 
                                     {/* 게시물 통계 */}
                                     {postStats && (
-                                        <div className="p-4 sm:p-6">
-                                            <div className="mb-4">
-                                                <h2 className="text-base font-medium text-gray-900">게시물 통계</h2>
-                                                <p className="mt-1 text-sm text-gray-500">카테고리별 상세 현황</p>
+                                        <div className="p-8">
+                                            <div className="mb-6">
+                                                <h2 className="text-lg font-bold text-slate-900">게시물 통계</h2>
+                                                <p className="mt-1 text-sm text-slate-500">카테고리별 상세 현황</p>
                                             </div>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                                                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                                                    <div className="flex items-center mb-4">
-                                                        <div className="w-8 h-8 bg-blue-50 rounded-md flex items-center justify-center mr-3">
-                                                            <FolderOpen className="h-4 w-4 text-blue-600" />
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-6 border border-slate-200">
+                                                    <div className="flex items-center mb-6">
+                                                        <div className="w-12 h-12 bg-slate-200 rounded-xl flex items-center justify-center mr-4">
+                                                            <FolderOpen className="h-6 w-6 text-slate-600" />
                                                         </div>
-                                                        <h3 className="text-sm font-medium text-gray-900">프로젝트</h3>
+                                                        <h3 className="text-lg font-bold text-slate-900">프로젝트</h3>
                                                     </div>
-                                                    <div className="space-y-3">
+                                                    <div className="space-y-4">
                                                         <div className="flex justify-between items-center">
-                                                            <span className="text-sm text-gray-500">총 게시물</span>
-                                                            <span className="text-sm font-medium text-gray-900">{postStats.projects.total || 0}</span>
+                                                            <span className="text-sm text-slate-600">총 게시물</span>
+                                                            <span className="text-sm font-bold text-slate-900">{postStats.projects.total || 0}</span>
                                                         </div>
                                                         <div className="flex justify-between items-center">
-                                                            <span className="text-sm text-gray-500">발행됨</span>
-                                                            <span className="text-sm font-medium text-green-600">{postStats.projects.published || 0}</span>
+                                                            <span className="text-sm text-slate-600">발행됨</span>
+                                                            <span className="text-sm font-bold text-emerald-600">{postStats.projects.published || 0}</span>
                                                         </div>
                                                         <div className="flex justify-between items-center">
-                                                            <span className="text-sm text-gray-500">임시저장</span>
-                                                            <span className="text-sm font-medium text-orange-600">{postStats.projects.drafts || 0}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                                                    <div className="flex items-center mb-4">
-                                                        <div className="w-8 h-8 bg-green-50 rounded-md flex items-center justify-center mr-3">
-                                                            <FileText className="h-4 w-4 text-green-600" />
-                                                        </div>
-                                                        <h3 className="text-sm font-medium text-gray-900">자료실</h3>
-                                                    </div>
-                                                    <div className="space-y-3">
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-sm text-gray-500">총 게시물</span>
-                                                            <span className="text-sm font-medium text-gray-900">{postStats.resources.total || 0}</span>
-                                                        </div>
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-sm text-gray-500">발행됨</span>
-                                                            <span className="text-sm font-medium text-green-600">{postStats.resources.published || 0}</span>
-                                                        </div>
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-sm text-gray-500">임시저장</span>
-                                                            <span className="text-sm font-medium text-orange-600">{postStats.resources.drafts || 0}</span>
+                                                            <span className="text-sm text-slate-600">임시저장</span>
+                                                            <span className="text-sm font-bold text-amber-600">{postStats.projects.drafts || 0}</span>
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                                                    <div className="flex items-center mb-4">
-                                                        <div className="w-8 h-8 bg-purple-50 rounded-md flex items-center justify-center mr-3">
-                                                            <Calendar className="h-4 w-4 text-purple-600" />
+                                                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-6 border border-slate-200">
+                                                    <div className="flex items-center mb-6">
+                                                        <div className="w-12 h-12 bg-slate-200 rounded-xl flex items-center justify-center mr-4">
+                                                            <FileText className="h-6 w-6 text-slate-600" />
                                                         </div>
-                                                        <h3 className="text-sm font-medium text-gray-900">활동</h3>
+                                                        <h3 className="text-lg font-bold text-slate-900">자료실</h3>
                                                     </div>
-                                                    <div className="space-y-3">
+                                                    <div className="space-y-4">
                                                         <div className="flex justify-between items-center">
-                                                            <span className="text-sm text-gray-500">총 게시물</span>
-                                                            <span className="text-sm font-medium text-gray-900">{postStats.activities.total || 0}</span>
+                                                            <span className="text-sm text-slate-600">총 게시물</span>
+                                                            <span className="text-sm font-bold text-slate-900">{postStats.resources.total || 0}</span>
                                                         </div>
                                                         <div className="flex justify-between items-center">
-                                                            <span className="text-sm text-gray-500">발행됨</span>
-                                                            <span className="text-sm font-medium text-green-600">{postStats.activities.published || 0}</span>
+                                                            <span className="text-sm text-slate-600">발행됨</span>
+                                                            <span className="text-sm font-bold text-emerald-600">{postStats.resources.published || 0}</span>
                                                         </div>
                                                         <div className="flex justify-between items-center">
-                                                            <span className="text-sm text-gray-500">임시저장</span>
-                                                            <span className="text-sm font-medium text-orange-600">{postStats.activities.drafts || 0}</span>
+                                                            <span className="text-sm text-slate-600">임시저장</span>
+                                                            <span className="text-sm font-bold text-amber-600">{postStats.resources.drafts || 0}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-6 border border-slate-200">
+                                                    <div className="flex items-center mb-6">
+                                                        <div className="w-12 h-12 bg-slate-200 rounded-xl flex items-center justify-center mr-4">
+                                                            <Calendar className="h-6 w-6 text-slate-600" />
+                                                        </div>
+                                                        <h3 className="text-lg font-bold text-slate-900">활동</h3>
+                                                    </div>
+                                                    <div className="space-y-4">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-sm text-slate-600">총 게시물</span>
+                                                            <span className="text-sm font-bold text-slate-900">{postStats.activities.total || 0}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-sm text-slate-600">발행됨</span>
+                                                            <span className="text-sm font-bold text-emerald-600">{postStats.activities.published || 0}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-sm text-slate-600">임시저장</span>
+                                                            <span className="text-sm font-bold text-amber-600">{postStats.activities.drafts || 0}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1295,15 +1301,15 @@ export default function AdminPage() {
 
                             {activeTab === 'users' && (
                                 <div>
-                                    <div className="p-4 sm:p-6 border-b border-gray-200">
-                                        <h2 className="text-base font-medium text-gray-900">사용자 관리</h2>
-                                        <p className="mt-1 text-sm text-gray-500">전체 사용자 목록과 권한을 관리합니다</p>
+                                    <div className="p-6 border-b border-slate-200">
+                                        <h2 className="text-lg font-semibold text-slate-900">사용자 관리</h2>
+                                        <p className="mt-1 text-sm text-slate-600">전체 사용자 목록과 권한을 관리합니다</p>
 
                                         {/* 표시 관리자 선택 */}
-                                        <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                                        <div className="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-lg">
                                             <div className="flex items-center gap-3">
-                                                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
-                                                    표시 관리자:
+                                                <label className="text-sm font-semibold text-slate-700 whitespace-nowrap">
+                                                    표시 관리자
                                                 </label>
                                                 <select
                                                     value={representativeAdmin?.id || ''}
@@ -1317,7 +1323,7 @@ export default function AdminPage() {
                                                         }
                                                     }}
                                                     disabled={isUpdatingRepresentative}
-                                                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-md bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                                 >
                                                     <option value="">표시 관리자 선택</option>
                                                     {users
@@ -1329,11 +1335,11 @@ export default function AdminPage() {
                                                         ))}
                                                 </select>
                                                 {isUpdatingRepresentative && (
-                                                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                                    <div className="w-4 h-4 border-2 border-slate-500 border-t-transparent rounded-full animate-spin"></div>
                                                 )}
                                             </div>
                                             {representativeAdmin && (
-                                                <div className="mt-2 text-xs text-gray-600">
+                                                <div className="mt-2 text-xs text-slate-600">
                                                     현재: {representativeAdmin.nickname} ({representativeAdmin.email})
                                                 </div>
                                             )}
@@ -1342,155 +1348,162 @@ export default function AdminPage() {
                                     </div>
 
                                     {/* 데스크톱 테이블 뷰 */}
-                                    <div className="hidden lg:block overflow-x-auto">
-                                        <table className="min-w-full divide-y divide-gray-200">
-                                            <thead>
-                                                <tr>
-                                                    <th scope="col" className="py-3.5 pl-6 pr-3 text-left text-sm font-medium text-gray-900">사용자</th>
-                                                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-medium text-gray-900">이름</th>
-                                                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-medium text-gray-900">이메일</th>
-                                                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-medium text-gray-900">생년월일</th>
-                                                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-medium text-gray-900">전공</th>
-                                                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-medium text-gray-900">학년</th>
-                                                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-medium text-gray-900">역할</th>
-                                                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-medium text-gray-900">상태</th>
-                                                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-medium text-gray-900">가입일</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-gray-200">
-                                                {users.map((user) => (
-                                                    <tr key={user.id}>
-                                                        <td className="whitespace-nowrap py-4 pl-6 pr-3">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="h-8 w-8 rounded-full bg-gray-400 flex items-center justify-center overflow-hidden relative">
-                                                                    {user.profile_image ? (
-                                                                        <Image
-                                                                            src={user.profile_image}
-                                                                            alt={user.nickname}
-                                                                            fill
-                                                                            sizes="32px"
-                                                                            className="object-cover"
-                                                                        />
-                                                                    ) : (
-                                                                        <span className="text-white text-sm font-semibold">
-                                                                            {user.nickname.charAt(0).toUpperCase()}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                <div
-                                                                    className="text-sm font-medium text-gray-900 cursor-pointer hover:text-blue-600 transition-colors duration-200"
-                                                                    onClick={() => router.push(`/profile/${user.nickname}`)}
-                                                                >
-                                                                    {user.nickname}
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900">
-                                                            {user.name}
-                                                        </td>
-                                                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                            {user.email}
-                                                        </td>
-                                                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                            {user.birth_date ? new Date(user.birth_date).toLocaleDateString() : '-'}
-                                                        </td>
-                                                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                            {user.major || '-'}
-                                                        </td>
-                                                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                            {user.grade || '-'}
-                                                        </td>
-                                                        <td className="whitespace-nowrap px-3 py-4">
-                                                            {/* 역할 선택박스 */}
-                                                            {profile?.role === 'super_admin' && user.id !== profile?.id ? (
-                                                                // 슈퍼 관리자: 모든 역할 변경 가능
-                                                                <select
-                                                                    value={user.role}
-                                                                    onChange={(e) => {
-                                                                        const newRole = e.target.value as 'member' | 'admin' | 'super_admin';
-
-                                                                        if (newRole === 'super_admin') {
-                                                                            handleSuperAdminToggle(user.id, 'grant');
-                                                                        } else if (user.role === 'super_admin') {
-                                                                            handleSuperAdminToggle(user.id, 'revoke');
-                                                                        } else {
-                                                                            handleUserRoleChange(user.id, newRole);
-                                                                        }
-                                                                    }}
-                                                                    className="px-3 py-1.5 text-xs font-medium rounded-lg border-0 shadow-sm bg-gradient-to-r from-blue-50 to-purple-50 text-gray-700 hover:from-blue-100 hover:to-purple-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 cursor-pointer"
-                                                                >
-                                                                    <option value="member">일반 사용자</option>
-                                                                    <option value="admin">관리자</option>
-                                                                    <option value="super_admin">대표 관리자</option>
-                                                                </select>
-                                                            ) : profile?.role === 'admin' && user.role === 'member' && user.id !== profile?.id ? (
-                                                                // 일반 관리자: 일반 사용자만 관리자로 변경 가능
-                                                                <select
-                                                                    value={user.role}
-                                                                    onChange={(e) => handleUserRoleChange(user.id, e.target.value as 'member' | 'admin')}
-                                                                    className="px-3 py-1.5 text-xs font-medium rounded-lg border-0 shadow-sm bg-gradient-to-r from-gray-50 to-slate-50 text-gray-700 hover:from-gray-100 hover:to-slate-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 cursor-pointer"
-                                                                >
-                                                                    <option value="member">일반 사용자</option>
-                                                                    <option value="admin">관리자</option>
-                                                                </select>
-                                                            ) : (
-                                                                // 읽기 전용
-                                                                <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${user.role === 'super_admin'
-                                                                    ? 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
-                                                                    : user.role === 'admin'
-                                                                        ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
-                                                                        : 'bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/20'
-                                                                    }`}>
-                                                                    {user.role === 'super_admin' ? '대표 관리자' :
-                                                                        user.role === 'admin' ? '관리자' : '일반 사용자'}
-                                                                </span>
-                                                            )}
-                                                        </td>
-                                                        <td className="whitespace-nowrap px-3 py-4">
-                                                            {/* 상태 선택박스 */}
-                                                            {user.id !== profile?.id ? (
-                                                                <select
-                                                                    value={user.status}
-                                                                    onChange={(e) => {
-                                                                        const value = e.target.value;
-                                                                        if (value.startsWith('suspended_')) {
-                                                                            const duration = parseInt(value.split('_')[1]);
-                                                                            handleUserStatusChange(user.id, 'suspended', duration);
-                                                                        } else {
-                                                                            handleUserStatusChange(user.id, value as 'active' | 'banned');
-                                                                        }
-                                                                    }}
-                                                                    className="px-3 py-1.5 text-xs font-medium rounded-lg border-0 shadow-sm bg-gradient-to-r from-green-50 to-emerald-50 text-gray-700 hover:from-green-100 hover:to-emerald-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 cursor-pointer"
-                                                                >
-                                                                    <option value="active">활성</option>
-                                                                    <option value="suspended_1">정지(1일)</option>
-                                                                    <option value="suspended_3">정지(3일)</option>
-                                                                    <option value="suspended_7">정지(7일)</option>
-                                                                    <option value="suspended_15">정지(15일)</option>
-                                                                    <option value="suspended_30">정지(30일)</option>
-                                                                    <option value="suspended_90">정지(90일)</option>
-                                                                    <option value="banned">차단</option>
-                                                                </select>
-                                                            ) : (
-                                                                // 본인은 읽기 전용
-                                                                <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${user.status === 'active'
-                                                                    ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20'
-                                                                    : user.status === 'suspended'
-                                                                        ? 'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20'
-                                                                        : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
-                                                                    }`}>
-                                                                    {user.status === 'active' ? '활성' :
-                                                                        user.status === 'suspended' ? '정지' : '차단'}
-                                                                </span>
-                                                            )}
-                                                        </td>
-                                                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                            {new Date(user.created_at).toLocaleDateString()}
-                                                        </td>
+                                    <div className="hidden lg:block">
+                                        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                                            <table className="w-full divide-y divide-slate-100">
+                                                <thead className="bg-slate-50">
+                                                    <tr>
+                                                        <th scope="col" className="py-4 pl-6 pr-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider w-48">사용자</th>
+                                                        <th scope="col" className="px-3 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider w-24">이름</th>
+                                                        <th scope="col" className="px-3 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider w-32">이메일</th>
+                                                        <th scope="col" className="px-3 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider w-20">생년월일</th>
+                                                        <th scope="col" className="px-3 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider w-32">전공/학년</th>
+                                                        <th scope="col" className="px-3 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider w-24">역할</th>
+                                                        <th scope="col" className="px-3 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider w-24">상태</th>
+                                                        <th scope="col" className="px-3 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider w-24">가입일</th>
                                                     </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                                </thead>
+                                                <tbody className="bg-white divide-y divide-slate-100">
+                                                    {users.map((user) => (
+                                                        <tr key={user.id} className="hover:bg-slate-50 transition-all duration-200">
+                                                            <td className="whitespace-nowrap py-5 pl-6 pr-3">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="h-10 w-10 rounded-full bg-slate-300 flex items-center justify-center overflow-hidden relative">
+                                                                        {user.profile_image ? (
+                                                                            <Image
+                                                                                src={user.profile_image}
+                                                                                alt={user.nickname}
+                                                                                fill
+                                                                                sizes="40px"
+                                                                                className="object-cover"
+                                                                            />
+                                                                        ) : (
+                                                                            <span className="text-white text-sm font-bold">
+                                                                                {user.nickname.charAt(0).toUpperCase()}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <div
+                                                                        className="text-sm font-semibold text-slate-900 cursor-pointer hover:text-slate-600 transition-colors duration-200"
+                                                                        onClick={() => router.push(`/profile/${user.nickname}`)}
+                                                                    >
+                                                                        {user.nickname}
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td className="whitespace-nowrap px-3 py-5 text-sm font-medium text-slate-900">
+                                                                {user.name}
+                                                            </td>
+                                                            <td className="whitespace-nowrap px-3 py-5 text-sm text-slate-600" title={user.email}>
+                                                                <span className="truncate block max-w-[120px]">
+                                                                    {user.email.length > 15 ? `${user.email.substring(0, 15)}...` : user.email}
+                                                                </span>
+                                                            </td>
+                                                            <td className="whitespace-nowrap px-3 py-5 text-sm text-slate-600" title={user.birth_date ? new Date(user.birth_date).toLocaleDateString() : '-'}>
+                                                                {user.birth_date ? new Date(user.birth_date).getFullYear() : '-'}
+                                                            </td>
+                                                            <td className="whitespace-nowrap px-3 py-5 text-sm text-slate-600">
+                                                                <div className="space-y-1">
+                                                                    <div className="truncate max-w-[120px]" title={user.major || '-'}>
+                                                                        {user.major || '-'}
+                                                                    </div>
+                                                                    <div className="text-xs text-slate-500">
+                                                                        {user.grade ? `${user.grade}학년` : '-'}
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td className="whitespace-nowrap px-3 py-5">
+                                                                {/* 역할 선택박스 */}
+                                                                {profile?.role === 'super_admin' && user.id !== profile?.id ? (
+                                                                    // 슈퍼 관리자: 모든 역할 변경 가능
+                                                                    <select
+                                                                        value={user.role}
+                                                                        onChange={(e) => {
+                                                                            const newRole = e.target.value as 'member' | 'admin' | 'super_admin';
+
+                                                                            if (newRole === 'super_admin') {
+                                                                                handleSuperAdminToggle(user.id, 'grant');
+                                                                            } else if (user.role === 'super_admin') {
+                                                                                handleSuperAdminToggle(user.id, 'revoke');
+                                                                            } else {
+                                                                                handleUserRoleChange(user.id, newRole);
+                                                                            }
+                                                                        }}
+                                                                        className="px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-all duration-200"
+                                                                    >
+                                                                        <option value="member">일반 사용자</option>
+                                                                        <option value="admin">관리자</option>
+                                                                        <option value="super_admin">대표 관리자</option>
+                                                                    </select>
+                                                                ) : profile?.role === 'admin' && user.role === 'member' && user.id !== profile?.id ? (
+                                                                    // 일반 관리자: 일반 사용자만 관리자로 변경 가능
+                                                                    <select
+                                                                        value={user.role}
+                                                                        onChange={(e) => handleUserRoleChange(user.id, e.target.value as 'member' | 'admin')}
+                                                                        className="px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-all duration-200"
+                                                                    >
+                                                                        <option value="member">일반 사용자</option>
+                                                                        <option value="admin">관리자</option>
+                                                                    </select>
+                                                                ) : (
+                                                                    // 읽기 전용
+                                                                    <span className={`inline-flex items-center rounded-lg px-3 py-2 text-xs font-semibold ${user.role === 'super_admin'
+                                                                        ? 'bg-red-50 text-red-700'
+                                                                        : user.role === 'admin'
+                                                                            ? 'bg-blue-50 text-blue-700'
+                                                                            : 'bg-slate-100 text-slate-700'
+                                                                        }`}>
+                                                                        {user.role === 'super_admin' ? '대표 관리자' :
+                                                                            user.role === 'admin' ? '관리자' : '일반 사용자'}
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                            <td className="whitespace-nowrap px-3 py-5">
+                                                                {/* 상태 선택박스 */}
+                                                                {user.id !== profile?.id ? (
+                                                                    <select
+                                                                        value={user.status}
+                                                                        onChange={(e) => {
+                                                                            const value = e.target.value;
+                                                                            if (value.startsWith('suspended_')) {
+                                                                                const duration = parseInt(value.split('_')[1]);
+                                                                                handleUserStatusChange(user.id, 'suspended', duration);
+                                                                            } else {
+                                                                                handleUserStatusChange(user.id, value as 'active' | 'banned');
+                                                                            }
+                                                                        }}
+                                                                        className="px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-all duration-200"
+                                                                    >
+                                                                        <option value="active">활성</option>
+                                                                        <option value="suspended_1">정지(1일)</option>
+                                                                        <option value="suspended_3">정지(3일)</option>
+                                                                        <option value="suspended_7">정지(7일)</option>
+                                                                        <option value="suspended_15">정지(15일)</option>
+                                                                        <option value="suspended_30">정지(30일)</option>
+                                                                        <option value="suspended_90">정지(90일)</option>
+                                                                        <option value="banned">차단</option>
+                                                                    </select>
+                                                                ) : (
+                                                                    // 본인은 읽기 전용
+                                                                    <span className={`inline-flex items-center rounded-lg px-3 py-2 text-xs font-semibold ${user.status === 'active'
+                                                                        ? 'bg-emerald-50 text-emerald-700'
+                                                                        : user.status === 'suspended'
+                                                                            ? 'bg-amber-50 text-amber-700'
+                                                                            : 'bg-red-50 text-red-700'
+                                                                        }`}>
+                                                                        {user.status === 'active' ? '활성' :
+                                                                            user.status === 'suspended' ? '정지' : '차단'}
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                            <td className="whitespace-nowrap px-3 py-5 text-sm text-slate-600" title={new Date(user.created_at).toLocaleDateString()}>
+                                                                {new Date(user.created_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
 
                                     {/* 모바일 카드 뷰 */}
