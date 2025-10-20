@@ -20,7 +20,7 @@ export async function GET() {
             }
 
             return NextResponse.json({ representative });
-        } catch (columnError) {
+        } catch {
             console.log('is_representative_admin 컬럼이 아직 추가되지 않음');
             return NextResponse.json({ representative: null });
         }

@@ -681,7 +681,7 @@ export default function AdminPage() {
                 return;
             }
 
-            let requestBody: any = { status };
+            const requestBody: { status: string; suspendUntil?: string } = { status };
 
             if (status === 'suspended' && duration) {
                 const suspendUntil = new Date();

@@ -3,9 +3,10 @@ import { createServerSupabase } from '@/lib/supabase/server';
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const resolvedParams = await params;
         const supabase = await createServerSupabase();
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -34,7 +35,7 @@ export async function POST(
         const { data: targetProfile, error: targetError } = await supabase
             .from('user_profiles')
             .select('role, nickname')
-            .eq('id', params.id)
+            .eq('id', resolvedParams.id)
             .single();
 
         if (targetError || !targetProfile) {
@@ -42,7 +43,7 @@ export async function POST(
         }
 
         // 본인에게는 권한 변경 불가
-        if (params.id === user.id) {
+        if (resolvedParams.id === user.id) {
             return NextResponse.json({ error: '본인의 권한은 변경할 수 없습니다.' }, { status: 400 });
         }
 
@@ -52,7 +53,7 @@ export async function POST(
         const { error: updateError } = await supabase
             .from('user_profiles')
             .update({ role: newRole })
-            .eq('id', params.id);
+            .eq('id', resolvedParams.id);
 
         if (updateError) {
             return NextResponse.json({ error: '권한 변경에 실패했습니다.' }, { status: 500 });
@@ -67,7 +68,7 @@ export async function POST(
             newRole
         });
 
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
