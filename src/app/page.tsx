@@ -47,7 +47,7 @@ function HomeContent() {
     const fetchLatestPosts = async () => {
       try {
         setLoadingPosts(true);
-        const response = await fetch('/api/posts/latest?limit=6');
+        const response = await fetch('/api/posts/latest?limit=3');
         if (response.ok) {
           const data = await response.json();
           setLatestPosts(data.posts || []);
@@ -132,7 +132,7 @@ function HomeContent() {
 
 
       {/* Hero Section */}
-      <section className="pt-48 pb-56 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <section className="pt-32 md:pt-56 lg:pt-56 pb-20 md:pb-32 lg:pb-40 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
           <Image
@@ -152,13 +152,13 @@ function HomeContent() {
           <div className="flex flex-col items-center justify-center text-center space-y-4">
             {/* Main Title */}
             <div className="space-y-2">
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-black leading-none drop-shadow-lg animate-fade-in-up">
+              <h1 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-black leading-tight drop-shadow-lg animate-fade-in-up">
                 KOREA MARITIME & OCEAN UNIV.
               </h1>
-              <h2 className="text-lg md:text-xl lg:text-2xl font-semibold text-black leading-none drop-shadow-lg animate-fade-in-up animation-delay-200">
+              <h2 className="text-base md:text-lg lg:text-xl xl:text-2xl font-semibold text-black leading-tight drop-shadow-lg animate-fade-in-up animation-delay-200">
                 Division of Artificial Intelligence Engineering Archi Semtle
               </h2>
-              <h3 className="text-lg md:text-xl lg:text-2xl font-semibold text-black leading-none drop-shadow-lg animate-fade-in-up animation-delay-400">
+              <h3 className="text-base md:text-lg lg:text-xl xl:text-2xl font-semibold text-black leading-tight drop-shadow-lg animate-fade-in-up animation-delay-400">
                 국립한국해양대학교 인공지능공학부 아치셈틀
               </h3>
             </div>
@@ -167,10 +167,10 @@ function HomeContent() {
             <div className="pt-4 animate-fade-in-up animation-delay-600">
               <Link
                 href="/activities"
-                className="group relative inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-slate-900 to-slate-700 text-white font-semibold rounded-full hover:from-slate-800 hover:to-slate-600 transition-all duration-300 shadow-2xl hover:shadow-slate-900/30 transform hover:-translate-y-1 overflow-hidden"
+                className="group relative inline-flex items-center justify-center px-6 md:px-7 lg:px-8 py-3 md:py-3.5 lg:py-4 bg-gradient-to-r from-slate-900 to-slate-700 text-white font-semibold rounded-full hover:from-slate-800 hover:to-slate-600 transition-all duration-300 shadow-2xl hover:shadow-slate-900/30 transform hover:-translate-y-1 overflow-hidden"
               >
-                <span className="relative z-10">활동 둘러보기</span>
-                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300 relative z-10" />
+                <span className="relative z-10 text-sm md:text-sm lg:text-base">활동 둘러보기</span>
+                <ArrowRight className="ml-2 w-4 h-4 md:w-4 md:h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform duration-300 relative z-10" />
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </Link>
             </div>
@@ -179,7 +179,7 @@ function HomeContent() {
       </section>
 
       {/* Features Section */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white relative overflow-hidden">
+      <section className="py-16 md:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white relative overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-5">
           <div className="absolute inset-0" style={{
@@ -189,71 +189,71 @@ function HomeContent() {
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="text-center mb-20">
-            <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 text-sm font-semibold rounded-full mb-6">
+          <div className="text-center mb-12 md:mb-16 lg:mb-20">
+            <div className="inline-flex items-center px-3 md:px-4 py-2 bg-blue-100 text-blue-800 text-xs md:text-sm font-semibold rounded-full mb-4 md:mb-6">
               <span className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></span>
               주요 활동
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6 leading-tight">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-slate-900 mb-4 md:mb-6 leading-tight">
               아치셈틀의<br />
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">주요 활동</span>
             </h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-base md:text-lg lg:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed px-4">
               인공지능과 컴퓨터과학 분야의 다양한 활동을 통해 함께 성장하고 발전해나갑니다
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             <Link
               href="/activities"
-              className="group relative bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-500 border border-slate-100 hover:border-blue-200 hover:-translate-y-2 overflow-hidden"
+              className="group relative bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-xl hover:shadow-2xl transition-all duration-500 border border-slate-100 hover:border-blue-200 hover:-translate-y-2 overflow-hidden"
             >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full -translate-y-16 translate-x-16 group-hover:scale-150 transition-transform duration-700"></div>
+              <div className="absolute top-0 right-0 w-24 md:w-32 h-24 md:h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full -translate-y-12 md:-translate-y-16 translate-x-12 md:translate-x-16 group-hover:scale-150 transition-transform duration-700"></div>
               <div className="relative z-10">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Megaphone className="w-8 h-8 text-white" />
+                <div className="w-12 md:w-14 lg:w-16 h-12 md:h-14 lg:h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl md:rounded-xl lg:rounded-2xl flex items-center justify-center mb-4 md:mb-5 lg:mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                  <Megaphone className="w-6 md:w-7 lg:w-8 h-6 md:h-7 lg:h-8 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-4 group-hover:text-blue-600 transition-colors duration-300">활동게시판</h3>
-                <p className="text-slate-600 mb-6 leading-relaxed">학회 공지사항, 세미나, 홈커밍 등 다양한 활동 소식을 확인하세요</p>
-                <div className="flex items-center text-blue-600 font-semibold text-sm group-hover:text-blue-700">
+                <h3 className="text-lg md:text-xl lg:text-2xl font-bold text-slate-900 mb-3 md:mb-3.5 lg:mb-4 group-hover:text-blue-600 transition-colors duration-300">활동게시판</h3>
+                <p className="text-sm md:text-sm lg:text-base text-slate-600 mb-4 md:mb-5 lg:mb-6 leading-relaxed">학회 공지사항, 세미나, 홈커밍 등 다양한 활동 소식을 확인하세요</p>
+                <div className="flex items-center text-blue-600 font-semibold text-xs md:text-xs lg:text-sm group-hover:text-blue-700">
                   자세히 보기
-                  <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                  <ArrowRight className="ml-2 w-3 md:w-3 lg:w-4 h-3 md:h-3 lg:h-4 group-hover:translate-x-1 transition-transform duration-300" />
                 </div>
               </div>
             </Link>
 
             <Link
               href="/projects"
-              className="group relative bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-500 border border-slate-100 hover:border-purple-200 hover:-translate-y-2 overflow-hidden"
+              className="group relative bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-xl hover:shadow-2xl transition-all duration-500 border border-slate-100 hover:border-purple-200 hover:-translate-y-2 overflow-hidden"
             >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full -translate-y-16 translate-x-16 group-hover:scale-150 transition-transform duration-700"></div>
+              <div className="absolute top-0 right-0 w-24 md:w-32 h-24 md:h-32 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full -translate-y-12 md:-translate-y-16 translate-x-12 md:translate-x-16 group-hover:scale-150 transition-transform duration-700"></div>
               <div className="relative z-10">
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Trophy className="w-8 h-8 text-white" />
+                <div className="w-12 md:w-14 lg:w-16 h-12 md:h-14 lg:h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl md:rounded-xl lg:rounded-2xl flex items-center justify-center mb-4 md:mb-5 lg:mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                  <Trophy className="w-6 md:w-7 lg:w-8 h-6 md:h-7 lg:h-8 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-4 group-hover:text-purple-600 transition-colors duration-300">프로젝트</h3>
-                <p className="text-slate-600 mb-6 leading-relaxed">프로젝트 팀 모집, 공모전 참가 등 포트폴리오 구축을 위한 다양한 기회를 얻어가세요</p>
-                <div className="flex items-center text-purple-600 font-semibold text-sm group-hover:text-purple-700">
+                <h3 className="text-lg md:text-xl lg:text-2xl font-bold text-slate-900 mb-3 md:mb-3.5 lg:mb-4 group-hover:text-purple-600 transition-colors duration-300">프로젝트</h3>
+                <p className="text-sm md:text-sm lg:text-base text-slate-600 mb-4 md:mb-5 lg:mb-6 leading-relaxed">프로젝트 팀 모집, 공모전 참가 등 포트폴리오 구축을 위한 다양한 기회를 얻어가세요</p>
+                <div className="flex items-center text-purple-600 font-semibold text-xs md:text-xs lg:text-sm group-hover:text-purple-700">
                   자세히 보기
-                  <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                  <ArrowRight className="ml-2 w-3 md:w-3 lg:w-4 h-3 md:h-3 lg:h-4 group-hover:translate-x-1 transition-transform duration-300" />
                 </div>
               </div>
             </Link>
 
             <Link
               href="/resources"
-              className="group relative bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-500 border border-slate-100 hover:border-emerald-200 hover:-translate-y-2 overflow-hidden md:col-span-2 lg:col-span-1"
+              className="group relative bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-xl hover:shadow-2xl transition-all duration-500 border border-slate-100 hover:border-emerald-200 hover:-translate-y-2 overflow-hidden md:col-span-2 lg:col-span-1"
             >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-full -translate-y-16 translate-x-16 group-hover:scale-150 transition-transform duration-700"></div>
+              <div className="absolute top-0 right-0 w-24 md:w-32 h-24 md:h-32 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-full -translate-y-12 md:-translate-y-16 translate-x-12 md:translate-x-16 group-hover:scale-150 transition-transform duration-700"></div>
               <div className="relative z-10">
-                <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <FileText className="w-8 h-8 text-white" />
+                <div className="w-12 md:w-14 lg:w-16 h-12 md:h-14 lg:h-16 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl md:rounded-xl lg:rounded-2xl flex items-center justify-center mb-4 md:mb-5 lg:mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                  <FileText className="w-6 md:w-7 lg:w-8 h-6 md:h-7 lg:h-8 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-4 group-hover:text-emerald-600 transition-colors duration-300">자료실</h3>
-                <p className="text-slate-600 mb-6 leading-relaxed">족보, 프로젝트 템플릿 등 학습에 도움이 되는 자료를 공유합니다</p>
-                <div className="flex items-center text-emerald-600 font-semibold text-sm group-hover:text-emerald-700">
+                <h3 className="text-lg md:text-xl lg:text-2xl font-bold text-slate-900 mb-3 md:mb-3.5 lg:mb-4 group-hover:text-emerald-600 transition-colors duration-300">자료실</h3>
+                <p className="text-sm md:text-sm lg:text-base text-slate-600 mb-4 md:mb-5 lg:mb-6 leading-relaxed">족보, 프로젝트 템플릿 등 학습에 도움이 되는 자료를 공유합니다</p>
+                <div className="flex items-center text-emerald-600 font-semibold text-xs md:text-xs lg:text-sm group-hover:text-emerald-700">
                   자세히 보기
-                  <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                  <ArrowRight className="ml-2 w-3 md:w-3 lg:w-4 h-3 md:h-3 lg:h-4 group-hover:translate-x-1 transition-transform duration-300" />
                 </div>
               </div>
             </Link>
@@ -262,54 +262,54 @@ function HomeContent() {
       </section>
 
       {/* Recent Activities */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-slate-50 relative overflow-hidden">
+      <section className="py-16 md:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-slate-50 relative overflow-hidden">
         {/* Background Elements */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-full -translate-y-48 translate-x-48"></div>
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-emerald-500/5 to-teal-500/5 rounded-full translate-y-40 -translate-x-40"></div>
+        <div className="absolute top-0 right-0 w-64 md:w-96 h-64 md:h-96 bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-full -translate-y-32 md:-translate-y-48 translate-x-32 md:translate-x-48"></div>
+        <div className="absolute bottom-0 left-0 w-64 md:w-80 h-64 md:h-80 bg-gradient-to-tr from-emerald-500/5 to-teal-500/5 rounded-full translate-y-32 md:translate-y-40 -translate-x-32 md:-translate-x-40"></div>
 
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-20">
-            <div className="mb-8 lg:mb-0">
-              <div className="inline-flex items-center px-4 py-2 bg-emerald-100 text-emerald-800 text-sm font-semibold rounded-full mb-6">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-12 md:mb-16 lg:mb-20">
+            <div className="mb-6 md:mb-8 lg:mb-0">
+              <div className="inline-flex items-center px-3 md:px-4 py-2 bg-emerald-100 text-emerald-800 text-xs md:text-sm font-semibold rounded-full mb-4 md:mb-6">
                 <span className="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse"></span>
                 최신 소식
               </div>
-              <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6 leading-tight">
+              <h2 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-slate-900 mb-4 md:mb-6 leading-tight">
                 아치셈틀의<br />
                 <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">최신 소식</span>
               </h2>
-              <p className="text-xl text-slate-600 max-w-2xl leading-relaxed">
+              <p className="text-base md:text-lg lg:text-xl text-slate-600 max-w-2xl leading-relaxed px-4 md:px-0">
                 학회의 최신 활동과 공지사항을 확인하고 함께 참여해보세요
               </p>
             </div>
             <Link
               href="/activities"
-              className="group inline-flex items-center px-8 py-4 bg-gradient-to-r from-slate-900 to-slate-700 text-white font-semibold rounded-full hover:from-slate-800 hover:to-slate-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
+              className="group inline-flex items-center px-6 md:px-7 lg:px-8 py-3 md:py-3.5 lg:py-4 bg-gradient-to-r from-slate-900 to-slate-700 text-white font-semibold rounded-full hover:from-slate-800 hover:to-slate-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
             >
-              전체 보기
-              <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+              <span className="text-sm md:text-sm lg:text-base">전체 보기</span>
+              <ArrowRight className="ml-2 w-4 md:w-4 lg:w-5 h-4 md:h-4 lg:h-5 group-hover:translate-x-1 transition-transform duration-300" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {loadingPosts ? (
               // 로딩 상태
-              Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="group relative bg-white rounded-3xl p-8 shadow-xl border border-slate-100 overflow-hidden animate-pulse">
-                  <div className="flex items-start justify-between mb-6">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-14 h-14 bg-gray-200 rounded-2xl"></div>
+              Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="group relative bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-xl border border-slate-100 overflow-hidden animate-pulse">
+                  <div className="flex items-start justify-between mb-4 md:mb-6">
+                    <div className="flex items-center space-x-3 md:space-x-4">
+                      <div className="w-10 md:w-14 h-10 md:h-14 bg-gray-200 rounded-xl md:rounded-2xl"></div>
                       <div>
-                        <div className="h-6 bg-gray-200 rounded-full w-20 mb-2"></div>
-                        <div className="h-4 bg-gray-200 rounded w-16"></div>
+                        <div className="h-4 md:h-6 bg-gray-200 rounded-full w-16 md:w-20 mb-2"></div>
+                        <div className="h-3 md:h-4 bg-gray-200 rounded w-12 md:w-16"></div>
                       </div>
                     </div>
-                    <div className="w-3 h-3 bg-gray-200 rounded-full"></div>
+                    <div className="w-2 md:w-3 h-2 md:h-3 bg-gray-200 rounded-full"></div>
                   </div>
-                  <div className="h-6 bg-gray-200 rounded mb-4"></div>
+                  <div className="h-4 md:h-6 bg-gray-200 rounded mb-3 md:mb-4"></div>
                   <div className="space-y-2">
-                    <div className="h-4 bg-gray-200 rounded"></div>
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-3 md:h-4 bg-gray-200 rounded"></div>
+                    <div className="h-3 md:h-4 bg-gray-200 rounded w-3/4"></div>
                   </div>
                 </div>
               ))
@@ -324,33 +324,33 @@ function HomeContent() {
                   <Link
                     key={post.id}
                     href={getPostUrl(post)}
-                    className={`group relative bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-500 border border-slate-100 hover:border-${typeInfo.hoverColor} hover:-translate-y-2 overflow-hidden ${isWideCard ? 'md:col-span-2 lg:col-span-1' : ''}`}
+                    className={`group relative bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-xl hover:shadow-2xl transition-all duration-500 border border-slate-100 hover:border-${typeInfo.hoverColor} hover:-translate-y-2 overflow-hidden ${isWideCard ? 'md:col-span-2 lg:col-span-1' : ''}`}
                   >
-                    <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-${typeInfo.color}-500/10 to-${typeInfo.color}-600/10 rounded-full -translate-y-12 translate-x-12 group-hover:scale-150 transition-transform duration-700`}></div>
+                    <div className={`absolute top-0 right-0 w-20 md:w-24 h-20 md:h-24 bg-gradient-to-br from-${typeInfo.color}-500/10 to-${typeInfo.color}-600/10 rounded-full -translate-y-10 md:-translate-y-12 translate-x-10 md:translate-x-12 group-hover:scale-150 transition-transform duration-700`}></div>
                     <div className="relative z-10">
-                      <div className="flex items-start justify-between mb-6">
-                        <div className="flex items-center space-x-4">
-                          <div className={`w-14 h-14 bg-gradient-to-br from-${typeInfo.color}-500 to-${typeInfo.color}-600 rounded-2xl flex items-center justify-center shadow-lg`}>
-                            <IconComponent className="w-7 h-7 text-white" />
+                      <div className="flex items-start justify-between mb-4 md:mb-5 lg:mb-6">
+                        <div className="flex items-center space-x-3 md:space-x-4">
+                          <div className={`w-10 md:w-12 lg:w-14 h-10 md:h-12 lg:h-14 bg-gradient-to-br from-${typeInfo.color}-500 to-${typeInfo.color}-600 rounded-xl md:rounded-xl lg:rounded-2xl flex items-center justify-center shadow-lg`}>
+                            <IconComponent className="w-5 md:w-6 lg:w-7 h-5 md:h-6 lg:h-7 text-white" />
                           </div>
                           <div>
-                            <span className={`text-sm font-bold text-${typeInfo.textColor} bg-${typeInfo.bgColor} px-3 py-1 rounded-full`}>
+                            <span className={`text-xs md:text-xs lg:text-sm font-bold text-${typeInfo.textColor} bg-${typeInfo.bgColor} px-2 md:px-2 lg:px-3 py-1 rounded-full`}>
                               {typeInfo.label}
                             </span>
                             <p className="text-xs text-slate-500 mt-1">{formatDate(post.display_date)}</p>
                           </div>
                         </div>
-                        <div className={`w-3 h-3 bg-${typeInfo.color}-500 rounded-full animate-pulse`}></div>
+                        <div className={`w-2 md:w-2 lg:w-3 h-2 md:h-2 lg:h-3 bg-${typeInfo.color}-500 rounded-full animate-pulse`}></div>
                       </div>
-                      <h3 className={`text-xl font-bold text-slate-900 mb-4 group-hover:text-${typeInfo.textColor} transition-colors duration-300 leading-tight`}>
+                      <h3 className={`text-base md:text-lg lg:text-xl font-bold text-slate-900 mb-3 md:mb-3.5 lg:mb-4 group-hover:text-${typeInfo.textColor} transition-colors duration-300 leading-tight`}>
                         {post.title}
                       </h3>
-                      <p className="text-slate-600 mb-6 leading-relaxed">
+                      <p className="text-sm md:text-sm lg:text-base text-slate-600 mb-4 md:mb-5 lg:mb-6 leading-relaxed">
                         {post.subtitle || '자세한 내용을 확인해보세요.'}
                       </p>
-                      <div className={`flex items-center text-${typeInfo.textColor} font-semibold text-sm group-hover:text-${typeInfo.color}-700`}>
+                      <div className={`flex items-center text-${typeInfo.textColor} font-semibold text-xs md:text-xs lg:text-sm group-hover:text-${typeInfo.color}-700`}>
                         자세히 보기
-                        <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                        <ArrowRight className="ml-2 w-3 md:w-3 lg:w-4 h-3 md:h-3 lg:h-4 group-hover:translate-x-1 transition-transform duration-300" />
                       </div>
                     </div>
                   </Link>
@@ -373,45 +373,45 @@ function HomeContent() {
       </section>
 
       {/* Contact Section */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white relative overflow-hidden">
+      <section className="py-16 md:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white relative overflow-hidden">
         {/* Background Elements */}
-        <div className="absolute top-0 left-0 w-80 h-80 bg-gradient-to-br from-orange-500/5 to-red-500/5 rounded-full -translate-y-40 -translate-x-40"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-pink-500/5 to-purple-500/5 rounded-full translate-y-48 translate-x-48"></div>
+        <div className="absolute top-0 left-0 w-64 md:w-80 h-64 md:h-80 bg-gradient-to-br from-orange-500/5 to-red-500/5 rounded-full -translate-y-32 md:-translate-y-40 -translate-x-32 md:-translate-x-40"></div>
+        <div className="absolute bottom-0 right-0 w-64 md:w-96 h-64 md:h-96 bg-gradient-to-tl from-pink-500/5 to-purple-500/5 rounded-full translate-y-32 md:translate-y-48 translate-x-32 md:translate-x-48"></div>
 
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="text-center mb-20">
-            <div className="inline-flex items-center px-4 py-2 bg-orange-100 text-orange-800 text-sm font-semibold rounded-full mb-6">
+          <div className="text-center mb-12 md:mb-16 lg:mb-20">
+            <div className="inline-flex items-center px-3 md:px-4 py-2 bg-orange-100 text-orange-800 text-xs md:text-sm font-semibold rounded-full mb-4 md:mb-6">
               <span className="w-2 h-2 bg-orange-500 rounded-full mr-2 animate-pulse"></span>
               문의하기
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6 leading-tight">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-slate-900 mb-4 md:mb-6 leading-tight">
               궁금한 점이<br />
               <span className="bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">있으신가요?</span>
             </h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed mb-12">
+            <p className="text-base md:text-lg lg:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed mb-8 md:mb-10 lg:mb-12 px-4">
               아치셈틀에 대한 문의사항이나 제안사항이 있으시면 언제든지 연락해주세요.<br />
               빠른 시일 내에 답변드리겠습니다.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+            <div className="flex flex-col sm:flex-row gap-4 md:gap-5 lg:gap-6 justify-center items-center">
               <Link
                 href="/contact"
-                className="group relative inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-full hover:from-orange-600 hover:to-red-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 overflow-hidden"
+                className="group relative inline-flex items-center justify-center px-6 md:px-7 lg:px-8 py-3 md:py-3.5 lg:py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-full hover:from-orange-600 hover:to-red-600 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 overflow-hidden"
               >
-                <MessageCircle className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
-                <span className="relative z-10">문의하기</span>
-                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300 relative z-10" />
+                <MessageCircle className="mr-2 w-4 md:w-4 lg:w-5 h-4 md:h-4 lg:h-5 group-hover:scale-110 transition-transform duration-300" />
+                <span className="relative z-10 text-sm md:text-sm lg:text-base">문의하기</span>
+                <ArrowRight className="ml-2 w-4 md:w-4 lg:w-5 h-4 md:h-4 lg:h-5 group-hover:translate-x-1 transition-transform duration-300 relative z-10" />
                 <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </Link>
 
-              <div className="flex items-center space-x-6 text-slate-600">
+              <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 md:space-x-5 lg:space-x-6 text-slate-600">
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium">평균 응답시간: 일주일 이내</span>
+                  <span className="text-xs md:text-xs lg:text-sm font-medium">평균 응답시간: 일주일 이내</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium">24시간 접수 가능</span>
+                  <span className="text-xs md:text-xs lg:text-sm font-medium">24시간 접수 가능</span>
                 </div>
               </div>
             </div>

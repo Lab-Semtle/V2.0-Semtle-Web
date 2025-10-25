@@ -7,6 +7,12 @@ import { Post } from './post';
 export interface ResourcePost extends Post {
     resource_data?: ResourceData;
     files?: ResourceFile[];
+    // resources 테이블에 직접 저장되는 필드들
+    subject?: string;
+    professor?: string;
+    semester?: string;
+    year?: number;
+    difficulty_level?: 'beginner' | 'intermediate' | 'advanced';
 }
 
 export interface ResourceFile {

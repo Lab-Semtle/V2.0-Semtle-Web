@@ -17,6 +17,27 @@ export async function GET() {
             .order('is_pinned', { ascending: false })
             .order('created_at', { ascending: false });
 
+        // 각 활동의 댓글 개수 조회 (답글 제외)
+        if (activities && activities.length > 0) {
+            const activitiesWithCommentCount = await Promise.all(
+                activities.map(async (activity) => {
+                    const { count: commentCount } = await supabase
+                        .from('activity_comments')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('activity_id', activity.id)
+                        .is('parent_id', null)
+                        .eq('is_deleted', false);
+
+                    return {
+                        ...activity,
+                        comments_count: commentCount || 0
+                    };
+                })
+            );
+
+            activities.splice(0, activities.length, ...activitiesWithCommentCount);
+        }
+
         // 작성자 정보를 별도로 조회
         if (activities && activities.length > 0) {
             const authorIds = activities.map(a => a.author_id).filter(Boolean);

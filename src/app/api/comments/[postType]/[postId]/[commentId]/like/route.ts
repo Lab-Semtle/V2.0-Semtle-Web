@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 
-// 자료 댓글 좋아요 토글
+// 통합 댓글 좋아요 토글 API
 export async function POST(
     request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    { params }: { params: Promise<{ postType: string; postId: string; commentId: string }> }
 ) {
     try {
         const supabase = await createServerSupabase();
@@ -16,16 +16,30 @@ export async function POST(
         }
 
         const resolvedParams = await params;
-        const commentId = parseInt(resolvedParams.id);
-        if (isNaN(commentId)) {
+        const { postType, commentId } = resolvedParams;
+        const commentIdNum = parseInt(commentId);
+
+        if (isNaN(commentIdNum)) {
             return NextResponse.json({ error: '유효하지 않은 댓글 ID입니다.' }, { status: 400 });
+        }
+
+        // 게시물 타입에 따른 좋아요 테이블 매핑
+        const likeTableMap = {
+            project: 'project_comment_likes',
+            activity: 'activity_comment_likes',
+            resource: 'resource_comment_likes'
+        };
+
+        const likeTable = likeTableMap[postType as keyof typeof likeTableMap];
+        if (!likeTable) {
+            return NextResponse.json({ error: '지원하지 않는 게시물 타입입니다.' }, { status: 400 });
         }
 
         // 기존 좋아요 확인
         const { data: existingLike, error: checkError } = await supabase
-            .from('resource_comment_likes')
+            .from(likeTable)
             .select('id')
-            .eq('comment_id', commentId)
+            .eq('comment_id', commentIdNum)
             .eq('user_id', user.id)
             .single();
 
@@ -39,9 +53,9 @@ export async function POST(
         if (existingLike) {
             // 좋아요 취소
             const { error: deleteError } = await supabase
-                .from('resource_comment_likes')
+                .from(likeTable)
                 .delete()
-                .eq('comment_id', commentId)
+                .eq('comment_id', commentIdNum)
                 .eq('user_id', user.id);
 
             if (deleteError) {
@@ -52,9 +66,9 @@ export async function POST(
         } else {
             // 좋아요 추가
             const { error: insertError } = await supabase
-                .from('resource_comment_likes')
+                .from(likeTable)
                 .insert({
-                    comment_id: commentId,
+                    comment_id: commentIdNum,
                     user_id: user.id
                 });
 
@@ -67,9 +81,9 @@ export async function POST(
 
         // 실제 좋아요 수 계산
         const { data: likeCountData } = await supabase
-            .from('resource_comment_likes')
+            .from(likeTable)
             .select('id', { count: 'exact' })
-            .eq('comment_id', commentId);
+            .eq('comment_id', commentIdNum);
 
         likesCount = likeCountData?.length || 0;
 
@@ -84,10 +98,10 @@ export async function POST(
     }
 }
 
-// 자료 댓글 좋아요 상태 확인
+// 통합 댓글 좋아요 상태 확인 API
 export async function GET(
     request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    { params }: { params: Promise<{ postType: string; postId: string; commentId: string }> }
 ) {
     try {
         const supabase = await createServerSupabase();
@@ -99,16 +113,30 @@ export async function GET(
         }
 
         const resolvedParams = await params;
-        const commentId = parseInt(resolvedParams.id);
-        if (isNaN(commentId)) {
+        const { postType, commentId } = resolvedParams;
+        const commentIdNum = parseInt(commentId);
+
+        if (isNaN(commentIdNum)) {
             return NextResponse.json({ error: '유효하지 않은 댓글 ID입니다.' }, { status: 400 });
+        }
+
+        // 게시물 타입에 따른 좋아요 테이블 매핑
+        const likeTableMap = {
+            project: 'project_comment_likes',
+            activity: 'activity_comment_likes',
+            resource: 'resource_comment_likes'
+        };
+
+        const likeTable = likeTableMap[postType as keyof typeof likeTableMap];
+        if (!likeTable) {
+            return NextResponse.json({ error: '지원하지 않는 게시물 타입입니다.' }, { status: 400 });
         }
 
         // 좋아요 상태 확인
         const { data: existingLike, error: checkError } = await supabase
-            .from('resource_comment_likes')
+            .from(likeTable)
             .select('id')
-            .eq('comment_id', commentId)
+            .eq('comment_id', commentIdNum)
             .eq('user_id', user.id)
             .single();
 
@@ -124,3 +152,5 @@ export async function GET(
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
+
+

@@ -62,9 +62,6 @@ export default function ActivitiesPage() {
         if (sortBy === "latest") {
             return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         }
-        if (sortBy === "popular") {
-            return (b.views || 0) - (a.views || 0);
-        }
         if (sortBy === "likes") {
             return (b.likes_count || 0) - (a.likes_count || 0);
         }
@@ -88,7 +85,7 @@ export default function ActivitiesPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
+            <div className="min-h-screen bg-white">
                 <Navigation />
                 <div className="flex items-center justify-center min-h-[400px]">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -100,15 +97,16 @@ export default function ActivitiesPage() {
     // 에러 상태 렌더링 제거 - API 오류 시에도 정상 화면 표시
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
+        <div className="min-h-screen bg-white">
             <Navigation />
 
             {/* Hero Section */}
             <HeroSection
-                badge="학회 활동"
-                badgeColor="bg-blue-100 text-blue-800"
-                title="아치셈틀 활동"
-                description="다양한 학회 활동과 이벤트를 확인하고 참여하세요"
+                badge=""
+                badgeColor=""
+                title="아치셈틀 학회활동"
+                description="아치셈틀의 최신 이야기들을 모아보거나 직접 참여할 수 있습니다"
+                pageType="activities"
             />
 
             {/* Main Content */}
@@ -146,7 +144,6 @@ export default function ActivitiesPage() {
                             <SortDropdown
                                 options={[
                                     { value: "latest", label: "최신순" },
-                                    { value: "popular", label: "조회순" },
                                     { value: "likes", label: "좋아요순" },
                                     { value: "comments", label: "댓글순" }
                                 ]}

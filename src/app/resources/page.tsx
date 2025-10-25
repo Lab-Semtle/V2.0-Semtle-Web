@@ -10,6 +10,8 @@ import Pagination from '@/components/ui/Pagination';
 import ResourceCard from '@/components/resources/ResourceCard';
 import EmptyState from '@/components/common/EmptyState';
 import { ResourcePost } from '@/types/resource';
+import { Filter } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ResourcesPage() {
     const [resources, setResources] = useState<ResourcePost[]>([]);
@@ -24,6 +26,7 @@ export default function ResourcesPage() {
     const [sortBy, setSortBy] = useState("latest");
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(4);
+    const [isSheetOpen, setIsSheetOpen] = useState(false);
 
     // 데이터 로드
     useEffect(() => {
@@ -76,6 +79,71 @@ export default function ResourcesPage() {
     useEffect(() => {
         setCurrentPage(1);
     }, [selectedCategory, selectedYear, selectedSemester, searchQuery, sortBy]);
+
+    // 필터 콘텐츠 컴포넌트
+    const FilterContent = () => (
+        <div className="space-y-6">
+            {/* 카테고리 필터 */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                    </div>
+                    <h3 className="text-sm font-semibold text-slate-700">카테고리</h3>
+                </div>
+                <FilterButtons
+                    filters={["전체", ...(Array.isArray(categories) ? categories.map(cat => cat.name) : [])]}
+                    selectedFilter={selectedCategory}
+                    onFilterChange={setSelectedCategory}
+                    activeColor="blue-500"
+                    icon={<svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>}
+                    compact={true}
+                />
+            </div>
+
+            {/* 연도 필터 */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-green-100 rounded-lg flex items-center justify-center">
+                        <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <h3 className="text-sm font-semibold text-slate-700">연도</h3>
+                </div>
+                <FilterButtons
+                    filters={availableYears}
+                    selectedFilter={selectedYear}
+                    onFilterChange={setSelectedYear}
+                    activeColor="green-500"
+                    icon={<svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
+                    compact={true}
+                />
+            </div>
+
+            {/* 학기 필터 */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <svg className="w-3 h-3 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                    </div>
+                    <h3 className="text-sm font-semibold text-slate-700">학기</h3>
+                </div>
+                <FilterButtons
+                    filters={availableSemesters}
+                    selectedFilter={selectedSemester}
+                    onFilterChange={setSelectedSemester}
+                    activeColor="orange-500"
+                    icon={<svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>}
+                    compact={true}
+                />
+            </div>
+        </div>
+    );
 
     const filteredPosts = resources.filter(resource => {
         const matchesCategory = selectedCategory === "전체" || resource.category?.name === selectedCategory;
@@ -143,10 +211,11 @@ export default function ResourcesPage() {
 
             {/* Hero Section */}
             <HeroSection
-                badge="자료실"
-                badgeColor="bg-purple-100 text-purple-800"
+                badge=""
+                badgeColor=""
                 title="자료실"
-                description="다양한 학습 자료와 파일을 공유하고 다운로드하세요"
+                description="다양한 학습 자료를 공유할 수 있습니다."
+                pageType="resources"
             />
 
             {/* Main Content */}
@@ -163,68 +232,76 @@ export default function ResourcesPage() {
                             />
                         </div>
 
-                        {/* Filter Buttons */}
-                        <div className="bg-gradient-to-br from-slate-50/50 to-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-slate-200/60 shadow-sm">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                                {/* 카테고리 필터 */}
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
-                                            <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                            </svg>
-                                        </div>
-                                        <h3 className="text-sm font-semibold text-slate-700">카테고리</h3>
-                                    </div>
-                                    <FilterButtons
-                                        filters={["전체", ...categories.map(cat => cat.name)]}
-                                        selectedFilter={selectedCategory}
-                                        onFilterChange={setSelectedCategory}
-                                        activeColor="blue-500"
-                                        icon={<svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>}
-                                        compact={true}
-                                    />
-                                </div>
+                        {/* Mobile Filter Button */}
+                        <div className="lg:hidden mb-6">
+                            <button
+                                onClick={() => setIsSheetOpen(true)}
+                                className="inline-flex items-center px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md"
+                            >
+                                <Filter className="w-4 h-4 mr-2" />
+                                필터
+                            </button>
+                        </div>
 
-                                {/* 연도 필터 */}
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-6 h-6 bg-green-100 rounded-lg flex items-center justify-center">
-                                            <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                            </svg>
-                                        </div>
-                                        <h3 className="text-sm font-semibold text-slate-700">연도</h3>
-                                    </div>
-                                    <FilterButtons
-                                        filters={availableYears}
-                                        selectedFilter={selectedYear}
-                                        onFilterChange={setSelectedYear}
-                                        activeColor="green-500"
-                                        icon={<svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
-                                        compact={true}
+                        {/* Framer Motion Sheet */}
+                        <AnimatePresence>
+                            {isSheetOpen && (
+                                <>
+                                    {/* Overlay */}
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="fixed inset-0 z-50 bg-black/80"
+                                        onClick={() => setIsSheetOpen(false)}
                                     />
-                                </div>
 
-                                {/* 학기 필터 */}
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-6 h-6 bg-orange-100 rounded-lg flex items-center justify-center">
-                                            <svg className="w-3 h-3 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                            </svg>
+                                    {/* Sheet Content */}
+                                    <motion.div
+                                        initial={{ x: "-100%" }}
+                                        animate={{ x: 0 }}
+                                        exit={{ x: "-100%" }}
+                                        transition={{
+                                            type: "spring",
+                                            damping: 25,
+                                            stiffness: 200
+                                        }}
+                                        className="fixed inset-y-0 left-0 z-50 h-full w-3/4 bg-white shadow-lg sm:max-w-sm"
+                                    >
+                                        <div className="flex flex-col h-full">
+                                            {/* Header */}
+                                            <div className="flex items-center justify-between p-6">
+                                                <div>
+                                                    <h2 className="text-lg font-semibold">자료실 필터 설정</h2>
+                                                    <p className="text-sm text-gray-600">
+                                                        원하는 조건을 선택하여 자료를 필터링해보세요.
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={() => setIsSheetOpen(false)}
+                                                    className="rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-none"
+                                                >
+                                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+
+                                            {/* Content */}
+                                            <div className="flex-1 overflow-y-auto p-6">
+                                                <FilterContent />
+                                            </div>
                                         </div>
-                                        <h3 className="text-sm font-semibold text-slate-700">학기</h3>
-                                    </div>
-                                    <FilterButtons
-                                        filters={availableSemesters}
-                                        selectedFilter={selectedSemester}
-                                        onFilterChange={setSelectedSemester}
-                                        activeColor="orange-500"
-                                        icon={<svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>}
-                                        compact={true}
-                                    />
-                                </div>
+                                    </motion.div>
+                                </>
+                            )}
+                        </AnimatePresence>
+
+                        {/* Desktop Filter */}
+                        <div className="hidden lg:block">
+                            <div className="bg-gradient-to-br from-slate-50/50 to-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-slate-200/60 shadow-sm">
+                                <FilterContent />
                             </div>
                         </div>
                     </div>

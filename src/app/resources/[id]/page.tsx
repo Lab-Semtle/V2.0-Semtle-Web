@@ -5,10 +5,10 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import Navigation from '@/components/layout/Navigation';
-import ResourceCommentComponent from '@/components/resources/ResourceCommentComponent';
+import CommentSystem from '@/components/common/CommentSystem';
 import NovelEditor from '@/components/editor/NovelEditor';
 import { ResourcePost } from '@/types/resource';
-import { Calendar, Download, File, GraduationCap, User, Star, Pin, Heart, Bookmark, ArrowLeft, MessageCircle, Share } from 'lucide-react';
+import { Download, File, Star, Pin, Heart, Bookmark, ArrowLeft, MessageCircle, Share } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { JSONContent } from 'novel';
 
@@ -157,20 +157,45 @@ export default function ResourceDetailPage() {
             const response = await fetch(apiUrl);
 
             if (response.ok) {
-                // 파일 다운로드
+                // Safari 호환성을 위한 다운로드 방식
                 const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = downloadFileName;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(url);
+
+                // Safari 감지
+                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+                if (isSafari) {
+                    // Safari의 경우 새 창에서 직접 다운로드
+                    const url = window.URL.createObjectURL(blob);
+                    const newWindow = window.open(url, '_blank');
+                    if (!newWindow) {
+                        // 팝업이 차단된 경우 대체 방법
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = downloadFileName;
+                        link.style.display = 'none';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }
+                    // URL 정리는 약간 지연 후
+                    setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                } else {
+                    // 다른 브라우저의 경우 기존 방식
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = downloadFileName;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                }
             } else {
                 alert('다운로드에 실패했습니다.');
             }
-        } catch {
+        } catch (error) {
+            console.error('다운로드 오류:', error);
             alert('다운로드 중 오류가 발생했습니다.');
         } finally {
             setIsDownloading(false);
@@ -293,11 +318,54 @@ export default function ResourceDetailPage() {
         <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-gray-100">
             <Navigation />
 
-            <main className="pt-24 pb-24 lg:pb-16 px-4 sm:px-6 lg:px-8">
+            <main className="pt-12 sm:pt-24 pb-24 lg:pb-16 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-5xl mx-auto relative">
 
                     {/* 자료 대표 이미지 */}
-                    <div className="mb-8">
+                    {/* 모바일용 대표이미지 - 전체 너비 */}
+                    <div className="sm:hidden -mx-4 mb-6">
+                        <div className="relative w-full h-64 overflow-hidden">
+                            {resource.thumbnail ? (
+                                <Image
+                                    src={resource.thumbnail}
+                                    alt={resource.title}
+                                    fill
+                                    priority
+                                    className="object-cover"
+                                />
+                            ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
+                                    <FileTypeIcon className="w-16 h-16 text-purple-400" />
+                                </div>
+                            )}
+
+                            {/* 배지들 */}
+                            <div className="absolute top-4 left-4 flex gap-2">
+                                {resource.is_pinned && (
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-amber-500/90 text-white shadow-md">
+                                        <Pin className="w-4 h-4 mr-1" />
+                                        고정
+                                    </span>
+                                )}
+                                {resource.is_featured && (
+                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-purple-500/90 text-white shadow-md">
+                                        <Star className="w-4 h-4 mr-1" />
+                                        추천
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* 파일 타입 */}
+                            <div className="absolute top-4 right-4">
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-white/90 text-slate-700 shadow-md">
+                                    {getFileTypeLabel()}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 데스크톱용 대표이미지 - 네모박스 */}
+                    <div className="hidden sm:block mb-8">
                         <div className="relative aspect-video w-full rounded-2xl overflow-hidden shadow-xl bg-gradient-to-br from-gray-50 to-gray-100">
                             {resource.thumbnail ? (
                                 <Image
@@ -339,12 +407,12 @@ export default function ResourceDetailPage() {
                     </div>
 
                     {/* 자료 헤더 */}
-                    <div className="mb-4 p-8">
+                    <div className="p-4 sm:p-8">
                         <div className="flex items-start justify-between mb-6">
                             <div className="flex-1">
-                                <h1 className="text-4xl font-bold text-slate-900 mb-4">{resource.title}</h1>
+                                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mb-4">{resource.title}</h1>
                                 {resource.subtitle && (
-                                    <p className="text-xl text-slate-600 mb-3 leading-relaxed">{resource.subtitle}</p>
+                                    <p className="text-base sm:text-lg lg:text-xl text-slate-600 mb-3 leading-relaxed">{resource.subtitle}</p>
                                 )}
 
                                 {/* 작성자 정보와 작성일자 */}
@@ -354,7 +422,7 @@ export default function ResourceDetailPage() {
                                         <div className="flex items-center gap-2">
                                             <div
                                                 onClick={() => window.location.href = `/profile/${resource.author?.nickname}`}
-                                                className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center cursor-pointer hover:scale-105 transition-transform duration-200 overflow-hidden"
+                                                className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center cursor-pointer hover:scale-105 transition-transform duration-200 overflow-hidden"
                                             >
                                                 {resource.author.profile_image ? (
                                                     <Image
@@ -364,7 +432,7 @@ export default function ResourceDetailPage() {
                                                         className="object-cover"
                                                     />
                                                 ) : (
-                                                    <span className="text-white text-sm font-bold">
+                                                    <span className="text-slate-600 text-sm font-bold">
                                                         {resource.author.nickname.charAt(0).toUpperCase()}
                                                     </span>
                                                 )}
@@ -424,25 +492,30 @@ export default function ResourceDetailPage() {
                                     {/* 액션 버튼들 */}
                                     <div className="flex items-center gap-3">
                                         {/* 좋아요 버튼 */}
-                                        <button
-                                            onClick={handleLike}
-                                            disabled={!user}
-                                            className={`flex items-center gap-1 px-3 py-2 rounded-lg border transition-all duration-200 ${!user
-                                                ? 'text-gray-400 border-gray-200 bg-gray-50 cursor-not-allowed'
-                                                : isLiked
-                                                    ? 'text-red-600 bg-red-50 border-red-200 hover:bg-red-100 hover:border-red-300'
-                                                    : 'text-gray-600 bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'
-                                                }`}
-                                        >
-                                            <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-                                            <span className="text-sm font-medium">{likesCount}</span>
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            {/* 좋아요 숫자 - 모바일에서만 표시 */}
+                                            <span className="sm:hidden text-sm font-medium text-gray-600">{likesCount}</span>
+
+                                            <button
+                                                onClick={handleLike}
+                                                disabled={!user}
+                                                className={`flex items-center gap-1 px-2 sm:px-3 py-2 rounded-lg border transition-all duration-200 ${!user
+                                                    ? 'text-gray-400 border-gray-200 bg-gray-50 cursor-not-allowed'
+                                                    : isLiked
+                                                        ? 'text-red-600 bg-red-50 border-red-200 hover:bg-red-100 hover:border-red-300'
+                                                        : 'text-gray-600 bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+                                                    }`}
+                                            >
+                                                <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+                                                <span className="hidden sm:inline text-sm font-medium">{likesCount}</span>
+                                            </button>
+                                        </div>
 
                                         {/* 북마크 버튼 */}
                                         <button
                                             onClick={handleBookmark}
                                             disabled={!user}
-                                            className={`flex items-center gap-1 px-3 py-2 rounded-lg border transition-all duration-200 ${!user
+                                            className={`flex items-center gap-1 px-2 sm:px-3 py-2 rounded-lg border transition-all duration-200 ${!user
                                                 ? 'text-gray-400 border-gray-200 bg-gray-50 cursor-not-allowed'
                                                 : isBookmarked
                                                     ? 'text-yellow-600 bg-yellow-50 border-yellow-200 hover:bg-yellow-100 hover:border-yellow-300'
@@ -450,17 +523,17 @@ export default function ResourceDetailPage() {
                                                 }`}
                                         >
                                             <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
-                                            <span className="text-sm font-medium">{isBookmarked ? '저장됨' : '저장'}</span>
+                                            <span className="hidden sm:inline text-sm font-medium">{isBookmarked ? '저장됨' : '저장'}</span>
                                         </button>
 
 
                                         {/* 공유하기 버튼 */}
                                         <button
                                             onClick={handleShare}
-                                            className="flex items-center gap-1 px-3 py-2 bg-gray-100 text-gray-600 rounded-lg border border-gray-200 hover:bg-gray-200 transition-all duration-200"
+                                            className="flex items-center gap-1 px-2 sm:px-3 py-2 bg-gray-100 text-gray-600 rounded-lg border border-gray-200 hover:bg-gray-200 transition-all duration-200"
                                         >
                                             <Share className="w-4 h-4" />
-                                            <span className="text-sm font-medium">공유</span>
+                                            <span className="hidden sm:inline text-sm font-medium">공유</span>
                                         </button>
                                     </div>
                                 </div>
@@ -469,86 +542,43 @@ export default function ResourceDetailPage() {
                     </div>
 
                     {/* 자료 정보 */}
-                    <div className="mb-8 pt-4 pb-8 px-8">
-                        <h2 className="text-2xl font-bold text-slate-900 mb-3">자료 정보</h2>
+                    <div className="mb-8 px-4 sm:px-8">
+                        {/* 구분선 */}
                         <div className="border-b border-gray-200 mb-6"></div>
 
-                        {/* 기본 정보 그리드 - 미니멀 디자인 */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-
+                        {/* 자료 상세 정보 뱃지들 */}
+                        <div className="flex flex-wrap gap-2 mb-6">
+                            {/* 연도 + 학기 */}
+                            {(resource.year || resource.semester) && (
+                                <span className="inline-flex items-center px-3 py-1.5 bg-orange-100 text-orange-800 rounded-lg text-sm font-medium">
+                                    {resource.year && resource.semester ? `${resource.year}년도 ${resource.semester}` :
+                                        resource.year ? `${resource.year}년도` : resource.semester}
+                                </span>
+                            )}
                             {/* 과목 */}
-                            {resource.resource_data?.subject && (
-                                <div className="bg-gradient-to-br from-blue-50/60 to-blue-100/40 rounded-lg p-4">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <div className="w-6 h-6 bg-blue-500 rounded flex items-center justify-center">
-                                            <GraduationCap className="w-3 h-3 text-white" />
-                                        </div>
-                                        <span className="text-sm font-medium text-gray-600">과목</span>
-                                    </div>
-                                    <div className="text-lg font-semibold text-gray-900">{resource.resource_data?.subject}</div>
-                                </div>
+                            {resource.subject && (
+                                <span className="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-800 rounded-lg text-sm font-medium">
+                                    {resource.subject}
+                                </span>
                             )}
-
                             {/* 교수 */}
-                            {resource.resource_data?.professor && (
-                                <div className="bg-gradient-to-br from-emerald-50/60 to-emerald-100/40 rounded-lg p-4">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <div className="w-6 h-6 bg-emerald-500 rounded flex items-center justify-center">
-                                            <User className="w-3 h-3 text-white" />
-                                        </div>
-                                        <span className="text-sm font-medium text-gray-600">교수</span>
-                                    </div>
-                                    <div className="text-lg font-semibold text-gray-900">{resource.resource_data?.professor}</div>
-                                </div>
+                            {resource.professor && (
+                                <span className="inline-flex items-center px-3 py-1.5 bg-emerald-100 text-emerald-800 rounded-lg text-sm font-medium">
+                                    {resource.professor}
+                                </span>
                             )}
-
-                            {/* 학기 */}
-                            {resource.resource_data?.semester && (
-                                <div className="bg-gradient-to-br from-orange-50/60 to-orange-100/40 rounded-lg p-4">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <div className="w-6 h-6 bg-orange-500 rounded flex items-center justify-center">
-                                            <Calendar className="w-3 h-3 text-white" />
-                                        </div>
-                                        <span className="text-sm font-medium text-gray-600">학기</span>
-                                    </div>
-                                    <div className="text-lg font-semibold text-gray-900">{resource.resource_data?.semester}</div>
-                                </div>
-                            )}
-
-                            {/* 연도 */}
-                            {resource.resource_data?.year && (
-                                <div className="bg-gradient-to-br from-red-50/60 to-red-100/40 rounded-lg p-4">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <div className="w-6 h-6 bg-red-500 rounded flex items-center justify-center">
-                                            <Calendar className="w-3 h-3 text-white" />
-                                        </div>
-                                        <span className="text-sm font-medium text-gray-600">연도</span>
-                                    </div>
-                                    <div className="text-lg font-semibold text-gray-900">{resource.resource_data?.year}</div>
-                                </div>
-                            )}
-
                             {/* 난이도 */}
-                            {resource.resource_data?.difficulty_level && (
-                                <div className="bg-gradient-to-br from-slate-50/60 to-slate-100/40 rounded-lg p-4">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <div className="w-6 h-6 bg-slate-500 rounded flex items-center justify-center">
-                                            <Star className="w-3 h-3 text-white" />
-                                        </div>
-                                        <span className="text-sm font-medium text-gray-600">난이도</span>
-                                    </div>
-                                    <div className="text-lg font-semibold text-gray-900">
-                                        {resource.resource_data?.difficulty_level === 'beginner' ? '초급' :
-                                            resource.resource_data?.difficulty_level === 'intermediate' ? '중급' : '고급'}
-                                    </div>
-                                </div>
+                            {resource.difficulty_level && (
+                                <span className="inline-flex items-center px-3 py-1.5 bg-slate-100 text-slate-800 rounded-lg text-sm font-medium">
+                                    {resource.difficulty_level === 'beginner' ? '초급' :
+                                        resource.difficulty_level === 'intermediate' ? '중급' : '고급'}
+                                </span>
                             )}
                         </div>
 
-                        {/* 첨부 파일 */}
+                        {/* 첨부 파일 - 자료정보 위쪽에 표시 */}
                         {resource.files && resource.files.length > 0 && (
-                            <div className="mb-8">
-                                <h3 className="text-lg font-semibold text-slate-900 mb-4">첨부 파일</h3>
+                            <div className="mb-6">
                                 <div className="space-y-3">
                                     {resource.files.map((file, index) => (
                                         <div key={file.id || index} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
@@ -561,10 +591,10 @@ export default function ResourceDetailPage() {
                                             <button
                                                 onClick={() => handleDownload(file.file_path || file.url, file.original_filename)}
                                                 disabled={isDownloading}
-                                                className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="flex items-center gap-2 px-2 sm:px-3 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <Download className="w-4 h-4" />
-                                                다운로드
+                                                <span className="hidden sm:inline">다운로드</span>
                                             </button>
                                         </div>
                                     ))}
@@ -575,10 +605,8 @@ export default function ResourceDetailPage() {
 
                     {/* 자료 내용 */}
                     {resource.content && (
-                        <div className="mb-4 pt-4 pb-4 px-8">
-                            <h3 className="text-2xl font-bold text-slate-900 mb-3">자료 상세 내용</h3>
-                            <div className="border-b border-gray-200 mb-6"></div>
-                            <div className="prose prose-lg max-w-none [&_.novel-editor]:!min-h-0 [&_.novel-editor]:!h-auto">
+                        <div className="mb-4 pt-4 pb-4 px-4 sm:px-8">
+                            <div className="prose prose-sm sm:prose-lg max-w-none [&_.novel-editor]:!min-h-0 [&_.novel-editor]:!h-auto">
                                 <NovelEditor
                                     initialContent={resource.content as JSONContent | null | undefined}
                                     editable={false}
@@ -595,8 +623,8 @@ export default function ResourceDetailPage() {
             {resource && (
                 <div className="px-4 sm:px-6 lg:px-8">
                     <div className="max-w-5xl mx-auto">
-                        <div className="p-8">
-                            <ResourceCommentComponent resource={resource} />
+                        <div className="p-4 sm:p-8">
+                            <CommentSystem postType="resource" postId={resource.id} />
                         </div>
                     </div>
                 </div>
@@ -605,59 +633,6 @@ export default function ResourceDetailPage() {
             {/* 댓글 섹션 하단 여백 */}
             <div className="h-16"></div>
 
-            {/* 모바일/태블릿용 하단 고정 메뉴바 */}
-            <div className="xl:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50">
-                <div className="max-w-5xl mx-auto">
-                    <div className="flex items-center justify-between gap-3">
-                        {/* 좋아요, 댓글 수 */}
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={handleLike}
-                                disabled={!user}
-                                className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-all duration-200 ${!user
-                                    ? 'text-gray-400'
-                                    : isLiked
-                                        ? 'text-red-600'
-                                        : 'text-gray-600'
-                                    }`}
-                            >
-                                <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-                                <span className="text-xs font-medium">{likesCount || 0}</span>
-                            </button>
-
-                            <div className="flex items-center gap-1">
-                                <MessageCircle className="w-4 h-4 text-green-600" />
-                                <span className="text-xs font-medium text-gray-600">{resource?.comments_count || 0}</span>
-                            </div>
-                        </div>
-
-                        {/* 액션 버튼들 */}
-                        <div className="flex items-center gap-2">
-                            {/* 북마크 버튼 */}
-                            <button
-                                onClick={handleBookmark}
-                                disabled={!user}
-                                className={`p-2 rounded-lg transition-all duration-200 ${!user
-                                    ? 'text-gray-400'
-                                    : isBookmarked
-                                        ? 'text-yellow-600 bg-yellow-50'
-                                        : 'text-gray-600 hover:bg-gray-100'
-                                    }`}
-                            >
-                                <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} />
-                            </button>
-
-                            {/* 공유하기 버튼 */}
-                            <button
-                                onClick={handleShare}
-                                className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-all duration-200"
-                            >
-                                <Share className="w-5 h-5" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     );
 }

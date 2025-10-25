@@ -329,7 +329,7 @@ const NovelEditor = ({
                     extensions={extensions as unknown as any[]}
                     editable={editable}
                     immediatelyRender={false}
-                    className={`relative min-h-[500px] w-full max-w-4xl bg-transparent sm:mb-[calc(20vh)] ${className}`}
+                    className={`relative w-full max-w-4xl bg-transparent sm:mb-[calc(20vh)] ${className}`}
                     editorProps={{
                         handleDOMEvents: {
                             keydown: (_view, event) => handleCommandNavigation(event),

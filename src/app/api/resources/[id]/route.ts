@@ -15,23 +15,59 @@ export async function GET(
             return NextResponse.json({ error: '유효하지 않은 자료 ID입니다.' }, { status: 400 });
         }
 
-        // 자료 조회 (파일 목록 포함)
+        // 자료 조회 (단계별로 안전하게)
         const { data: resource, error } = await supabase
             .from('resources')
-            .select(`
-                *,
-                category:resource_categories(*),
-                files:resource_files(*)
-            `)
+            .select('*')
             .eq('id', resourceId)
             .single();
 
         if (error) {
+            console.error('자료 조회 오류:', error);
             return NextResponse.json({ error: '자료를 찾을 수 없습니다.' }, { status: 404 });
         }
 
         if (!resource) {
             return NextResponse.json({ error: '자료를 찾을 수 없습니다.' }, { status: 404 });
+        }
+
+        // 카테고리 정보 조회
+        const { data: categoryData } = await supabase
+            .from('resource_categories')
+            .select('*')
+            .eq('id', resource.category_id)
+            .single();
+
+        // 파일 목록 조회
+        const { data: filesData } = await supabase
+            .from('resource_files')
+            .select('*')
+            .eq('resource_id', resourceId)
+            .order('upload_order');
+
+        console.log('자료 조회 성공:', { id: resourceId, title: resource.title });
+        console.log('카테고리 데이터:', categoryData);
+        console.log('파일 데이터:', filesData);
+        console.log('resource_data 필드:', resource.resource_data);
+        console.log('전체 resource 객체:', JSON.stringify(resource, null, 2));
+
+        // 자료 상세 정보 필드들 개별 확인
+        console.log('=== 자료 상세 정보 필드 확인 ===');
+        console.log('subject:', resource.subject);
+        console.log('professor:', resource.professor);
+        console.log('semester:', resource.semester);
+        console.log('year:', resource.year);
+        console.log('difficulty_level:', resource.difficulty_level);
+        console.log('resource_data:', resource.resource_data);
+
+        // resource_data가 JSON 문자열인지 확인
+        if (resource.resource_data && typeof resource.resource_data === 'string') {
+            try {
+                const parsedResourceData = JSON.parse(resource.resource_data);
+                console.log('parsed resource_data:', parsedResourceData);
+            } catch (e) {
+                console.log('resource_data 파싱 실패:', e);
+            }
         }
 
         // 실제 좋아요 수 계산
@@ -79,13 +115,16 @@ export async function GET(
         return NextResponse.json({
             resource: {
                 ...resource,
+                category: categoryData,
+                files: filesData || [],
                 likes_count: actualLikesCount,
                 downloads_count: actualDownloadsCount,
                 comments_count: actualCommentsCount,
                 author: authorData
             }
         });
-    } catch {
+    } catch (error) {
+        console.error('자료 API 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }

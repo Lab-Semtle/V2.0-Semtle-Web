@@ -47,6 +47,14 @@ export async function GET(
 
         const actualLikesCount = likeCountData?.length || 0;
 
+        // 댓글 개수 조회 (답글 제외)
+        const { count: commentCount } = await supabase
+            .from('project_comments')
+            .select('*', { count: 'exact', head: true })
+            .eq('project_id', projectId)
+            .is('parent_id', null)
+            .eq('is_deleted', false);
+
         // 승인된 팀원 수 조회 (프로젝트 작성자 제외)
         const { data: teamMembers } = await supabase
             .from('project_team_members')
@@ -74,7 +82,8 @@ export async function GET(
         // 실제 좋아요 수로 프로젝트 데이터 업데이트
         const projectWithActualLikes = {
             ...project,
-            likes_count: actualLikesCount
+            likes_count: actualLikesCount,
+            comments_count: commentCount || 0 // 답글 제외한 댓글 개수
         };
 
         // 작성자 정보 조회

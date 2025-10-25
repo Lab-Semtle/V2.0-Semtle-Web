@@ -59,12 +59,7 @@ export async function POST(
 
             if (updateError) {
                 console.error('좋아요 수 업데이트 오류:', updateError);
-            } else {
-                console.log('좋아요 수 업데이트 성공 (취소):', { projectId, actualLikesCount });
             }
-
-            // 실제 DB 값으로 응답
-            console.log('최종 좋아요 수 (취소):', { projectId, likes_count: actualLikesCount });
 
             return NextResponse.json({
                 liked: false,
@@ -85,7 +80,6 @@ export async function POST(
                 return NextResponse.json({ error: '좋아요 추가에 실패했습니다.' }, { status: 500 });
             }
 
-            console.log('좋아요 추가 성공:', { projectId, userId: user.id });
 
             // 실제 DB에서 좋아요 수를 계산해서 가져오기
             const { data: likeCountData } = await supabase
@@ -105,8 +99,6 @@ export async function POST(
 
             if (updateError) {
                 console.error('좋아요 수 업데이트 오류:', updateError);
-            } else {
-                console.log('좋아요 수 업데이트 성공:', { projectId, actualLikesCount });
             }
 
             // 알림 생성 (작성자에게)
@@ -131,8 +123,6 @@ export async function POST(
                     });
             }
 
-            // 실제 DB 값으로 응답
-            console.log('최종 좋아요 수:', { projectId, likes_count: actualLikesCount });
 
             return NextResponse.json({
                 liked: true,

@@ -99,11 +99,19 @@ export async function GET(
         const arrayBuffer = await fileData.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        // 응답 헤더 설정
+        // 응답 헤더 설정 (Safari 호환성 개선)
         const headers = new Headers();
         headers.set('Content-Type', fileType);
-        headers.set('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
+
+        // Safari 호환성을 위한 파일명 처리
+        const safeFileName = fileName.replace(/[^\x20-\x7E]/g, ''); // ASCII 문자만 유지
+        headers.set('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(safeFileName)}`);
         headers.set('Content-Length', buffer.length.toString());
+
+        // CORS 헤더 추가
+        headers.set('Access-Control-Allow-Origin', '*');
+        headers.set('Access-Control-Allow-Methods', 'GET');
+        headers.set('Access-Control-Allow-Headers', 'Content-Type');
 
         return new NextResponse(buffer, {
             status: 200,

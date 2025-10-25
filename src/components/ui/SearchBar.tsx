@@ -26,7 +26,7 @@ export default function SearchBar({
                 placeholder={placeholder}
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
-                className={`w-full pl-12 pr-4 py-4 bg-white/90 backdrop-blur-sm border border-slate-200/60 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-${focusColor}/30 focus:border-${focusColor} transition-all duration-300 text-sm shadow-lg hover:shadow-xl`}
+                className={`w-full pl-12 pr-4 py-4 bg-white/90 backdrop-blur-sm border border-slate-200/60 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-${focusColor}/30 focus:border-${focusColor} transition-all duration-300 text-sm`}
             />
             {value && (
                 <button

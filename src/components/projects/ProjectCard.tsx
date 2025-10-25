@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ProjectPost } from '@/types/project';
-import { useViewCount } from '@/hooks/useViewCount';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 import { Users, Pin, CheckCircle, XCircle, AlertCircle, Bookmark } from 'lucide-react';
@@ -19,11 +18,6 @@ export default function ProjectCard({ project }: ProjectCardProps) {
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [isBookmarking, setIsBookmarking] = useState(false);
     const { user } = useAuth();
-    const { views, incrementView } = useViewCount({
-        postType: 'project',
-        postId: project.id,
-        initialViews: project.views || 0
-    });
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('ko-KR', {
@@ -176,7 +170,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
     const StatusInfo = getStatusInfo(project);
 
     return (
-        <Link href={`/projects/${project.id}`} onClick={incrementView}>
+        <Link href={`/projects/${project.id}`}>
             <article className={`group h-full flex flex-col rounded-xl transition-all duration-300 ${project.is_pinned
                 ? 'bg-gradient-to-br from-amber-50/50 to-orange-50/50'
                 : 'bg-white hover:bg-gray-50/50'
@@ -284,13 +278,13 @@ export default function ProjectCard({ project }: ProjectCardProps) {
                         </div>
 
                         {/* 제목 */}
-                        <h3 className="text-2xl text-slate-900 mb-2 line-clamp-2" style={{ fontWeight: 950 }}>
+                        <h3 className="text-lg sm:text-xl lg:text-2xl text-slate-900 mb-2 line-clamp-2" style={{ fontWeight: 950 }}>
                             {project.title}
                         </h3>
 
                         {/* 요약문(소제목) */}
                         {project.subtitle && (
-                            <p className="text-lg text-slate-600 mb-3 line-clamp-2">
+                            <p className="text-sm sm:text-base lg:text-lg text-slate-600 mb-3 line-clamp-2">
                                 {project.subtitle}
                             </p>
                         )}
@@ -301,8 +295,8 @@ export default function ProjectCard({ project }: ProjectCardProps) {
                                 {/* 모집 현황 */}
                                 <div className="py-2 px-3 bg-slate-50 rounded-lg">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-sm font-medium text-slate-700">모집 현황</span>
-                                        <span className="text-sm font-bold text-blue-900">
+                                        <span className="text-xs sm:text-sm font-medium text-slate-700">모집 현황</span>
+                                        <span className="text-xs sm:text-sm font-bold text-blue-900">
                                             {project.project_data.current_members}/{project.project_data.team_size}명
                                         </span>
                                     </div>
@@ -347,20 +341,12 @@ export default function ProjectCard({ project }: ProjectCardProps) {
                                         <span>{project.comments_count}</span>
                                     </div>
 
-                                    {/* 조회수 */}
-                                    <div className="flex items-center gap-1">
-                                        <svg className="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                        </svg>
-                                        <span>{views}</span>
-                                    </div>
                                 </div>
 
                                 {/* 작성자 정보 */}
                                 {project.author && (
                                     <div className="flex items-center gap-2">
-                                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                                        <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden">
                                             {project.author.profile_image ? (
                                                 <Image
                                                     src={project.author.profile_image}
@@ -370,7 +356,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
                                                     className="w-full h-full object-cover rounded-full"
                                                 />
                                             ) : (
-                                                <span className="text-white text-xs font-bold">
+                                                <span className="text-slate-600 text-xs font-bold">
                                                     {project.author.nickname.charAt(0).toUpperCase()}
                                                 </span>
                                             )}

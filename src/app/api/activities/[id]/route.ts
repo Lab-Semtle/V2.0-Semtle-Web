@@ -29,15 +29,22 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             activity.author = author;
         }
 
+        // 댓글 개수 조회 (답글 제외)
+        const { count: commentCount } = await supabase
+            .from('activity_comments')
+            .select('*', { count: 'exact', head: true })
+            .eq('activity_id', activityId)
+            .is('parent_id', null)
+            .eq('is_deleted', false);
+
+        // 댓글 개수를 활동 데이터에 추가
+        if (activity) {
+            activity.comments_count = commentCount || 0;
+        }
+
         if (error) {
             return NextResponse.json({ error: '활동을 찾을 수 없습니다.' }, { status: 404 });
         }
-
-        // 조회수 증가
-        await supabase
-            .from('activities')
-            .update({ views: (activity.views || 0) + 1 })
-            .eq('id', activityId);
 
         return NextResponse.json({ activity });
     } catch {

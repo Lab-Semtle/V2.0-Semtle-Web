@@ -116,6 +116,14 @@ export async function GET(request: NextRequest) {
 
                     const actualDownloadsCount = downloadCountData?.length || 0;
 
+                    // 댓글 개수 조회 (답글 제외)
+                    const { count: commentCount } = await supabase
+                        .from('resource_comments')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('resource_id', resource.id)
+                        .is('parent_id', null)
+                        .eq('is_deleted', false);
+
                     // 작성자 정보 조회
                     const { data: authorData } = await supabase
                         .from('user_profiles')
@@ -143,6 +151,7 @@ export async function GET(request: NextRequest) {
                         ...resource,
                         likes_count: actualLikesCount,
                         downloads_count: actualDownloadsCount,
+                        comments_count: commentCount || 0, // 답글 제외한 댓글 개수
                         author: authorData,
                         files: filesData || []
                     };

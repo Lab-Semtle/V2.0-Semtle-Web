@@ -76,11 +76,6 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: '프로젝트 목록을 불러올 수 없습니다.' }, { status: 500 });
         }
 
-        // 디버깅: 좋아요 카운트 확인
-        if (projects && projects.length > 0) {
-            console.log('프로젝트 목록 좋아요 카운트:', projects.map(p => ({ id: p.id, title: p.title, likes_count: p.likes_count })));
-        }
-
         // 카테고리 및 타입 목록 조회
         const [categoriesResult, typesResult] = await Promise.all([
             supabase
@@ -146,19 +141,18 @@ export async function GET(request: NextRequest) {
                 // 작성자(1) + 승인된 신청자 수
                 const actualCurrentMembers = 1 + (acceptedApplications?.length || 0);
 
-                // 디버깅 로그
-                console.log(`프로젝트 ${project.id} 모집현황:`, {
-                    project_title: project.title,
-                    author_id: project.author_id,
-                    team_size: project.team_size,
-                    accepted_applications: acceptedApplications?.length || 0,
-                    actual_current_members: actualCurrentMembers,
-                    pending_applications: actualApplicantCount
-                });
+                // 댓글 개수 조회 (답글 제외)
+                const { count: commentCount } = await supabase
+                    .from('project_comments')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('project_id', project.id)
+                    .is('parent_id', null)
+                    .eq('is_deleted', false);
 
                 return {
                     ...project,
                     likes_count: actualLikesCount, // 실제 좋아요 수 사용
+                    comments_count: commentCount || 0, // 답글 제외한 댓글 개수
                     author: author || null,
                     project_data: {
                         team_size: project.team_size,

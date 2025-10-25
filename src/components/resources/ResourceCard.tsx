@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { ResourcePost } from '@/types/resource';
-import { Calendar, Download, File, Code, Image as ImageIcon, Video, Presentation, GraduationCap, User, Star, Pin, Bookmark } from 'lucide-react';
+import { Calendar, Download, File, Code, Image as ImageIcon, Video, Presentation, GraduationCap, User, Star, Pin, Bookmark, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ResourceCardProps {
@@ -217,13 +217,13 @@ export default function ResourceCard({ resource, className = '' }: ResourceCardP
                 )}
 
                 {/* 제목 */}
-                <h3 className="text-xl sm:text-2xl text-slate-900 mb-2 line-clamp-2" style={{ fontWeight: 950 }}>
+                <h3 className="text-lg sm:text-xl lg:text-2xl text-slate-900 mb-2 line-clamp-2" style={{ fontWeight: 950 }}>
                     {resource.title}
                 </h3>
 
                 {/* 부제목 */}
                 {resource.subtitle && (
-                    <p className="text-base sm:text-lg text-slate-600 mb-3 line-clamp-2">
+                    <p className="text-sm sm:text-base lg:text-lg text-slate-600 mb-3 line-clamp-2">
                         {resource.subtitle}
                     </p>
                 )}
@@ -232,21 +232,21 @@ export default function ResourceCard({ resource, className = '' }: ResourceCardP
                 {resource.resource_data && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
                         {resource.resource_data.subject && (
-                            <div className="flex items-center gap-2 text-sm text-slate-600 min-w-0">
+                            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-600 min-w-0">
                                 <GraduationCap className="w-4 h-4 flex-shrink-0" />
                                 <span className="truncate">{resource.resource_data.subject}</span>
                             </div>
                         )}
 
                         {resource.resource_data.professor && (
-                            <div className="flex items-center gap-2 text-sm text-slate-600 min-w-0">
+                            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-600 min-w-0">
                                 <User className="w-4 h-4 flex-shrink-0" />
                                 <span className="truncate">{resource.resource_data.professor} 교수</span>
                             </div>
                         )}
 
                         {resource.resource_data.semester && (
-                            <div className="flex items-center gap-2 text-sm text-slate-600 min-w-0">
+                            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-600 min-w-0">
                                 <Calendar className="w-4 h-4 flex-shrink-0" />
                                 <span className="truncate">{resource.resource_data.semester}</span>
                             </div>
@@ -271,7 +271,7 @@ export default function ResourceCard({ resource, className = '' }: ResourceCardP
                             </div>
                             {/* 댓글 수 */}
                             <div className="flex items-center gap-1">
-                                <File className="w-3 h-3 flex-shrink-0" />
+                                <MessageCircle className="w-3 h-3 flex-shrink-0" />
                                 <span>{resource.comments_count || 0}</span>
                             </div>
                         </div>
@@ -284,7 +284,7 @@ export default function ResourceCard({ resource, className = '' }: ResourceCardP
                                         e.stopPropagation();
                                         window.location.href = `/profile/${resource.author?.nickname}`;
                                     }}
-                                    className="w-5 h-5 bg-gray-400 rounded-full flex items-center justify-center cursor-pointer hover:scale-105 transition-transform duration-200 flex-shrink-0 overflow-hidden"
+                                    className="w-5 h-5 bg-slate-200 rounded-full flex items-center justify-center cursor-pointer hover:scale-105 transition-transform duration-200 flex-shrink-0 overflow-hidden"
                                 >
                                     {resource.author.profile_image ? (
                                         <Image
@@ -294,7 +294,7 @@ export default function ResourceCard({ resource, className = '' }: ResourceCardP
                                             className="object-cover"
                                         />
                                     ) : (
-                                        <span className="text-white text-xs font-bold">
+                                        <span className="text-slate-600 text-xs font-bold">
                                             {resource.author?.nickname?.charAt(0).toUpperCase()}
                                         </span>
                                     )}

@@ -6,9 +6,8 @@ import { useParams } from 'next/navigation';
 import Navigation from '@/components/layout/Navigation';
 import NovelEditor from '@/components/editor/NovelEditor';
 import EmptyState from '@/components/common/EmptyState';
-import CommentComponent from '@/components/projects/CommentComponent';
+import CommentSystem from '@/components/common/CommentSystem';
 import { useAuth } from '@/contexts/AuthContext';
-import { useViewCount } from '@/hooks/useViewCount';
 import { ProjectPost } from '@/types/project';
 import { JSONContent } from 'novel';
 import { Heart, MessageCircle, Bookmark, Share } from 'lucide-react';
@@ -29,14 +28,6 @@ export default function ProjectDetailPage() {
     const [isLiking, setIsLiking] = useState(false);
     const [isFollowing, setIsFollowing] = useState(false);
     const [isFollowingLoading, setIsFollowingLoading] = useState(false);
-
-
-    // 조회수 훅
-    const { views } = useViewCount({
-        postType: 'project',
-        postId: parseInt(id),
-        initialViews: post?.views || 0
-    });
 
     // 최신 좋아요 카운트만 가져오는 함수
     const fetchLatestLikesCount = useCallback(async () => {
@@ -136,7 +127,6 @@ export default function ProjectDetailPage() {
         };
     }, [id, fetchLatestLikesCount, refreshProjectData]);
 
-    // 조회수는 useViewCount 훅에서 자동으로 처리됨 (세션당 1회)
 
     const handleApply = () => {
         if (!user) {
@@ -338,10 +328,43 @@ export default function ProjectDetailPage() {
         <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-gray-100">
             <Navigation />
 
-            <main className="pt-24 pb-24 lg:pb-16 px-4 sm:px-6 lg:px-8">
+            <main className="pt-12 sm:pt-24 pb-24 lg:pb-16 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-5xl mx-auto relative">
-                    {/* 프로젝트 대표 이미지 */}
-                    <div className="mb-8">
+                    {/* 프로젝트 대표 이미지 - 모바일용 전체 너비 */}
+                    <div className="sm:hidden -mx-4 mb-6">
+                        <div className="relative w-full h-64 overflow-hidden">
+                            {post.thumbnail ? (
+                                <Image
+                                    src={post.thumbnail}
+                                    alt={post.title}
+                                    fill
+                                    className="object-cover"
+                                    priority
+                                />
+                            ) : (
+                                <div
+                                    className="w-full h-full relative overflow-hidden"
+                                    style={{
+                                        background: `linear-gradient(135deg, ${getProjectTypeColor()}15 0%, ${getProjectTypeColor()}25 50%, ${getProjectTypeColor()}35 100%)`
+                                    }}
+                                >
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className="text-center">
+                                            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/20 flex items-center justify-center">
+                                                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                                </svg>
+                                            </div>
+                                            <p className="text-white font-semibold text-lg">프로젝트</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* 프로젝트 대표 이미지 - 데스크톱용 네모박스 */}
+                    <div className="hidden sm:block mb-8">
                         <div className="relative aspect-video w-full rounded-2xl overflow-hidden shadow-xl bg-gradient-to-br from-gray-50 to-gray-100">
                             {post.thumbnail ? (
                                 <Image
@@ -380,12 +403,12 @@ export default function ProjectDetailPage() {
                     </div>
 
                     {/* 프로젝트 헤더 */}
-                    <div className="mb-4 p-8">
+                    <div className="mb-4 p-4 sm:p-8">
                         <div className="flex items-start justify-between mb-6">
                             <div className="flex-1">
-                                <h1 className="text-4xl font-bold text-slate-900 mb-4">{post.title}</h1>
+                                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 mb-4">{post.title}</h1>
                                 {post.subtitle && (
-                                    <p className="text-xl text-slate-600 mb-3 leading-relaxed">{post.subtitle}</p>
+                                    <p className="text-sm sm:text-base lg:text-lg text-slate-600 mb-3 leading-relaxed">{post.subtitle}</p>
                                 )}
 
 
@@ -396,7 +419,7 @@ export default function ProjectDetailPage() {
                                         <div className="flex items-center gap-2">
                                             <div
                                                 onClick={() => window.location.href = `/profile/${post.author?.nickname}`}
-                                                className="relative w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform duration-200 overflow-hidden"
+                                                className="relative w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform duration-200 overflow-hidden"
                                             >
                                                 {post.author.profile_image ? (
                                                     <Image
@@ -406,7 +429,7 @@ export default function ProjectDetailPage() {
                                                         className="object-cover rounded-full"
                                                     />
                                                 ) : (
-                                                    <span className="text-white text-sm font-bold">
+                                                    <span className="text-slate-600 text-sm font-bold">
                                                         {post.author.nickname.charAt(0).toUpperCase()}
                                                     </span>
                                                 )}
@@ -452,16 +475,8 @@ export default function ProjectDetailPage() {
 
                                 {/* 통계 정보와 액션 버튼들 - 좌우 배치 */}
                                 <div className="flex items-center justify-between mt-4">
-                                    {/* 왼쪽: 조회수, 댓글 수 */}
+                                    {/* 왼쪽: 댓글 수 */}
                                     <div className="flex items-center gap-4">
-                                        <div className="flex items-center gap-1">
-                                            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                            </svg>
-                                            <span className="text-sm font-medium text-gray-600">{views}</span>
-                                        </div>
-
                                         <div className="flex items-center gap-1">
                                             <MessageCircle className="w-4 h-4 text-green-600" />
                                             <span className="text-sm font-medium text-gray-600">{post.comments_count || 0}</span>
@@ -471,42 +486,47 @@ export default function ProjectDetailPage() {
                                     {/* 오른쪽: 액션 버튼들 */}
                                     <div className="flex items-center gap-2">
                                         {/* 좋아요 버튼 */}
-                                        <button
-                                            onClick={handleLike}
-                                            disabled={isLiking || !user}
-                                            className={`flex items-center gap-1 px-3 py-2 rounded-lg transition-all duration-200 ${!user
-                                                ? 'text-gray-400'
-                                                : isLiked
-                                                    ? 'text-red-600 bg-red-50'
-                                                    : 'text-gray-600 hover:text-red-500 hover:bg-red-50'
-                                                }`}
-                                        >
-                                            <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-                                            <span className="text-sm font-medium">{post.likes_count || 0}</span>
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            {/* 좋아요 숫자 - 모바일에서만 표시 */}
+                                            <span className="sm:hidden text-sm font-medium text-gray-600">{post.likes_count || 0}</span>
+
+                                            <button
+                                                onClick={handleLike}
+                                                disabled={isLiking || !user}
+                                                className={`flex items-center gap-1 px-2 sm:px-3 py-2 rounded-lg border transition-all duration-200 ${!user
+                                                    ? 'text-gray-400 border-gray-200 bg-gray-50 cursor-not-allowed'
+                                                    : isLiked
+                                                        ? 'text-red-600 bg-red-50 border-red-200 hover:bg-red-100 hover:border-red-300'
+                                                        : 'text-gray-600 bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+                                                    }`}
+                                            >
+                                                <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+                                                <span className="hidden sm:inline text-sm font-medium">{post.likes_count || 0}</span>
+                                            </button>
+                                        </div>
 
                                         {/* 북마크 버튼 */}
                                         <button
                                             onClick={handleBookmark}
                                             disabled={isBookmarking || !user}
-                                            className={`flex items-center gap-1 px-3 py-2 rounded-lg transition-all duration-200 ${!user
-                                                ? 'text-gray-400'
+                                            className={`flex items-center gap-1 px-2 sm:px-3 py-2 rounded-lg border transition-all duration-200 ${!user
+                                                ? 'text-gray-400 border-gray-200 bg-gray-50 cursor-not-allowed'
                                                 : isBookmarked
-                                                    ? 'text-yellow-600 bg-yellow-50'
-                                                    : 'text-gray-600 hover:text-yellow-500 hover:bg-yellow-50'
+                                                    ? 'text-yellow-600 bg-yellow-50 border-yellow-200 hover:bg-yellow-100 hover:border-yellow-300'
+                                                    : 'text-gray-600 bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'
                                                 }`}
                                         >
                                             <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
-                                            <span className="text-sm font-medium">{isBookmarked ? '저장됨' : '저장'}</span>
+                                            <span className="hidden sm:inline text-sm font-medium">{isBookmarked ? '저장됨' : '저장'}</span>
                                         </button>
 
                                         {/* 공유하기 버튼 */}
                                         <button
                                             onClick={handleShare}
-                                            className="flex items-center gap-1 px-3 py-2 bg-gray-100 text-gray-600 rounded-lg border border-gray-200 hover:bg-gray-200 transition-all duration-200"
+                                            className="flex items-center gap-1 px-2 sm:px-3 py-2 bg-gray-100 text-gray-600 rounded-lg border border-gray-200 hover:bg-gray-200 transition-all duration-200"
                                         >
                                             <Share className="w-4 h-4" />
-                                            <span className="text-sm font-medium">공유</span>
+                                            <span className="hidden sm:inline text-sm font-medium">공유</span>
                                         </button>
                                     </div>
                                 </div>
@@ -518,7 +538,7 @@ export default function ProjectDetailPage() {
                                             <button
                                                 onClick={handleApply}
                                                 disabled={hasApplied || !user || user.id === post.author_id}
-                                                className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-200 shadow-lg hover:shadow-xl ${!user || user.id === post.author_id || hasApplied
+                                                className={`w-full py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-bold text-base sm:text-lg transition-all duration-200 shadow-lg hover:shadow-xl ${!user || user.id === post.author_id || hasApplied
                                                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                                     : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white hover:-translate-y-1'
                                                     }`}
@@ -539,14 +559,14 @@ export default function ProjectDetailPage() {
 
                     {/* 프로젝트 정보 */}
                     {post.project_data && (
-                        <div className="mb-8 pt-4 pb-8 px-8">
-                            <h2 className="text-2xl font-bold text-slate-900 mb-3">프로젝트 정보</h2>
+                        <div className="mb-8 pt-4 pb-8 px-4 sm:px-8">
+                            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-900 mb-3">프로젝트 정보</h2>
                             <div className="border-b border-gray-200 mb-6"></div>
 
                             {/* 프로젝트 목표 */}
                             {post.project_data.project_goals && (
                                 <div className="mb-8">
-                                    <h3 className="text-lg font-semibold text-slate-900 mb-3">프로젝트 목표</h3>
+                                    <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-3">프로젝트 목표</h3>
                                     <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
                                         <p className="text-slate-700 leading-relaxed font-semibold">
                                             {post.project_data.project_goals}
@@ -567,7 +587,7 @@ export default function ProjectDetailPage() {
                                         </div>
                                         <span className="text-sm font-medium text-gray-600">프로젝트 타입</span>
                                     </div>
-                                    <div className="text-lg font-semibold text-gray-900">{post.project_type?.name || 'N/A'}</div>
+                                    <div className="text-base sm:text-lg font-semibold text-gray-900">{post.project_type?.name || 'N/A'}</div>
                                 </div>
 
                                 {/* 팀 구성 */}
@@ -587,7 +607,7 @@ export default function ProjectDetailPage() {
                                             </span>
                                         )}
                                     </div>
-                                    <div className="text-lg font-semibold text-gray-900">
+                                    <div className="text-base sm:text-lg font-semibold text-gray-900">
                                         {post.approved_members || 0}/{post.project_data.team_size}명
                                     </div>
                                     <div className="mt-2 w-full bg-emerald-200 rounded-full h-1.5">
@@ -610,7 +630,7 @@ export default function ProjectDetailPage() {
                                         </div>
                                         <span className="text-sm font-medium text-gray-600">난이도</span>
                                     </div>
-                                    <div className="text-lg font-semibold text-gray-900">
+                                    <div className="text-base sm:text-lg font-semibold text-gray-900">
                                         {post.project_data.difficulty === 'beginner' ? '초급' :
                                             post.project_data.difficulty === 'intermediate' ? '중급' :
                                                 post.project_data.difficulty === 'advanced' ? '고급' :
@@ -628,7 +648,7 @@ export default function ProjectDetailPage() {
                                         </div>
                                         <span className="text-sm font-medium text-gray-600">진행 방식</span>
                                     </div>
-                                    <div className="text-lg font-semibold text-gray-900">
+                                    <div className="text-base sm:text-lg font-semibold text-gray-900">
                                         {post.project_data.location === 'online' ? '온라인' :
                                             post.project_data.location === 'offline' ? '오프라인' :
                                                 post.project_data.location === 'hybrid' ? '하이브리드' :
@@ -646,7 +666,7 @@ export default function ProjectDetailPage() {
                                         </div>
                                         <span className="text-sm font-medium text-gray-600">모집 마감</span>
                                     </div>
-                                    <div className="text-lg font-semibold text-gray-900">
+                                    <div className="text-base sm:text-lg font-semibold text-gray-900">
                                         {new Date(post.project_data.deadline).toLocaleDateString('ko-KR', {
                                             month: 'short',
                                             day: 'numeric'
@@ -668,7 +688,7 @@ export default function ProjectDetailPage() {
                                         </div>
                                         <span className="text-sm font-medium text-gray-600">프로젝트 상태</span>
                                     </div>
-                                    <div className="text-lg font-semibold text-gray-900">
+                                    <div className="text-base sm:text-lg font-semibold text-gray-900">
                                         {post.project_data.project_status === 'recruiting' ? '모집중' :
                                             post.project_data.project_status === 'active' ? '진행중' :
                                                 post.project_data.project_status === 'completed' ? '완료' :
@@ -682,7 +702,7 @@ export default function ProjectDetailPage() {
                             {post.project_data.needed_skills && post.project_data.needed_skills.length > 0 && (
                                 <div className="mb-8">
                                     <div className="flex items-center gap-3 mb-4">
-                                        <h3 className="text-lg font-semibold text-slate-900">필요 기술</h3>
+                                        <h3 className="text-base sm:text-lg font-semibold text-slate-900">필요 기술</h3>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
                                         {post.project_data.needed_skills.map((skill, index) => (
@@ -696,7 +716,7 @@ export default function ProjectDetailPage() {
 
                             {(post.project_data.github_url || post.project_data.demo_url) && (
                                 <div className="mb-6">
-                                    <h3 className="text-lg font-semibold text-slate-900 mb-4">외부 링크</h3>
+                                    <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">외부 링크</h3>
                                     <div className="flex gap-4">
                                         {post.project_data.github_url && (
                                             <a
@@ -731,10 +751,10 @@ export default function ProjectDetailPage() {
                     )}
 
                     {/* 프로젝트 내용 */}
-                    <div className="mb-4 pt-4 pb-4 px-8">
-                        <h3 className="text-2xl font-bold text-slate-900 mb-3">프로젝트 상세 내용</h3>
+                    <div className="mb-4 pt-4 pb-4 px-4 sm:px-8">
+                        <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-900 mb-3">프로젝트 상세 내용</h3>
                         <div className="border-b border-gray-200 mb-6"></div>
-                        <div className="prose prose-lg max-w-none [&_.novel-editor]:!min-h-0 [&_.novel-editor]:!h-auto">
+                        <div className="prose prose-sm sm:prose-lg max-w-none [&_.novel-editor]:!min-h-0 [&_.novel-editor]:!h-auto">
                             <NovelEditor
                                 initialContent={post.content as JSONContent | null | undefined}
                                 editable={false}
@@ -751,7 +771,7 @@ export default function ProjectDetailPage() {
                 <div className="px-4 sm:px-6 lg:px-8">
                     <div className="max-w-5xl mx-auto">
                         <div className="p-8">
-                            <CommentComponent projectId={post.id} />
+                            <CommentSystem postType="project" postId={post.id} />
                         </div>
                     </div>
                 </div>
@@ -761,16 +781,8 @@ export default function ProjectDetailPage() {
             <div className="xl:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50">
                 <div className="max-w-5xl mx-auto">
                     <div className="flex items-center justify-between gap-3">
-                        {/* 조회수, 좋아요, 댓글 수 */}
+                        {/* 좋아요, 댓글 수 */}
                         <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-1">
-                                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                                <span className="text-xs font-medium text-gray-600">{views}</span>
-                            </div>
-
                             <button
                                 onClick={handleLike}
                                 disabled={isLiking || !user}
@@ -799,7 +811,7 @@ export default function ProjectDetailPage() {
                                     <button
                                         onClick={handleApply}
                                         disabled={hasApplied || !user || user.id === post.author_id}
-                                        className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${!user || user.id === post.author_id || hasApplied
+                                        className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 ${!user || user.id === post.author_id || hasApplied
                                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                             : 'bg-blue-500 hover:bg-blue-600 text-white'
                                             }`}
@@ -839,7 +851,7 @@ export default function ProjectDetailPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
                     <div className="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-bold text-slate-900">프로젝트 신청</h2>
+                            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-900">프로젝트 신청</h2>
                             <button
                                 onClick={() => setShowApplicationModal(false)}
                                 className="text-slate-400 hover:text-slate-600 transition-colors"
@@ -1032,7 +1044,7 @@ function ProjectApplicationForm({ projectId, onSuccess, onCancel }: {
                 <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white rounded-lg text-sm sm:text-base font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {isSubmitting ? '신청 중...' : '신청하기'}
                 </button>
