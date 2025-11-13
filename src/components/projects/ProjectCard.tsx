@@ -1,93 +1,58 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ProjectPost } from '@/types/project';
+import { Users, Pin, CheckCircle, XCircle, AlertCircle, Heart, MessageCircle, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase/client';
-import { Users, Pin, CheckCircle, XCircle, AlertCircle, Bookmark } from 'lucide-react';
 
 interface ProjectCardProps {
     project: ProjectPost;
     className?: string;
+    isSelectable?: boolean;
+    isSelected?: boolean;
+    onSelect?: (projectId: number) => void;
 }
 
-export default function ProjectCard({ project }: ProjectCardProps) {
-    const [imageError, setImageError] = useState(false);
-    const [isBookmarked, setIsBookmarked] = useState(false);
-    const [isBookmarking, setIsBookmarking] = useState(false);
+export default function ProjectCard({
+    project,
+    className = '',
+    isSelectable = false,
+    isSelected = false,
+    onSelect
+}: ProjectCardProps) {
     const { user } = useAuth();
+    const [imageError, setImageError] = useState(false);
 
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('ko-KR', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
-    };
+    // 소유자 여부 확인
+    const isOwner = user?.id === project.author_id;
+    const showCheckbox = isOwner && isSelectable && onSelect;
 
-
-
-    // 북마크 상태 확인
-    useEffect(() => {
-        const checkBookmarkStatus = async () => {
-            if (!user) return;
-
-            try {
-                const response = await fetch(`/api/posts/${project.id}/bookmark`, {
-                    credentials: 'include'
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    setIsBookmarked(data.isBookmarked);
-                }
-            } catch {
-                // 에러 무시
-            }
-        };
-
-        checkBookmarkStatus();
-    }, [user, project.id]);
-
-    // 북마크 토글
-    const handleBookmark = async (e: React.MouseEvent) => {
+    const handleCheckboxClick = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-
-        // Supabase 세션 직접 확인
-        await supabase.auth.getSession();
-
-        if (!user) {
-            return;
-        }
-
-        if (isBookmarking) return;
-
-        setIsBookmarking(true);
-        try {
-            const response = await fetch(`/api/posts/${project.id}/bookmark`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include'
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || '북마크 처리에 실패했습니다.');
-            }
-
-            setIsBookmarked(data.isBookmarked);
-        } catch {
-            alert('북마크 처리 중 오류가 발생했습니다.');
-        } finally {
-            setIsBookmarking(false);
+        if (onSelect) {
+            onSelect(project.id);
         }
     };
 
+    const formatDate = (dateString: string | null | undefined) => {
+        if (!dateString) return '';
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+            return date.toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch {
+            return '';
+        }
+    };
 
     const getCustomStatusColor = (status: string) => {
         switch (status) {
@@ -169,210 +134,228 @@ export default function ProjectCard({ project }: ProjectCardProps) {
 
     const StatusInfo = getStatusInfo(project);
 
-    return (
-        <Link href={`/projects/${project.id}`}>
-            <article className={`group h-full flex flex-col rounded-xl transition-all duration-300 ${project.is_pinned
-                ? 'bg-gradient-to-br from-amber-50/50 to-orange-50/50'
-                : 'bg-white hover:bg-gray-50/50'
-                }`}>
-                {/* 메인 콘텐츠 영역 - 썸네일과 내용 */}
-                <div className="flex flex-col md:flex-row-reverse flex-1">
-                    {/* 썸네일 - 우측 */}
-                    <div className="relative w-full md:w-80 h-44 md:h-auto bg-gray-50/50 rounded-xl overflow-hidden flex-shrink-0">
-                        {project.thumbnail && !imageError ? (
-                            <Image
-                                src={project.thumbnail}
-                                alt={project.title}
-                                fill
-                                className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out rounded-xl"
-                                onError={() => setImageError(true)}
-                            />
-                        ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl">
-                            </div>
-                        )}
-
-                        {/* 상단 배지들 */}
-                        <div className="absolute top-3 left-3 flex flex-col gap-2">
-                            <div className="flex flex-row gap-2">
-                                {/* 난이도 태그 */}
-                                {project.project_data && (
-                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold ${project.project_data.difficulty === 'beginner'
-                                        ? 'bg-green-100 text-green-800'
-                                        : project.project_data.difficulty === 'intermediate'
-                                            ? 'bg-yellow-100 text-yellow-800'
-                                            : 'bg-red-100 text-red-800'
-                                        }`}>
-                                        {project.project_data.difficulty === 'beginner' ? '초급' :
-                                            project.project_data.difficulty === 'intermediate' ? '중급' : '고급'}
-                                    </span>
-                                )}
-
-                                {/* 프로젝트 타입 */}
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-900">
-                                    {((project as unknown as Record<string, unknown>).project_type as { name: string } || { name: '프로젝트' }).name}
-                                </span>
-                            </div>
-
-                            {/* 마감기간 배지 */}
-                            {project.project_data && project.project_data.deadline && (
-                                <div className="px-3 py-1.5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg text-xs font-bold shadow-lg">
-                                    <span>모집마감: {formatDate(project.project_data.deadline)}</span>
-                                </div>
-                            )}
+    const CardContent = (
+        <article className={`group w-full max-w-full flex flex-col md:flex-row rounded-xl md:rounded-2xl transition-all duration-300 overflow-hidden ${isSelected ? 'ring-2 ring-blue-500' : ''} ${(((project as unknown as { is_pinned?: boolean }).is_pinned === true)
+            ? 'bg-gradient-to-br from-amber-50/50 to-orange-50/50'
+            : 'bg-transparent hover:bg-white/40')}
+                } ${className}`}>
+            {/* 메인 콘텐츠 영역 - 썸네일과 내용 */}
+            <div className="flex flex-col md:flex-row min-w-0 w-full">
+                {/* 썸네일 - 좌측 */}
+                <div className="relative w-full md:w-56 lg:w-72 xl:w-80 h-48 sm:h-52 md:h-56 lg:h-60 bg-gray-50/50 rounded-xl md:rounded-2xl overflow-hidden flex-shrink-0">
+                    {project.thumbnail && !imageError ? (
+                        <Image
+                            src={project.thumbnail}
+                            alt={project.title}
+                            fill
+                            className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out rounded-xl md:rounded-2xl"
+                            onError={() => setImageError(true)}
+                        />
+                    ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl md:rounded-2xl">
                         </div>
+                    )}
 
+                    {/* 이미지 위 최소 정보: 상태 배지 + 마감일자 배지 */}
+                    {/* 상단 좌측: 상태 배지 + 마감일자 배지 */}
+                    <div className="absolute top-2.5 sm:top-3 left-2.5 sm:left-3 z-10 flex items-center md:flex-col md:items-start gap-1.5 sm:gap-2.5 md:gap-1.5 flex-nowrap max-w-[calc(100%-4rem)] sm:max-w-none">
+                        <span className={`inline-flex items-center px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold shadow-md backdrop-blur-md whitespace-nowrap flex-shrink-0 ${StatusInfo.color}`}>
+                            {StatusInfo.label}
+                        </span>
+                        {/* 마감일자 배지 - 모집중이고 마감일이 지나지 않았을 때만 표시 */}
+                        {(() => {
+                            if (!project.project_data || !project.project_data.deadline) return null;
 
-                        {/* 상단 액션 버튼들 */}
-                        <div className="absolute top-3 right-3 flex gap-2">
-                            {/* 북마크 버튼 */}
-                            <button
-                                onClick={handleBookmark}
-                                disabled={isBookmarking || !user}
-                                className={`p-2 rounded-full shadow-sm transition-all duration-200 backdrop-blur-sm ${!user
-                                    ? 'bg-white/80 text-gray-400 cursor-not-allowed'
-                                    : isBookmarked
-                                        ? 'bg-yellow-500 text-white hover:bg-yellow-600'
-                                        : 'bg-white/80 text-gray-600 hover:bg-white hover:text-yellow-500'
-                                    }`}
-                            >
-                                {isBookmarking ? (
-                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></div>
-                                ) : (
-                                    <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
-                                )}
-                            </button>
-                        </div>
+                            // project_status_info가 있으면 그것을 사용, 없으면 project_status 사용
+                            const statusName = (project as unknown as Record<string, unknown>).project_status_info
+                                ? ((project as unknown as Record<string, unknown>).project_status_info as { name: string }).name
+                                : (project.project_data as { project_status?: string }).project_status;
 
-                        {/* 하단 배지들 - 필요기술만 */}
-                        {project.project_data && project.project_data.needed_skills && project.project_data.needed_skills.length > 0 && (
-                            <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5">
-                                {/* 필요기술 */}
-                                {project.project_data.needed_skills.slice(0, 3).map((skill, index) => (
-                                    <span key={index} className="px-2 py-1 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-md text-xs font-bold">
-                                        {skill}
-                                    </span>
-                                ))}
-                                {project.project_data.needed_skills.length > 3 && (
-                                    <span className="px-2 py-1 bg-gradient-to-r from-gray-400 to-gray-500 text-white rounded-md text-xs font-bold">
-                                        +{project.project_data.needed_skills.length - 3}
-                                    </span>
-                                )}
-                            </div>
-                        )}
+                            if (statusName === 'recruiting') {
+                                const now = new Date();
+                                const deadlineDate = new Date(project.project_data.deadline);
+                                if (now < deadlineDate) {
+                                    return (
+                                        <span className="inline-flex items-center px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md backdrop-blur-md whitespace-nowrap flex-shrink-0">
+                                            <span className="whitespace-nowrap">마감: {formatDate(project.project_data.deadline)}</span>
+                                        </span>
+                                    );
+                                }
+                            }
+                            return null;
+                        })()}
                     </div>
 
-                    {/* 내용 - 우측 */}
-                    <div className="flex-1 px-4 pt-3 pb-6 flex flex-col">
-                        {/* 프로젝트 상태 - 제목 위쪽 */}
-                        <div className="flex items-center gap-2 mb-2">
-                            {project.is_pinned && (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm">
-                                    <Pin className="w-3 h-3" />
-                                    고정된 프로젝트
-                                </span>
-                            )}
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${StatusInfo.color}`}>
-                                {StatusInfo.label}
-                            </span>
+                    {/* 체크박스 (소유자일 때만 표시) */}
+                    {showCheckbox && (
+                        <div
+                            className="absolute top-2.5 sm:top-3 right-2.5 sm:right-3 z-20 cursor-pointer"
+                            onClick={handleCheckboxClick}
+                        >
+                            <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-md border-2 flex items-center justify-center transition-all shadow-md ${isSelected
+                                ? 'bg-blue-600 border-blue-600'
+                                : 'bg-white/95 border-slate-300'
+                                }`}>
+                                {isSelected && (
+                                    <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+                                )}
+                            </div>
                         </div>
+                    )}
 
+                    {/* 하단: 모집 현황 오버레이 */}
+                    {project.project_data && (
+                        <div className="absolute bottom-0 left-0 right-0 z-10 p-2.5 sm:p-3 bg-gradient-to-t from-black/70 via-black/50 to-transparent backdrop-blur-sm rounded-b-xl md:rounded-b-2xl">
+                            <div className="flex items-center justify-between mb-2 sm:mb-2.5">
+                                <span className="text-xs sm:text-sm font-semibold text-white">모집 현황</span>
+                                <span className="text-xs sm:text-sm font-bold text-white">
+                                    {project.project_data.current_members}/{project.project_data.team_size}명
+                                </span>
+                            </div>
+                            <div className="w-full bg-white/20 rounded-full h-2 sm:h-2.5 overflow-hidden shadow-inner">
+                                <div
+                                    className="bg-gradient-to-r from-blue-400 to-blue-500 h-full rounded-full transition-all duration-500 shadow-sm"
+                                    style={{
+                                        width: `${Math.min((project.project_data.current_members / project.project_data.team_size) * 100, 100)}%`
+                                    }}
+                                ></div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* 내용 - 우측 */}
+                <div className="flex-1 px-4 sm:px-5 md:px-6 pt-1 sm:pt-1.5 pb-1 sm:pb-1.5 flex flex-col min-w-0 md:h-56 lg:h-60">
+                    {/* 중간 콘텐츠 영역 - flex-1로 남은 공간 차지 */}
+                    <div className="flex-1 flex flex-col">
                         {/* 제목 */}
-                        <h3 className="text-lg sm:text-xl lg:text-2xl text-slate-900 mb-2 line-clamp-2" style={{ fontWeight: 950 }}>
+                        <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl text-slate-900 mb-2 sm:mb-2.5 line-clamp-2 break-words font-bold leading-tight">
                             {project.title}
                         </h3>
 
                         {/* 요약문(소제목) */}
                         {project.subtitle && (
-                            <p className="text-sm sm:text-base lg:text-lg text-slate-600 mb-3 line-clamp-2">
+                            <p className="text-xs sm:text-sm md:text-base lg:text-lg text-slate-600 mb-3.5 sm:mb-4 line-clamp-2 break-words leading-relaxed">
                                 {project.subtitle}
                             </p>
                         )}
+                    </div>
 
-                        {/* 핵심 정보 - 팀원 모집 현황만 */}
-                        {project.project_data && (
-                            <div className="space-y-3 mb-4">
-                                {/* 모집 현황 */}
-                                <div className="py-2 px-3 bg-slate-50 rounded-lg">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-xs sm:text-sm font-medium text-slate-700">모집 현황</span>
-                                        <span className="text-xs sm:text-sm font-bold text-blue-900">
-                                            {project.project_data.current_members}/{project.project_data.team_size}명
-                                        </span>
-                                    </div>
-                                    <div className="w-full bg-blue-200 rounded-full h-2">
-                                        <div
-                                            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                                            style={{
-                                                width: `${Math.min((project.project_data.current_members / project.project_data.team_size) * 100, 100)}%`
-                                            }}
-                                        ></div>
-                                    </div>
-                                </div>
-                            </div>
+                    {/* 속성 영역: 고정 배지, 난이도, 연관분야, 필요기술 - 구분선 바로 위에 고정 */}
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 mb-2 sm:mb-2.5">
+                        {/* 고정 배지 */}
+                        {((project as unknown as { is_pinned?: boolean }).is_pinned === true) && (
+                            <span className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm">
+                                <Pin className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                                <span className="whitespace-nowrap">고정</span>
+                            </span>
                         )}
+                        {/* 난이도 태그 */}
+                        {project.project_data && project.project_data.difficulty && (
+                            <span className={`inline-flex items-center px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold ${project.project_data.difficulty === 'beginner'
+                                ? 'bg-green-100 text-green-800'
+                                : project.project_data.difficulty === 'intermediate'
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : project.project_data.difficulty === 'advanced'
+                                        ? 'bg-red-100 text-red-800'
+                                        : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                {project.project_data.difficulty === 'beginner'
+                                    ? '초급'
+                                    : project.project_data.difficulty === 'intermediate'
+                                        ? '중급'
+                                        : project.project_data.difficulty === 'advanced'
+                                            ? '고급'
+                                            : project.project_data.difficulty}
+                            </span>
+                        )}
+                        {/* 프로젝트 타입 (연관분야) */}
+                        <span className="inline-flex items-center px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold bg-slate-100 text-slate-700">
+                            {((project as unknown as Record<string, unknown>).project_type as { name: string } || { name: '프로젝트' }).name}
+                        </span>
+                        {/* 필요기술 태그들 */}
+                        {project.project_data && project.project_data.needed_skills && project.project_data.needed_skills.length > 0 && (
+                            <>
+                                {project.project_data.needed_skills.slice(0, 4).map((skill, index) => (
+                                    <span key={index} className="inline-flex items-center px-2.5 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-md text-[10px] sm:text-xs font-bold shadow-sm">
+                                        {skill}
+                                    </span>
+                                ))}
+                                {project.project_data.needed_skills.length > 4 && (
+                                    <span className="inline-flex items-center px-2.5 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-gray-400 to-gray-500 text-white rounded-md text-[10px] sm:text-xs font-bold shadow-sm">
+                                        +{project.project_data.needed_skills.length - 4}
+                                    </span>
+                                )}
+                            </>
+                        )}
+                    </div>
 
-                        {/* 작성자 정보와 하단 메타 정보 */}
-                        <div className="mt-auto">
-                            {/* 하단 메타 정보 - Medium 스타일 */}
-                            <div className="flex items-center justify-between text-xs text-slate-500 pt-3">
-                                <div className="flex items-center gap-4">
-                                    {/* 작성일자 */}
-                                    <div className="flex items-center gap-1">
-                                        <svg className="w-3 h-3 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                        </svg>
-                                        <span>{formatDate(project.created_at)}</span>
-                                    </div>
-
-                                    {/* 좋아요 */}
-                                    <div className="flex items-center gap-1">
-                                        <svg className="w-3 h-3 text-slate-500" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
-                                        </svg>
-                                        <span>{project.likes_count}</span>
-                                    </div>
-
-                                    {/* 댓글 */}
-                                    <div className="flex items-center gap-1">
-                                        <svg className="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                        </svg>
-                                        <span>{project.comments_count}</span>
-                                    </div>
-
+                    {/* 작성자 정보와 하단 메타 정보 - 고정된 하단 위치 */}
+                    <div className="pt-1.5 sm:pt-2 border-t border-slate-200/60">
+                        {/* 하단 메타 정보 - 전체 너비 활용 */}
+                        <div className="flex flex-row items-center justify-between gap-2.5 sm:gap-4">
+                            {/* 메타 통계 - 왼쪽 */}
+                            <div className="flex items-center gap-2.5 text-[10px] sm:text-xs text-slate-500">
+                                {/* 작성일자 */}
+                                <div>
+                                    <span className="whitespace-nowrap">{formatDate(project.created_at)}</span>
                                 </div>
 
-                                {/* 작성자 정보 */}
-                                {project.author && (
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden">
-                                            {project.author.profile_image ? (
-                                                <Image
-                                                    src={project.author.profile_image}
-                                                    alt={project.author.nickname}
-                                                    width={20}
-                                                    height={20}
-                                                    className="w-full h-full object-cover rounded-full"
-                                                />
-                                            ) : (
-                                                <span className="text-slate-600 text-xs font-bold">
-                                                    {project.author.nickname.charAt(0).toUpperCase()}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <span className="text-xs font-medium text-slate-700">
-                                            {project.author.nickname}
-                                        </span>
-                                    </div>
-                                )}
+                                {/* 좋아요 */}
+                                <div className="flex items-center gap-1">
+                                    <Heart className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                                    <span className="font-medium">{project.likes_count || 0}</span>
+                                </div>
+
+                                {/* 댓글 */}
+                                <div className="flex items-center gap-1">
+                                    <MessageCircle className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                                    <span className="font-medium">{project.comments_count || 0}</span>
+                                </div>
                             </div>
+
+                            {/* 작성자 정보 - 우측 */}
+                            {project.author && (
+                                <div className="flex items-center gap-2 sm:gap-2.5">
+                                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                        {project.author.profile_image ? (
+                                            <Image
+                                                src={project.author.profile_image ?? ''}
+                                                alt={project.author.nickname ?? ''}
+                                                width={24}
+                                                height={24}
+                                                className="w-full h-full object-cover rounded-full"
+                                            />
+                                        ) : (
+                                            <span className="text-slate-600 text-xs sm:text-sm font-bold">
+                                                {(project.author.nickname?.charAt(0).toUpperCase()) ?? ''}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <span className="text-xs sm:text-sm font-medium text-slate-700 truncate">
+                                        {project.author.nickname ?? ''}
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
-                {/* 구분선 - 카드 전체 너비 */}
-                <div className="border-t border-slate-100 mt-4"></div>
-            </article>
+            </div>
+        </article>
+    );
+
+    // 선택 모드일 때도 카드 클릭은 상세 페이지로 이동
+    if (isSelectable) {
+        return (
+            <Link href={`/projects/${project.id}`} className="block">
+                {CardContent}
+            </Link>
+        );
+    }
+
+    return (
+        <Link href={`/projects/${project.id}`} className="block">
+            {CardContent}
         </Link>
     );
 }

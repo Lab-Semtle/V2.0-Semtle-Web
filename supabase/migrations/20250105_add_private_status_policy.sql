@@ -27,3 +27,12 @@ CREATE POLICY "Authors can view their own private resources" ON resources
 
 
 
+
+
+
+
+
+
+
+
+

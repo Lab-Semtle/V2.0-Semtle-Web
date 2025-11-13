@@ -94,6 +94,7 @@ export default function FileUpload({
 
             const result = await response.json();
             uploadedFile.url = result.url;
+            uploadedFile.file_path = result.path || result.url; // path 우선, 없으면 url 사용
             uploadedFile.progress = 100;
 
             return uploadedFile;

@@ -71,166 +71,112 @@ const Footer: React.FC = () => {
     // const SNS_LINKS = [...]; // 제거됨 - 이제 footerLinks 상태로 관리
 
     return (
-        <footer className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden">
-            {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-5">
-                <div className="absolute inset-0" style={{
-                    backgroundImage: `radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)`,
-                    backgroundSize: '30px 30px'
-                }}></div>
-            </div>
-
-            {/* Gradient Orbs */}
-            <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full -translate-y-48 -translate-x-48"></div>
-            <div className="absolute bottom-0 right-0 w-80 h-80 bg-gradient-to-tl from-emerald-500/10 to-teal-500/10 rounded-full translate-y-40 translate-x-40"></div>
-
-            <div className="relative z-10 pt-16 md:pt-24 pb-16 md:pb-20">
+        <footer className="bg-slate-50 border-t border-slate-200">
+            <div className="pt-12 md:pt-16 pb-8 md:pb-12">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
+                    {/* 메인 콘텐츠 */}
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-8 md:gap-12 lg:gap-16">
                         {/* 로고 및 소개 */}
-                        <div className="md:col-span-2 lg:col-span-2 space-y-4 md:space-y-5 lg:space-y-6">
-                            <div className="flex items-center space-x-3">
-                                <div className="w-10 md:w-11 lg:w-12 h-10 md:h-11 lg:h-12 rounded-xl md:rounded-xl lg:rounded-2xl flex items-center justify-center shadow-lg overflow-hidden">
-                                    <Image
-                                        src="/logo/semtle-logo-bg-square-v2022.png"
-                                        alt="SEMTLE Logo"
-                                        width={48}
-                                        height={48}
-                                        className="w-full h-full object-contain"
-                                    />
-                                </div>
-                                <div>
-                                    <span className="text-lg md:text-xl lg:text-2xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">아치셈틀</span>
-                                    <p className="text-slate-400 text-xs md:text-xs lg:text-sm">Archi Semtle Lab</p>
-                                </div>
-                            </div>
-                            <p className="text-slate-300 text-sm md:text-base lg:text-lg leading-relaxed max-w-md">
-                                국립한국해양대학교 인공지능공학부 소속 학술연구회로,
-                                인공지능과 컴퓨터과학 분야의 연구와 학습을 통해 함께 성장합니다.
-                            </p>
-                        </div>
-
-                        {/* 빠른 링크 */}
-                        <div className="space-y-4 md:space-y-5 lg:space-y-6">
-                            <h3 className="text-base md:text-lg lg:text-xl font-bold text-white">빠른 링크</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-2 lg:gap-3">
-                                <Link href="/activities" className="group flex items-center text-slate-300 hover:text-white transition-all duration-300 text-xs md:text-xs lg:text-sm">
-                                    <div className="w-1 h-1 bg-blue-500 rounded-full mr-2 md:mr-2 lg:mr-3 group-hover:scale-150 transition-transform duration-300"></div>
-                                    활동게시판
-                                </Link>
-                                <Link href="/projects" className="group flex items-center text-slate-300 hover:text-white transition-all duration-300 text-xs md:text-xs lg:text-sm">
-                                    <div className="w-1 h-1 bg-purple-500 rounded-full mr-2 md:mr-2 lg:mr-3 group-hover:scale-150 transition-transform duration-300"></div>
-                                    프로젝트
-                                </Link>
-                                <Link href="/resources" className="group flex items-center text-slate-300 hover:text-white transition-all duration-300 text-xs md:text-xs lg:text-sm">
-                                    <div className="w-1 h-1 bg-emerald-500 rounded-full mr-2 md:mr-2 lg:mr-3 group-hover:scale-150 transition-transform duration-300"></div>
-                                    자료실
-                                </Link>
-                            </div>
-                        </div>
-
-                        {/* 연락처 및 SNS */}
-                        <div className="space-y-4 md:space-y-5 lg:space-y-6">
-                            <h3 className="text-base md:text-lg lg:text-xl font-bold text-white">연락처</h3>
-                            <div className="grid grid-cols-1 gap-3 md:gap-3 lg:gap-4">
-                                {representativeAdmin ? (
-                                    <>
-                                        <div className="flex items-start space-x-3">
-                                            <div className="w-5 md:w-5 lg:w-6 h-5 md:h-5 lg:h-6 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                <Mail className="w-3 h-3 text-blue-400" />
-                                            </div>
-                                            <div>
-                                                <p className="text-slate-300 text-xs md:text-xs lg:text-sm font-medium">회장 이메일</p>
-                                                <p className="text-slate-400 text-xs">{representativeAdmin.email}</p>
-                                                <p className="text-slate-500 text-xs">{representativeAdmin.name}</p>
-                                            </div>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="flex items-start space-x-3">
-                                        <div className="w-5 md:w-5 lg:w-6 h-5 md:h-5 lg:h-6 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                                            <Mail className="w-3 h-3 text-blue-400" />
-                                        </div>
-                                        <div>
-                                            <p className="text-slate-300 text-xs md:text-xs lg:text-sm font-medium">이메일</p>
-                                            <p className="text-slate-400 text-xs">semtle@kmou.ac.kr</p>
-                                        </div>
-                                    </div>
-                                )}
-                                <div className="flex items-start space-x-3">
-                                    <div className="w-5 md:w-5 lg:w-6 h-5 md:h-5 lg:h-6 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                                        <Globe className="w-3 h-3 text-purple-400" />
+                        <div className="flex-1 md:max-w-md">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 md:flex-col md:items-start md:gap-6">
+                                <div className="flex items-center space-x-3">
+                                    <div className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                                        <Image
+                                            src="/logo/semtle-logo-bg-square-v2022.png"
+                                            alt="SEMTLE Logo"
+                                            width={48}
+                                            height={48}
+                                            className="w-full h-full object-contain"
+                                        />
                                     </div>
                                     <div>
-                                        <p className="text-slate-300 text-xs md:text-xs lg:text-sm font-medium">위치</p>
-                                        <p className="text-slate-400 text-xs">부산광역시 영도구 태종로 727</p>
-                                        <p className="text-slate-400 text-xs">국립한국해양대학교 공학1관 308호</p>
+                                        <span className="text-xl font-bold text-slate-900 block">아치셈틀</span>
+                                        <p className="text-slate-500 text-sm">Archi Semtle Lab</p>
                                     </div>
                                 </div>
+                                {/* SNS 링크 */}
+                                {footerLinks.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 sm:gap-3">
+                                        {footerLinks.map((link) => {
+                                            const iconMap: { [key: string]: React.ComponentType } = {
+                                                Github,
+                                                Instagram,
+                                                Youtube,
+                                                Mail,
+                                                Globe,
+                                                Phone,
+                                                MessageSquare,
+                                                ExternalLink,
+                                                Facebook,
+                                                Twitter,
+                                                Linkedin,
+                                                Twitch,
+                                                BookOpen,
+                                                Calendar,
+                                                MapPin,
+                                                Users
+                                            };
+
+                                            const IconComponent = (iconMap[link.icon] || ExternalLink) as React.ComponentType<{ className?: string }>;
+
+                                            return (
+                                                <Link
+                                                    key={link.id}
+                                                    href={link.url}
+                                                    aria-label={link.name}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="p-2.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all duration-200"
+                                                >
+                                                    <IconComponent className="h-5 w-5" />
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
+                        </div>
 
-                            {/* SNS 링크 */}
-                            <div className="space-y-3">
-                                <div className="flex flex-wrap gap-2 md:gap-2 lg:gap-3">
-                                    {footerLinks.map((link) => {
-                                        // 아이콘 매핑 객체
-                                        const iconMap: { [key: string]: React.ComponentType } = {
-                                            Github,
-                                            Instagram,
-                                            Youtube,
-                                            Mail,
-                                            Globe,
-                                            Phone,
-                                            MessageSquare,
-                                            ExternalLink,
-                                            Facebook,
-                                            Twitter,
-                                            Linkedin,
-                                            Twitch,
-                                            BookOpen,
-                                            Calendar,
-                                            MapPin,
-                                            Users
-                                        };
-
-                                        const IconComponent = (iconMap[link.icon] || ExternalLink) as React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
-
-                                        return (
-                                            <Link
-                                                key={link.id}
-                                                href={link.url}
-                                                aria-label={link.name}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="group p-2 md:p-2 lg:p-3 bg-slate-800/50 hover:bg-slate-700/50 rounded-lg md:rounded-lg lg:rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg"
-                                            >
-                                                <IconComponent
-                                                    className="h-4 md:h-4 lg:h-5 w-4 md:w-4 lg:w-5 text-slate-400 group-hover:text-white transition-colors duration-300"
-                                                    style={{ color: link.color }}
-                                                />
-                                            </Link>
-                                        );
-                                    })}
+                        {/* 연락처 */}
+                        <div className="flex-1 md:max-w-sm">
+                            <h3 className="text-base font-semibold text-slate-900 mb-4 md:mb-5">연락처</h3>
+                            <div className="space-y-4">
+                                {representativeAdmin ? (
+                                    <div>
+                                        <p className="text-slate-600 text-sm font-medium mb-1.5">아치셈틀 회장</p>
+                                        <p className="text-slate-500 text-sm leading-relaxed">{representativeAdmin.email}</p>
+                                        <p className="text-slate-500 text-sm">{representativeAdmin.name}</p>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <p className="text-slate-600 text-sm font-medium mb-1.5">이메일</p>
+                                        <p className="text-slate-500 text-sm leading-relaxed">semtle@kmou.ac.kr</p>
+                                    </div>
+                                )}
+                                <div>
+                                    <p className="text-slate-600 text-sm font-medium mb-1.5">위치</p>
+                                    <p className="text-slate-500 text-sm leading-relaxed">부산광역시 영도구 태종로 727</p>
+                                    <p className="text-slate-500 text-sm leading-relaxed">국립한국해양대학교 공학1관 308호</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     {/* 하단 구분선 및 저작권 */}
-                    <div className="border-t border-slate-700/50 mt-12 md:mt-14 lg:mt-16 pt-6 md:pt-7 lg:pt-8">
-                        <div className="flex flex-col md:flex-row justify-between items-center space-y-3 md:space-y-0">
-                            <div className="flex flex-wrap justify-center md:justify-start space-x-4 md:space-x-4 lg:space-x-6 text-xs md:text-xs lg:text-sm text-slate-400">
-                                <Link href="/terms" className="hover:text-white transition-colors duration-300 hover:underline">
+                    <div className="border-t border-slate-200 mt-10 md:mt-12 pt-6 md:pt-8">
+                        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6">
+                            <div className="flex flex-wrap justify-center sm:justify-start gap-x-4 gap-y-2 text-sm text-slate-600">
+                                <Link href="/terms" className="hover:text-slate-900 transition-colors">
                                     이용약관
                                 </Link>
-                                <Link href="/privacy" className="hover:text-white transition-colors duration-300 hover:underline">
+                                <Link href="/privacy" className="hover:text-slate-900 transition-colors">
                                     개인정보처리방침
                                 </Link>
-                                <Link href="/contact" className="hover:text-white transition-colors duration-300 hover:underline">
+                                <Link href="/contact" className="hover:text-slate-900 transition-colors">
                                     문의하기
                                 </Link>
                             </div>
-                            <p className="text-slate-400 text-xs md:text-xs lg:text-sm">
+                            <p className="text-slate-500 text-sm text-center sm:text-right">
                                 © {currentYear} 아치셈틀. All rights reserved.
                             </p>
                         </div>

@@ -96,13 +96,24 @@ export async function PUT(
             return NextResponse.json({ error: '댓글을 수정할 권한이 없습니다.' }, { status: 403 });
         }
 
+        // 실제로 내용이 변경되었는지 확인
+        const trimmedContent = content.trim();
+        const currentContent = comment.content.trim();
+        
+        // 내용이 변경되지 않았으면 updated_at을 업데이트하지 않음
+        const updateData: { content: string; updated_at?: string } = {
+            content: trimmedContent
+        };
+        
+        // 실제로 내용이 변경된 경우에만 updated_at 업데이트
+        if (trimmedContent !== currentContent) {
+            updateData.updated_at = new Date().toISOString();
+        }
+
         // 댓글 수정
         const { data: updatedComment, error: updateError } = await supabase
             .from(commentTable)
-            .update({
-                content: content.trim(),
-                updated_at: new Date().toISOString()
-            })
+            .update(updateData)
             .eq('id', commentIdNum)
             .select(`
                 *,

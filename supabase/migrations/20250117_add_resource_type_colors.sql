@@ -13,3 +13,12 @@ UPDATE resource_types SET color = '#6B7280' WHERE name = '기타';
 -- 색상 컬럼을 NOT NULL로 설정 (기본값 포함)
 ALTER TABLE resource_types ALTER COLUMN color SET NOT NULL;
 ALTER TABLE resource_types ALTER COLUMN color SET DEFAULT '#6B7280';
+
+
+
+
+
+
+
+
+

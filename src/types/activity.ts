@@ -6,6 +6,45 @@ import { Post } from './post';
 
 export interface ActivityPost extends Post {
     activity_data?: ActivityData;
+    start_date?: string;
+    end_date?: string;
+    location?: string;
+    max_participants?: number;
+    current_participants?: number;
+    participation_fee?: number;
+    contact_info?: string;
+    has_voting?: boolean;
+    vote_options?: VoteOption[];
+    vote_deadline?: string;
+    published_version_id?: number;
+    republished_at?: string;
+}
+
+export interface ActivityVersion {
+    id: number;
+    activity_id: number;
+    author_id: string;
+    version_number: number;
+    version_code: string;
+    parent_version_id?: number;
+    version_label?: string;
+    title: string;
+    subtitle?: string;
+    content: unknown;
+    thumbnail?: string[];
+    category_id?: number;
+    location?: string;
+    start_date?: string;
+    end_date?: string;
+    max_participants?: number;
+    participation_fee?: number;
+    contact_info?: string;
+    tags?: string[];
+    has_voting?: boolean;
+    vote_options?: VoteOption[];
+    vote_deadline?: string;
+    created_at: string;
+    updated_at: string;
 }
 
 export interface ActivityData {
@@ -59,9 +98,9 @@ export interface ActivityCreateData {
     title: string;
     subtitle?: string;
     content: unknown;
-    thumbnail?: string;
+    thumbnail?: string | string[];
     category_id: number;
-    status?: 'draft' | 'published';
+    status?: 'draft' | 'public' | 'private';  // 새 스키마: draft, public, private
     tags?: string[];
 
     // 활동 특화 정보
@@ -81,9 +120,9 @@ export interface ActivityUpdateData {
     title?: string;
     subtitle?: string;
     content?: unknown;
-    thumbnail?: string;
+    thumbnail?: string | string[];
     category_id?: number;
-    status?: 'draft' | 'published' | 'hidden';
+    status?: 'draft' | 'public' | 'private';  // 새 스키마
     tags?: string[];
 
     // 활동 특화 정보

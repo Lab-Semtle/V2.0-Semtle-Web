@@ -20,3 +20,12 @@ CREATE POLICY "Users can join teams when accepted" ON project_team_members FOR I
         AND projects.author_id = auth.uid()
     )
 );
+
+
+
+
+
+
+
+
+

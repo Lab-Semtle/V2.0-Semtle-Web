@@ -45,24 +45,13 @@ export async function GET(request: NextRequest) {
 
 
                 if (projects && projects.length > 0) {
-                    // 작성자 정보를 별도로 조회
-                    const authorIds = [...new Set(projects.map(p => p.author_id))];
-                    const { data: authors } = await supabase
-                        .from('user_profiles')
-                        .select('id, nickname, name, profile_image')
-                        .in('id', authorIds);
+                    // 작성자 정보 제거
+                    const projectsWithoutAuthors = projects.map(project => ({
+                        ...project,
+                        post_type: 'project'
+                    }));
 
-                    // 작성자 정보를 프로젝트에 매핑
-                    const projectsWithAuthors = projects.map(project => {
-                        const author = authors?.find(a => a.id === project.author_id);
-                        return {
-                            ...project,
-                            post_type: 'project',
-                            author: author || { nickname: 'Unknown', name: 'Unknown', profile_image: null }
-                        };
-                    });
-
-                    posts.push(...projectsWithAuthors);
+                    posts.push(...projectsWithoutAuthors);
                 }
             }
         }
@@ -95,34 +84,25 @@ export async function GET(request: NextRequest) {
 
 
                 if (resources && resources.length > 0) {
-                    // 작성자 정보를 별도로 조회
-                    const authorIds = [...new Set(resources.map(r => r.author_id))];
-                    const { data: authors } = await supabase
-                        .from('user_profiles')
-                        .select('id, nickname, name, profile_image')
-                        .in('id', authorIds);
-
                     // 파일 정보를 별도로 조회
                     const { data: resourceFiles } = await supabase
                         .from('resource_files')
                         .select('resource_id, file_size')
                         .in('resource_id', resourceIds);
 
-                    // 작성자 정보와 파일 정보를 자료에 매핑
-                    const resourcesWithAuthors = resources.map(resource => {
-                        const author = authors?.find(a => a.id === resource.author_id);
+                    // 파일 정보를 자료에 매핑 (작성자 정보 제거)
+                    const resourcesWithoutAuthors = resources.map(resource => {
                         const files = resourceFiles?.filter(f => f.resource_id === resource.id) || [];
                         const totalFileSize = files.reduce((sum, file) => sum + (file.file_size || 0), 0);
 
                         return {
                             ...resource,
                             post_type: 'resource',
-                            author: author || { nickname: 'Unknown', name: 'Unknown', profile_image: null },
                             file_size: totalFileSize
                         };
                     });
 
-                    posts.push(...resourcesWithAuthors);
+                    posts.push(...resourcesWithoutAuthors);
                 }
             }
         }
@@ -147,7 +127,7 @@ export async function GET(request: NextRequest) {
                         created_at, updated_at, published_at, status,
                         author_id,
                         activity_type:activity_types(name),
-                        start_date, end_date, location, max_participants, current_participants
+                        start_date, end_date, location, max_participants
                     `)
                     .eq('status', 'published')
                     .in('id', activityIds)
@@ -155,24 +135,29 @@ export async function GET(request: NextRequest) {
 
 
                 if (activities && activities.length > 0) {
-                    // 작성자 정보를 별도로 조회
-                    const authorIds = [...new Set(activities.map(a => a.author_id))];
-                    const { data: authors } = await supabase
-                        .from('user_profiles')
-                        .select('id, nickname, name, profile_image')
-                        .in('id', authorIds);
+                    // 각 활동의 참가자 수 집계
+                    const activitiesWithParticipants = await Promise.all(
+                        activities.map(async (activity) => {
+                            const { count: participantsCount } = await supabase
+                                .from('activity_participants')
+                                .select('*', { count: 'exact', head: true })
+                                .eq('activity_id', activity.id)
+                                .eq('status', 'registered');
 
-                    // 작성자 정보를 활동에 매핑
-                    const activitiesWithAuthors = activities.map(activity => {
-                        const author = authors?.find(a => a.id === activity.author_id);
-                        return {
-                            ...activity,
-                            post_type: 'activity',
-                            author: author || { nickname: 'Unknown', name: 'Unknown', profile_image: null }
-                        };
-                    });
+                            return {
+                                ...activity,
+                                current_participants: participantsCount || 0
+                            };
+                        })
+                    );
 
-                    posts.push(...activitiesWithAuthors);
+                    // 작성자 정보 제거
+                    const activitiesWithoutAuthors = activitiesWithParticipants.map(activity => ({
+                        ...activity,
+                        post_type: 'activity'
+                    }));
+
+                    posts.push(...activitiesWithoutAuthors);
                 }
             }
         }

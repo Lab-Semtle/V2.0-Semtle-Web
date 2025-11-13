@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
-import Navigation from '@/components/layout/Navigation';
 import NovelEditor from '@/components/editor/NovelEditor';
 import EmptyState from '@/components/common/EmptyState';
 import CommentSystem from '@/components/common/CommentSystem';
@@ -291,7 +290,6 @@ export default function ProjectDetailPage() {
     if (loading) {
         return (
             <div className="min-h-screen bg-white">
-                <Navigation />
                 <div className="flex items-center justify-center min-h-[400px]">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
@@ -302,7 +300,6 @@ export default function ProjectDetailPage() {
     if (error || !post) {
         return (
             <div className="min-h-screen bg-white">
-                <Navigation />
                 <div className="flex items-center justify-center min-h-[400px]">
                     <EmptyState
                         title="프로젝트를 찾을 수 없습니다"
@@ -326,7 +323,6 @@ export default function ProjectDetailPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-gray-100">
-            <Navigation />
 
             <main className="pt-12 sm:pt-24 pb-24 lg:pb-16 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-5xl mx-auto relative">
@@ -405,10 +401,10 @@ export default function ProjectDetailPage() {
                     {/* 프로젝트 헤더 */}
                     <div className="mb-4 p-4 sm:p-8">
                         <div className="flex items-start justify-between mb-6">
-                            <div className="flex-1">
-                                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 mb-4">{post.title}</h1>
+                            <div className="flex-1 min-w-0">
+                                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 mb-4 break-words">{post.title}</h1>
                                 {post.subtitle && (
-                                    <p className="text-sm sm:text-base lg:text-lg text-slate-600 mb-3 leading-relaxed">{post.subtitle}</p>
+                                    <p className="text-sm sm:text-base lg:text-lg text-slate-600 mb-3 leading-relaxed break-words">{post.subtitle}</p>
                                 )}
 
 
@@ -423,14 +419,14 @@ export default function ProjectDetailPage() {
                                             >
                                                 {post.author.profile_image ? (
                                                     <Image
-                                                        src={post.author.profile_image}
-                                                        alt={post.author.nickname}
+                                                        src={post.author.profile_image ?? ''}
+                                                        alt={post.author.nickname ?? ''}
                                                         fill
                                                         className="object-cover rounded-full"
                                                     />
                                                 ) : (
                                                     <span className="text-slate-600 text-sm font-bold">
-                                                        {post.author.nickname.charAt(0).toUpperCase()}
+                                                        {(post.author.nickname?.charAt(0).toUpperCase()) ?? ''}
                                                     </span>
                                                 )}
                                             </div>
@@ -438,7 +434,7 @@ export default function ProjectDetailPage() {
                                                 onClick={() => window.location.href = `/profile/${post.author?.nickname}`}
                                                 className="font-semibold text-slate-900 text-sm hover:text-blue-600 transition-colors duration-200 cursor-pointer"
                                             >
-                                                {post.author.nickname}
+                                                {post.author.nickname ?? ''}
                                             </p>
                                         </div>
                                     )}
@@ -534,11 +530,11 @@ export default function ProjectDetailPage() {
                                 {/* 프로젝트 신청 버튼 - 조회수, 댓글 수 아래에 배치 */}
                                 {post?.project_data?.project_status === 'recruiting' &&
                                     new Date(post.project_data.deadline) > new Date() && (
-                                        <div className="mt-4 flex justify-center">
+                                        <div className="mt-4 flex justify-center w-full max-w-full">
                                             <button
                                                 onClick={handleApply}
                                                 disabled={hasApplied || !user || user.id === post.author_id}
-                                                className={`w-full py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-bold text-base sm:text-lg transition-all duration-200 shadow-lg hover:shadow-xl ${!user || user.id === post.author_id || hasApplied
+                                                className={`w-full max-w-md py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-bold text-base sm:text-lg transition-all duration-200 shadow-lg hover:shadow-xl whitespace-nowrap ${!user || user.id === post.author_id || hasApplied
                                                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                                     : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white hover:-translate-y-1'
                                                     }`}
@@ -756,7 +752,7 @@ export default function ProjectDetailPage() {
                         <div className="border-b border-gray-200 mb-6"></div>
                         <div className="prose prose-sm sm:prose-lg max-w-none [&_.novel-editor]:!min-h-0 [&_.novel-editor]:!h-auto">
                             <NovelEditor
-                                initialContent={post.content as JSONContent | null | undefined}
+                                initialContent={(post as unknown as { content?: JSONContent }).content}
                                 editable={false}
                                 className="!min-h-0"
                             />

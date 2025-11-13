@@ -1,32 +1,25 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
-import { ArrowLeft, Calendar, MapPin, Users, Heart, Pin, Clock, Share2, CheckCircle, ChevronDown, } from 'lucide-react';
-import Navigation from '@/components/layout/Navigation';
+import { ArrowLeft, Calendar, MapPin, Users, Heart, Pin, Clock, Share2, CheckCircle, ChevronDown, UserPlus, DollarSign, Vote, BarChart, Loader2, Edit, Trash2 } from 'lucide-react';
 import NovelEditor from '@/components/editor/NovelEditor';
 import CommentSystem from '@/components/common/CommentSystem';
 import { useAuth } from '@/contexts/AuthContext';
 import { JSONContent } from 'novel';
+import ActivityImageCarousel from '@/components/activities/ActivityImageCarousel';
 
 interface Activity {
     id: number;
     title: string;
     subtitle?: string;
     description?: string;
-    thumbnail?: string;
+    thumbnail?: string | string[];
     category?: {
         name: string;
         color: string;
         icon: string;
-    };
-    author?: {
-        name: string;
-        nickname: string;
-        role: string;
-        profile_image?: string;
     };
     start_date?: string;
     end_date?: string;
@@ -39,21 +32,23 @@ interface Activity {
     vote_options?: Array<{ text: string }>;
     vote_deadline?: string;
     views: number;
-    likes: number;
+    likes_count: number;
     comments_count: number;
     status: string;
     is_pinned?: boolean;
-    is_featured?: boolean;
     tags?: string[];
     content: unknown;
     created_at: string;
+    author_id?: string;
+    published_version_id?: number | null;
 }
 
 
 export default function ActivityDetailPage() {
     const params = useParams();
+    const router = useRouter();
     const id = params.id as string;
-    const { loading: authLoading, user } = useAuth();
+    const { loading: authLoading, user, isAdmin } = useAuth();
     const [activity, setActivity] = useState<Activity | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -93,7 +88,7 @@ export default function ActivityDetailPage() {
                 }
 
                 // 참가 상태 확인
-                const participateResponse = await fetch(`/api/activities/${id}/participate`);
+                const participateResponse = await fetch(`/api/activities/${id}/participants?status=true`);
                 if (participateResponse.ok) {
                     const participateData = await participateResponse.json();
                     setIsParticipating(participateData.participated);
@@ -207,7 +202,7 @@ export default function ActivityDetailPage() {
 
                 // 활동 데이터 업데이트
                 if (data.likes_count !== undefined) {
-                    setActivity(prev => prev ? { ...prev, likes: data.likes_count } : null);
+                    setActivity(prev => prev ? { ...prev, likes_count: data.likes_count } : null);
                 }
             } else {
                 const errorData = await response.json();
@@ -227,7 +222,7 @@ export default function ActivityDetailPage() {
         }
 
         try {
-            const response = await fetch(`/api/activities/${id}/participate`, {
+            const response = await fetch(`/api/activities/${id}/participants`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -247,10 +242,12 @@ export default function ActivityDetailPage() {
                     } : null);
                 }
             } else {
-                const errorData = await response.json();
+                const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+                console.error('참가 API 오류:', { status: response.status, statusText: response.statusText, error: errorData });
                 alert(errorData.error || '참가 처리 중 오류가 발생했습니다.');
             }
-        } catch {
+        } catch (error) {
+            console.error('참가 처리 중 오류:', error);
             alert('참가 처리 중 오류가 발생했습니다.');
         }
     };
@@ -320,6 +317,32 @@ export default function ActivityDetailPage() {
         }
     };
 
+    const handleDelete = async () => {
+        if (!activity) return;
+
+        if (!confirm('정말로 이 활동을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/activities/${id}/delete`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                alert('활동이 성공적으로 삭제되었습니다.');
+                router.push('/activities');
+            } else {
+                const data = await response.json();
+                alert(data.error || '활동 삭제에 실패했습니다.');
+            }
+        } catch (error) {
+            console.error('삭제 오류:', error);
+            alert('활동 삭제 중 오류가 발생했습니다.');
+        }
+    };
+
     if (loading || authLoading) {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
@@ -331,7 +354,6 @@ export default function ActivityDetailPage() {
     if (error || !activity) {
         return (
             <div className="min-h-screen bg-white">
-                <Navigation />
                 <main className="px-3 sm:px-4 md:px-6 py-8">
                     <div className="max-w-4xl mx-auto">
                         <div className="text-center py-12">
@@ -355,7 +377,6 @@ export default function ActivityDetailPage() {
 
     return (
         <div className="min-h-screen bg-white">
-            <Navigation />
 
             {/* Hero Section */}
             <div
@@ -374,75 +395,84 @@ export default function ActivityDetailPage() {
                     }}
                 ></div>
 
-                <div className="relative py-12 sm:py-20 pt-12 sm:pt-24">
+                <div className="relative py-12 sm:py-20 pt-20 sm:pt-24">
                     <div className="max-w-4xl mx-auto px-6">
-                        {/* 뒤로 가기 버튼 - 데스크톱만 */}
-                        <Link
-                            href="/activities"
-                            className="hidden sm:inline-flex mb-8 items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-xl hover:bg-blue-100/50 hover:border-blue-200 transition-all duration-300 border border-white/70 text-gray-800 hover:text-blue-700 font-medium group"
-                        >
-                            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-300" />
-                            활동 게시판으로
-                        </Link>
-
-                        {/* 썸네일 이미지 - 모바일 */}
-                        <div className="sm:hidden -mx-6 mb-6">
-                            <div className="relative h-64 w-full overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
-                                {activity.thumbnail ? (
-                                    <Image
-                                        src={activity.thumbnail}
-                                        alt={activity.title}
-                                        fill
-                                        className="object-cover"
-                                        priority
-                                    />
-                                ) : (
-                                    <div className="w-full h-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
-                                        <span className="text-blue-400 text-6xl font-bold">
-                                            A
-                                        </span>
-                                    </div>
-                                )}
-
-                                {/* 카테고리 배지 - 이미지 좌측 상단 */}
-                                {activity.category && (
-                                    <div className="absolute top-4 left-4">
-                                        <span className={`inline-flex items-center px-3 py-1.5 rounded-lg font-bold text-xs border backdrop-blur-sm ${getCategoryColor(activity.category.name)}`}>
-                                            {activity.category.name}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
+                        {/* 뒤로 가기 버튼 및 수정 버튼 */}
+                        <div className="flex mb-6 sm:mb-8 items-center justify-between gap-2 sm:gap-4">
+                            {/* 좌측: 활동 게시판으로 버튼 */}
+                            <Link
+                                href="/activities"
+                                className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white text-xs sm:text-base rounded-lg sm:rounded-xl hover:bg-blue-700 hover:shadow-md transition-all duration-300 font-medium group whitespace-nowrap"
+                            >
+                                <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:-translate-x-1 transition-transform duration-300 flex-shrink-0" />
+                                <span className="hidden sm:inline">활동 게시판으로</span>
+                                <span className="sm:hidden">목록</span>
+                            </Link>
+                            {/* 우측: 권한 있는 유저용 수정/삭제 버튼 */}
+                            {(isAdmin() || (user && activity?.author_id === user.id)) && (
+                                <div className="flex items-center gap-3">
+                                    <Link
+                                        href={`/activities/edit/${id}`}
+                                        className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-amber-600 text-white text-xs sm:text-base rounded-lg sm:rounded-xl hover:bg-amber-700 hover:shadow-md transition-all duration-300 font-medium group whitespace-nowrap"
+                                    >
+                                        <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                                        <span className="hidden sm:inline">수정하기</span>
+                                        <span className="sm:hidden">수정</span>
+                                    </Link>
+                                    <button
+                                        onClick={handleDelete}
+                                        className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-red-600 text-white text-xs sm:text-base rounded-lg sm:rounded-xl hover:bg-red-700 hover:shadow-md transition-all duration-300 font-medium group whitespace-nowrap"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                                        <span className="hidden sm:inline">삭제하기</span>
+                                        <span className="sm:hidden">삭제</span>
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
-                        {/* 썸네일 이미지 - 데스크톱 */}
-                        <div className="hidden sm:block mb-8">
-                            <div className="relative aspect-video w-full rounded-2xl overflow-hidden shadow-xl bg-gradient-to-br from-gray-50 to-gray-100">
-                                {activity.thumbnail ? (
-                                    <Image
-                                        src={activity.thumbnail}
-                                        alt={activity.title}
-                                        fill
-                                        className="object-cover"
-                                        priority
-                                    />
-                                ) : (
-                                    <div className="w-full h-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center rounded-2xl">
-                                        <span className="text-blue-400 text-6xl font-bold">
-                                            A
-                                        </span>
-                                    </div>
-                                )}
+                        {/* 썸네일 이미지 */}
+                        <div className="mb-8">
+                            {(() => {
+                                // thumbnail을 배열로 변환
+                                const thumbnails = Array.isArray(activity.thumbnail)
+                                    ? activity.thumbnail
+                                    : (activity.thumbnail ? [activity.thumbnail] : []);
 
-                                {/* 카테고리 배지 - 이미지 좌측 상단 */}
-                                {activity.category && (
-                                    <div className="absolute top-4 left-4">
-                                        <span className={`inline-flex items-center px-4 py-2 rounded-xl font-bold text-sm border backdrop-blur-sm ${getCategoryColor(activity.category.name)}`}>
-                                            {activity.category.name}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
+                                if (thumbnails.length > 0) {
+                                    return (
+                                        <div className="relative">
+                                            <ActivityImageCarousel images={thumbnails} />
+                                            {/* 카테고리 배지 - 이미지 좌측 상단 */}
+                                            {activity.category && (
+                                                <div className="absolute top-4 left-4 z-10">
+                                                    <span className={`inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm border backdrop-blur-sm ${getCategoryColor(activity.category.name)}`}>
+                                                        {activity.category.name}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                } else {
+                                    return (
+                                        <div className="relative aspect-video w-full rounded-2xl overflow-hidden shadow-xl bg-gradient-to-br from-gray-50 to-gray-100">
+                                            <div className="w-full h-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center rounded-2xl">
+                                                <span className="text-blue-400 text-6xl font-bold">
+                                                    A
+                                                </span>
+                                            </div>
+                                            {/* 카테고리 배지 - 이미지 좌측 상단 */}
+                                            {activity.category && (
+                                                <div className="absolute top-4 left-4">
+                                                    <span className={`inline-flex items-center px-4 py-2 rounded-xl font-bold text-sm border backdrop-blur-sm ${getCategoryColor(activity.category.name)}`}>
+                                                        {activity.category.name}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                }
+                            })()}
                         </div>
 
                         {/* 태그, 상태 */}
@@ -534,45 +564,12 @@ export default function ActivityDetailPage() {
                             )}
                         </div>
 
-                        {/* 작성자 정보와 액션 버튼들 */}
-                        <div className="flex items-center justify-between -mb-4">
-                            {/* 작성자 정보 */}
-                            {activity.author && (
-                                <div className="flex items-center gap-3">
-                                    <div
-                                        onClick={() => window.location.href = `/profile/${activity.author?.nickname}`}
-                                        className="relative w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden cursor-pointer hover:scale-105 transition-transform duration-200"
-                                    >
-                                        {activity.author.profile_image ? (
-                                            <Image
-                                                src={activity.author.profile_image}
-                                                alt={activity.author.nickname}
-                                                fill
-                                                className="object-cover"
-                                            />
-                                        ) : (
-                                            <span className="text-slate-600 text-lg font-bold">
-                                                {activity.author.nickname.charAt(0).toUpperCase()}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <div
-                                            onClick={() => window.location.href = `/profile/${activity.author?.nickname}`}
-                                            className="font-semibold text-gray-900 hover:text-blue-600 transition-colors duration-200 cursor-pointer"
-                                        >
-                                            {activity.author.nickname}
-                                        </div>
-                                        <div className="text-sm text-gray-500">{activity.author.name}</div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* 액션 버튼들 */}
+                        {/* 액션 버튼들 */}
+                        <div className="flex items-center justify-end -mb-4">
                             <div className="flex items-center gap-2">
                                 {/* 좋아요 버튼 */}
                                 <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-gray-600">{activity.likes}</span>
+                                    <span className="text-sm font-medium text-gray-600">{activity.likes_count || 0}</span>
                                     <button
                                         onClick={handleLike}
                                         disabled={isLiking}
@@ -623,16 +620,16 @@ export default function ActivityDetailPage() {
                             {/* 참가 기능 섹션 */}
                             {((activity.max_participants && activity.max_participants > 0) || (activity.participation_fee && activity.participation_fee > 0)) && (
                                 <div className="mb-6">
-                                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl overflow-hidden">
+                                    <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
                                         <button
                                             onClick={() => setIsParticipationExpanded(!isParticipationExpanded)}
-                                            className="flex items-center justify-between w-full p-4 hover:from-purple-100 hover:to-pink-100 transition-all duration-200"
+                                            className="flex items-center justify-between w-full p-4 hover:bg-slate-50 transition-colors duration-200"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                                                    <Users className="w-4 h-4 text-white" />
+                                                <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
+                                                    <UserPlus className="w-4 h-4 text-slate-700" />
                                                 </div>
-                                                <h3 className="text-base sm:text-base lg:text-lg font-bold text-gray-900">참가 정보</h3>
+                                                <h3 className="text-base sm:text-base lg:text-lg font-semibold text-gray-900">참가 정보</h3>
                                             </div>
                                             <ChevronDown
                                                 className={`w-5 h-5 text-gray-600 transition-transform duration-200 ${isParticipationExpanded ? 'rotate-180' : ''
@@ -641,22 +638,22 @@ export default function ActivityDetailPage() {
                                         </button>
 
                                         {isParticipationExpanded && (
-                                            <div className="px-4 pb-8">
-                                                <div className="space-y-6">
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="px-4 pb-6 border-t border-slate-200">
+                                                <div className="space-y-5 pt-4">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         {activity.max_participants && activity.max_participants > 0 && (
-                                                            <div className="flex items-center gap-4">
-                                                                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm">
-                                                                    <Users className="w-6 h-6 text-purple-600" />
+                                                            <div className="flex items-start gap-3">
+                                                                <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                                    <Users className="w-5 h-5 text-slate-600" />
                                                                 </div>
-                                                                <div className="flex-1">
-                                                                    <div className="text-sm font-medium text-gray-600 mb-1">참가자 현황</div>
-                                                                    <div className="text-sm sm:text-base lg:text-lg font-bold text-gray-900 mb-3">
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="text-xs text-gray-500 mb-1">참가자 현황</div>
+                                                                    <div className="text-base font-semibold text-gray-900 mb-2">
                                                                         {activity.current_participants ?? 0}/{activity.max_participants}명
                                                                     </div>
-                                                                    <div className="w-full bg-white rounded-full h-3 shadow-inner">
+                                                                    <div className="w-full bg-slate-100 rounded-full h-2">
                                                                         <div
-                                                                            className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-500 shadow-sm"
+                                                                            className="bg-slate-600 h-2 rounded-full transition-all duration-300"
                                                                             style={{
                                                                                 width: `${Math.min(100, ((activity.current_participants ?? 0) / activity.max_participants) * 100)}%`
                                                                             }}
@@ -667,37 +664,37 @@ export default function ActivityDetailPage() {
                                                         )}
 
                                                         {activity.participation_fee && activity.participation_fee > 0 && (
-                                                            <div className="flex items-center gap-4">
-                                                                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm">
-                                                                    <div className="text-2xl">💰</div>
+                                                            <div className="flex items-start gap-3">
+                                                                <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                                    <DollarSign className="w-5 h-5 text-slate-600" />
                                                                 </div>
                                                                 <div>
-                                                                    <div className="text-sm font-medium text-gray-600 mb-1">참가비</div>
-                                                                    <div className="text-sm sm:text-base lg:text-lg font-bold text-gray-900">{activity.participation_fee.toLocaleString()}원</div>
+                                                                    <div className="text-xs text-gray-500 mb-1">참가비</div>
+                                                                    <div className="text-base font-semibold text-gray-900">{activity.participation_fee.toLocaleString()}원</div>
                                                                 </div>
                                                             </div>
                                                         )}
                                                     </div>
 
-                                                    <div className="pt-4">
+                                                    <div className="pt-2">
                                                         <button
                                                             onClick={handleParticipate}
-                                                            disabled={activity.status !== 'published' || !!(activity.max_participants && (activity.current_participants || 0) >= activity.max_participants)}
-                                                            className={`w-full flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold text-sm sm:text-sm lg:text-base transition-all duration-300 ${isParticipating
-                                                                ? 'bg-gradient-to-r from-green-400 to-emerald-500 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-1'
-                                                                : activity.status === 'published' && (!activity.max_participants || (activity.current_participants || 0) < activity.max_participants)
-                                                                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-1'
-                                                                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                                            disabled={!((activity.status === 'public' || activity.status === 'published') && activity.published_version_id) || !!(activity.max_participants && (activity.current_participants || 0) >= activity.max_participants)}
+                                                            className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-colors ${isParticipating
+                                                                ? 'bg-slate-700 text-white hover:bg-slate-800'
+                                                                : (activity.status === 'public' || activity.status === 'published') && activity.published_version_id && (!activity.max_participants || (activity.current_participants || 0) < activity.max_participants)
+                                                                    ? 'bg-slate-900 text-white hover:bg-slate-800'
+                                                                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                                                                 }`}
                                                         >
                                                             {isParticipating ? (
                                                                 <>
-                                                                    <CheckCircle className="w-5 h-5" />
+                                                                    <CheckCircle className="w-4 h-4" />
                                                                     참가 완료
                                                                 </>
                                                             ) : (
                                                                 <>
-                                                                    <Users className="w-5 h-5" />
+                                                                    <UserPlus className="w-4 h-4" />
                                                                     참가하기
                                                                 </>
                                                             )}
@@ -713,16 +710,16 @@ export default function ActivityDetailPage() {
                             {/* 투표 기능 섹션 */}
                             {activity.has_voting && activity.vote_options && activity.vote_options.length > 0 && (
                                 <div className="mb-6">
-                                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl overflow-hidden">
+                                    <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
                                         <button
                                             onClick={() => setIsVotingExpanded(!isVotingExpanded)}
-                                            className="flex items-center justify-between w-full p-4 hover:from-blue-100 hover:to-indigo-100 transition-all duration-200"
+                                            className="flex items-center justify-between w-full p-4 hover:bg-slate-50 transition-colors duration-200"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center">
-                                                    <Clock className="w-4 h-4 text-white" />
+                                                <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
+                                                    <Vote className="w-4 h-4 text-slate-700" />
                                                 </div>
-                                                <h3 className="text-base sm:text-base lg:text-lg font-bold text-gray-900">투표</h3>
+                                                <h3 className="text-base sm:text-base lg:text-lg font-semibold text-gray-900">투표</h3>
                                             </div>
                                             <ChevronDown
                                                 className={`w-5 h-5 text-gray-600 transition-transform duration-200 ${isVotingExpanded ? 'rotate-180' : ''
@@ -731,35 +728,35 @@ export default function ActivityDetailPage() {
                                         </button>
 
                                         {isVotingExpanded && (
-                                            <div className="px-4 pb-8">
-                                                <div className="space-y-6">
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="px-4 pb-6 border-t border-slate-200">
+                                                <div className="space-y-5 pt-4">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         {activity.vote_deadline && (
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm">
-                                                                    <Clock className="w-6 h-6 text-orange-600" />
+                                                            <div className="flex items-start gap-3">
+                                                                <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                                    <Clock className="w-5 h-5 text-slate-600" />
                                                                 </div>
                                                                 <div>
-                                                                    <div className="text-sm font-medium text-gray-600 mb-1">투표 마감</div>
-                                                                    <div className="text-sm sm:text-base lg:text-lg font-bold text-gray-900">{formatDate(activity.vote_deadline)}</div>
+                                                                    <div className="text-xs text-gray-500 mb-1">투표 마감</div>
+                                                                    <div className="text-base font-semibold text-gray-900">{formatDate(activity.vote_deadline)}</div>
                                                                 </div>
                                                             </div>
                                                         )}
 
                                                         {totalVotes > 0 && (
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm">
-                                                                    <Users className="w-6 h-6 text-blue-600" />
+                                                            <div className="flex items-start gap-3">
+                                                                <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                                    <BarChart className="w-5 h-5 text-slate-600" />
                                                                 </div>
                                                                 <div>
-                                                                    <div className="text-sm font-medium text-gray-600 mb-1">총 투표수</div>
-                                                                    <div className="text-sm sm:text-base lg:text-lg font-bold text-gray-900">{totalVotes}명</div>
+                                                                    <div className="text-xs text-gray-500 mb-1">총 투표수</div>
+                                                                    <div className="text-base font-semibold text-gray-900">{totalVotes}명</div>
                                                                 </div>
                                                             </div>
                                                         )}
                                                     </div>
 
-                                                    <div className="space-y-3">
+                                                    <div className="space-y-2">
                                                         {activity.vote_options?.map((option, index) => {
                                                             const voteCount = voteResults[option.text] || 0;
                                                             const percentage = totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0;
@@ -771,35 +768,35 @@ export default function ActivityDetailPage() {
                                                                     <button
                                                                         onClick={() => handleVote(option.text)}
                                                                         disabled={isVoting || isVoteDeadlinePassed}
-                                                                        className={`w-full p-6 rounded-2xl transition-all duration-300 ${isVoted
-                                                                            ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg transform scale-[1.02]'
-                                                                            : 'bg-white hover:bg-blue-50 shadow-sm hover:shadow-md hover:transform hover:scale-[1.01]'
+                                                                        className={`w-full p-4 rounded-lg transition-all duration-200 ${isVoted
+                                                                            ? 'bg-slate-900 text-white border-2 border-slate-900'
+                                                                            : 'bg-white hover:bg-slate-50 border-2 border-slate-200'
                                                                             } ${isVoting || isVoteDeadlinePassed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                                                                     >
-                                                                        <div className="flex items-center justify-between mb-3">
-                                                                            <div className="text-left">
-                                                                                <div className={`font-semibold text-sm sm:text-base lg:text-lg ${isVoted ? 'text-white' : 'text-gray-900'}`}>
+                                                                        <div className="flex items-center justify-between mb-2">
+                                                                            <div className="text-left flex-1 min-w-0">
+                                                                                <div className={`font-medium text-sm ${isVoted ? 'text-white' : 'text-gray-900'}`}>
                                                                                     {option.text}
                                                                                 </div>
                                                                                 {totalVotes > 0 && (
-                                                                                    <div className={`text-sm mt-1 ${isVoted ? 'text-blue-100' : 'text-gray-600'}`}>
+                                                                                    <div className={`text-xs mt-1 ${isVoted ? 'text-slate-300' : 'text-gray-500'}`}>
                                                                                         {voteCount}표 ({percentage.toFixed(1)}%)
                                                                                     </div>
                                                                                 )}
                                                                             </div>
                                                                             {isVoted && (
-                                                                                <div className="flex items-center gap-2">
-                                                                                    <CheckCircle className="w-6 h-6 text-white" />
-                                                                                    <span className="font-medium text-white">투표함</span>
+                                                                                <div className="flex items-center gap-1.5 ml-3 flex-shrink-0">
+                                                                                    <CheckCircle className="w-4 h-4 text-white" />
+                                                                                    <span className="text-xs font-medium text-white">투표함</span>
                                                                                 </div>
                                                                             )}
                                                                         </div>
 
                                                                         {/* 투표 진행률 바 */}
                                                                         {totalVotes > 0 && (
-                                                                            <div className={`rounded-full h-3 ${isVoted ? 'bg-white/30' : 'bg-gray-200'}`}>
+                                                                            <div className={`rounded-full h-1.5 ${isVoted ? 'bg-white/30' : 'bg-slate-100'}`}>
                                                                                 <div
-                                                                                    className={`h-3 rounded-full transition-all duration-500 ${isVoted ? 'bg-white' : 'bg-gradient-to-r from-blue-500 to-indigo-500'
+                                                                                    className={`h-1.5 rounded-full transition-all duration-300 ${isVoted ? 'bg-white' : 'bg-slate-600'
                                                                                         }`}
                                                                                     style={{ width: `${percentage}%` }}
                                                                                 />
@@ -812,10 +809,10 @@ export default function ActivityDetailPage() {
                                                     </div>
 
                                                     {isVoting && (
-                                                        <div className="text-center py-6">
-                                                            <div className="inline-flex items-center gap-3 bg-white rounded-2xl px-6 py-4 shadow-sm">
-                                                                <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
-                                                                <span className="font-medium text-gray-700">투표 처리 중...</span>
+                                                        <div className="text-center py-4">
+                                                            <div className="inline-flex items-center gap-2 bg-slate-50 rounded-lg px-4 py-2">
+                                                                <Loader2 className="w-4 h-4 text-slate-600 animate-spin" />
+                                                                <span className="text-sm font-medium text-gray-700">투표 처리 중...</span>
                                                             </div>
                                                         </div>
                                                     )}

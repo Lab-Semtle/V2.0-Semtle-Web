@@ -1,0 +1,445 @@
+.ProseMirror {
+    padding: 3rem 2rem;
+  }
+
+  @media (min-width: 640px) {
+    .ProseMirror {
+      padding-left: 3rem;
+      padding-right: 3rem;
+    }
+  }
+
+  /* 편집 폼에서 사용할 때 padding 제거 */
+  /* max-w-4xl 컨테이너 안에 있을 때 padding 제거 (제목/부제목과 시작점 정렬) */
+  .max-w-4xl .ProseMirror,
+  .no-editor-padding .ProseMirror {
+    padding: 0 !important;
+  }
+  
+  /* 에디터 전체가 비어있을 때만 placeholder 표시 */
+  .ProseMirror.is-editor-empty .is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    color: hsl(var(--muted-foreground));
+    pointer-events: none;
+    height: 0;
+  }
+  
+  /* 개별 라인 단위 placeholder는 숨김 */
+  .ProseMirror .is-empty::before {
+    content: none !important;
+    display: none !important;
+  }
+
+  /* 할일 목록이 유일한 콘텐츠일 때 placeholder 숨기기 */
+  .ProseMirror > ul[data-type="taskList"]:first-child:last-child .is-empty::before,
+  .ProseMirror > ul[data-type="taskList"]:first-child:last-child .is-editor-empty::before,
+  .ProseMirror > ul[data-type="taskList"]:first-child:last-child li .is-empty::before,
+  .ProseMirror > ul[data-type="taskList"]:first-child:last-child li .is-editor-empty::before {
+    content: none !important;
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+
+  /* 할일 목록 내부에서는 placeholder 숨기기 (모든 경우) */
+  ul[data-type="taskList"] .is-empty::before,
+  ul[data-type="taskList"] .is-editor-empty::before,
+  ul[data-type="taskList"] li[data-type="taskItem"] .is-empty::before,
+  ul[data-type="taskList"] li[data-type="taskItem"] .is-editor-empty::before,
+  ul[data-type="taskList"] li[data-type="taskItem"] p.is-empty::before,
+  ul[data-type="taskList"] li[data-type="taskItem"] p.is-editor-empty::before,
+  ul[data-type="taskList"] li[data-type="taskItem"] div .is-empty::before,
+  ul[data-type="taskList"] li[data-type="taskItem"] div .is-editor-empty::before,
+  ul[data-type="taskList"] li[data-type="taskItem"] div p.is-empty::before,
+  ul[data-type="taskList"] li[data-type="taskItem"] div p.is-editor-empty::before,
+  ul[data-type="taskList"] li[data-type="taskItem"] > div > p.is-empty::before,
+  ul[data-type="taskList"] li[data-type="taskItem"] > div > p.is-editor-empty::before,
+  ul[data-type="taskList"] li[data-type="taskItem"] > div > .is-empty::before,
+  ul[data-type="taskList"] li[data-type="taskItem"] > div > .is-editor-empty::before,
+  ul[data-type="taskList"] li[data-type="taskItem"] > div > p::before,
+  ul[data-type="taskList"] li[data-type="taskItem"] > div::before,
+  ul[data-type="taskList"] li[data-type="taskItem"]::before,
+  ul[data-type="taskList"]::before {
+    content: none !important;
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+  
+  /* Custom image styles */
+  
+  .ProseMirror img {
+    transition: filter 0.1s ease-in-out;
+  
+    &:hover {
+      cursor: pointer;
+      filter: brightness(90%);
+    }
+  
+    &.ProseMirror-selectednode {
+      outline: 3px solid #5abbf7;
+      filter: brightness(90%);
+    }
+  }
+  
+  .img-placeholder {
+    position: relative;
+  
+    &:before {
+      content: "";
+      box-sizing: border-box;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 3px solid var(--novel-stone-200);
+      border-top-color: var(--novel-stone-800);
+      animation: spinning 0.6s linear infinite;
+    }
+  }
+  
+  @keyframes spinning {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  /* Custom TODO list checkboxes – shoutout to this awesome tutorial: https://moderncss.dev/pure-css-custom-checkbox-style/ */
+  
+  /* 할일 목록 들여쓰기 제거 */
+  ul[data-type="taskList"] {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+    margin-top: 6px;
+    margin-bottom: 6px;
+  }
+
+  /* 일반 텍스트 다음에 오는 할일 목록 여백 조정 */
+  .prose p + ul[data-type="taskList"] {
+    margin-top: 6px;
+  }
+
+  /* 할일 목록 다음에 오는 일반 텍스트 여백 조정 */
+  ul[data-type="taskList"] + .prose p {
+    margin-top: 6px;
+  }
+  
+  ul[data-type="taskList"] li > label {
+    margin-right: 0.2rem;
+    user-select: none;
+  }
+  
+  @media screen and (max-width: 768px) {
+    ul[data-type="taskList"] li > label {
+      margin-right: 0.5rem;
+    }
+  }
+  
+  ul[data-type="taskList"] li > label input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background-color: hsl(var(--background));
+    margin: 0;
+    cursor: pointer;
+    width: 1.2em;
+    height: 1.2em;
+    position: relative;
+    top: 5px;
+    border: 2px solid hsl(var(--border));
+    margin-right: 0.3rem;
+    display: grid;
+    place-content: center;
+  
+    &:hover {
+      background-color: hsl(var(--accent));
+    }
+  
+    &:active {
+      background-color: hsl(var(--accent));
+    }
+  
+    &::before {
+      content: "";
+      width: 0.65em;
+      height: 0.65em;
+      transform: scale(0);
+      transition: 120ms transform ease-in-out;
+      box-shadow: inset 1em 1em;
+      transform-origin: center;
+      clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+    }
+  
+    &:checked::before {
+      transform: scale(1);
+    }
+  }
+  
+  ul[data-type="taskList"] li[data-checked="true"] > div > p {
+    color: hsl(var(--muted-foreground));
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+  }
+  
+  /* Overwrite tippy-box original max-width */
+  
+  .tippy-box {
+    max-width: 400px !important;
+  }
+  
+  .ProseMirror:not(.dragging) .ProseMirror-selectednode {
+    outline: none !important;
+    background-color: var(--novel-highlight-blue);
+    transition: background-color 0.2s;
+    box-shadow: none;
+  }
+  
+  .drag-handle {
+    position: fixed;
+    opacity: 1;
+    transition: opacity ease-in 0.2s;
+    border-radius: 0.25rem;
+  
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' style='fill: rgba(0, 0, 0, 0.5)'%3E%3Cpath d='M3,2 C2.44771525,2 2,1.55228475 2,1 C2,0.44771525 2.44771525,0 3,0 C3.55228475,0 4,0.44771525 4,1 C4,1.55228475 3.55228475,2 3,2 Z M3,6 C2.44771525,6 2,5.55228475 2,5 C2,4.44771525 2.44771525,4 3,4 C3.55228475,4 4,4.44771525 4,5 C4,5.55228475 3.55228475,6 3,6 Z M3,10 C2.44771525,10 2,9.55228475 2,9 C2,8.44771525 2.44771525,8 3,8 C3.55228475,8 4,8.44771525 4,9 C4,9.55228475 3.55228475,10 3,10 Z M7,2 C6.44771525,2 6,1.55228475 6,1 C6,0.44771525 6.44771525,0 7,0 C7.55228475,0 8,0.44771525 8,1 C8,1.55228475 7.55228475,2 7,2 Z M7,6 C6.44771525,6 6,5.55228475 6,5 C6,4.44771525 6.44771525,4 7,4 C7.55228475,4 8,4.44771525 8,5 C8,5.55228475 7.55228475,6 7,6 Z M7,10 C6.44771525,10 6,9.55228475 6,9 C6,8.44771525 6.44771525,8 7,8 C7.55228475,8 8,8.44771525 8,9 C8,9.55228475 7.55228475,10 7,10 Z'%3E%3C/path%3E%3C/svg%3E");
+    background-size: calc(0.5em + 0.375rem) calc(0.5em + 0.375rem);
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 1.2rem;
+    height: 1.5rem;
+    z-index: 50;
+    cursor: grab;
+  
+    &:hover {
+      background-color: var(--novel-stone-100);
+      transition: background-color 0.2s;
+    }
+  
+    &:active {
+      background-color: var(--novel-stone-200);
+      transition: background-color 0.2s;
+      cursor: grabbing;
+    }
+  
+    &.hide {
+      opacity: 0;
+      pointer-events: none;
+    }
+  
+    @media screen and (max-width: 600px) {
+      display: none;
+      pointer-events: none;
+    }
+  }
+  
+  .dark .drag-handle {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' style='fill: rgba(255, 255, 255, 0.5)'%3E%3Cpath d='M3,2 C2.44771525,2 2,1.55228475 2,1 C2,0.44771525 2.44771525,0 3,0 C3.55228475,0 4,0.44771525 4,1 C4,1.55228475 3.55228475,2 3,2 Z M3,6 C2.44771525,6 2,5.55228475 2,5 C2,4.44771525 2.44771525,4 3,4 C3.55228475,4 4,4.44771525 4,5 C4,5.55228475 3.55228475,6 3,6 Z M3,10 C2.44771525,10 2,9.55228475 2,9 C2,8.44771525 2.44771525,8 3,8 C3.55228475,8 4,8.44771525 4,9 C4,9.55228475 3.55228475,10 3,10 Z M7,2 C6.44771525,2 6,1.55228475 6,1 C6,0.44771525 6.44771525,0 7,0 C7.55228475,0 8,0.44771525 8,1 C8,1.55228475 7.55228475,2 7,2 Z M7,6 C6.44771525,6 6,5.55228475 6,5 C6,4.44771525 6.44771525,4 7,4 C7.55228475,4 8,4.44771525 8,5 C8,5.55228475 7.55228475,6 7,6 Z M7,10 C6.44771525,10 6,9.55228475 6,9 C6,8.44771525 6.44771525,8 7,8 C7.55228475,8 8,8.44771525 8,9 C8,9.55228475 7.55228475,10 7,10 Z'%3E%3C/path%3E%3C/svg%3E");
+  }
+  
+  /* Custom Youtube Video CSS */
+  iframe {
+    border: 8px solid #ffd00027;
+    border-radius: 4px;
+    min-width: 200px;
+    min-height: 200px;
+    display: block;
+    outline: 0px solid transparent;
+  }
+  
+  div[data-youtube-video] > iframe {
+    cursor: move;
+    aspect-ratio: 16 / 9;
+    width: 100%;
+  }
+  
+  .ProseMirror-selectednode iframe {
+    transition: outline 0.15s;
+    outline: 6px solid #fbbf24;
+  }
+  
+  @media only screen and (max-width: 480px) {
+    div[data-youtube-video] > iframe {
+      max-height: 50px;
+    }
+  }
+  
+  @media only screen and (max-width: 720px) {
+    div[data-youtube-video] > iframe {
+      max-height: 100px;
+    }
+  }
+  
+  /* CSS for bold coloring and highlighting issue*/
+  span[style] > strong {
+    color: inherit;
+  }
+  
+  mark[style] > strong {
+    color: inherit;
+  }
+
+  /* Prose styles for headings, blockquote, lists */
+  .prose h1 {
+    font-size: 2.25em;
+    margin-top: 0;
+    margin-bottom: 6px;
+    line-height: 1.1111111;
+    font-weight: 800;
+  }
+
+  .prose h2 {
+    font-size: 1.75em;
+    margin-top: 0;
+    margin-bottom: 6px;
+    line-height: 1.3333333;
+    font-weight: 700;
+  }
+
+  .prose h3 {
+    font-size: 1.25em;
+    margin-top: 0;
+    margin-bottom: 6px;
+    line-height: 1.6;
+    font-weight: 600;
+  }
+
+  .prose h4 {
+    font-size: 1.125em;
+    margin-top: 1.5555556em;
+    margin-bottom: 0.4444444em;
+    line-height: 1.5555556;
+    font-weight: 600;
+  }
+
+  .prose blockquote {
+    font-weight: 500;
+    font-style: italic;
+    color: hsl(var(--foreground));
+    border-left-width: 0.25rem;
+    border-left-color: hsl(var(--primary));
+    margin-top: 1em;
+    margin-bottom: 1em;
+    padding-left: 1em;
+  }
+
+  /* 따옴표 기호 제거 */
+  .prose blockquote p:first-of-type::before {
+    content: none;
+  }
+
+  .prose blockquote p:last-of-type::after {
+    content: none;
+  }
+
+  .prose ul,
+  .prose ol {
+    margin-top: 6px;
+    margin-bottom: 6px;
+    padding-left: 1.625em;
+  }
+
+  .prose ul > li {
+    position: relative;
+    padding-left: 0.375em;
+  }
+
+  .prose ol > li {
+    position: relative;
+    padding-left: 0.375em;
+  }
+
+  .prose ul > li::marker {
+    color: hsl(var(--foreground));
+  }
+
+  .prose ol > li::marker {
+    color: hsl(var(--foreground));
+  }
+
+  .prose li {
+    margin-top: 2px;
+    margin-bottom: 2px;
+  }
+
+  .prose p {
+    margin-top: 6px;
+    margin-bottom: 6px;
+  }
+
+  /* 첫 번째와 마지막 단락의 여백 제거 */
+  .prose p:first-child {
+    margin-top: 0;
+  }
+
+  .prose p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Code block styles for prose content */
+  .prose pre {
+    background: #0d0d0d !important;
+    border-radius: 0.5rem !important;
+    color: #fff !important;
+    font-family: "JetBrainsMono", monospace !important;
+    padding: 0.75rem 1rem !important;
+  }
+
+  .prose pre code {
+    background: none !important;
+    color: inherit !important;
+    font-size: 0.8rem !important;
+    padding: 0 !important;
+  }
+
+  .prose pre .hljs-comment,
+  .prose pre .hljs-quote {
+    color: #616161 !important;
+  }
+
+  .prose pre .hljs-variable,
+  .prose pre .hljs-template-variable,
+  .prose pre .hljs-attribute,
+  .prose pre .hljs-tag,
+  .prose pre .hljs-name,
+  .prose pre .hljs-regexp,
+  .prose pre .hljs-link,
+  .prose pre .hljs-name,
+  .prose pre .hljs-selector-id,
+  .prose pre .hljs-selector-class {
+    color: #f98181 !important;
+  }
+
+  .prose pre .hljs-number,
+  .prose pre .hljs-meta,
+  .prose pre .hljs-built_in,
+  .prose pre .hljs-builtin-name,
+  .prose pre .hljs-literal,
+  .prose pre .hljs-type,
+  .prose pre .hljs-params {
+    color: #fbbc88 !important;
+  }
+
+  .prose pre .hljs-string,
+  .prose pre .hljs-symbol,
+  .prose pre .hljs-bullet {
+    color: #b9f18d !important;
+  }
+
+  .prose pre .hljs-title,
+  .prose pre .hljs-section {
+    color: #faf594 !important;
+  }
+
+  .prose pre .hljs-keyword,
+  .prose pre .hljs-selector-tag {
+    color: #70cff8 !important;
+  }
+
+  .prose pre .hljs-emphasis {
+    font-style: italic !important;
+  }
+
+  .prose pre .hljs-strong {
+    font-weight: 700 !important;
+  }

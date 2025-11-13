@@ -23,15 +23,23 @@ export async function POST(
             return NextResponse.json({ error: '유효하지 않은 댓글 ID입니다.' }, { status: 400 });
         }
 
-        // 게시물 타입에 따른 좋아요 테이블 매핑
+        // 게시물 타입에 따른 좋아요 테이블 및 댓글 테이블 매핑
         const likeTableMap = {
             project: 'project_comment_likes',
             activity: 'activity_comment_likes',
             resource: 'resource_comment_likes'
         };
 
+        const commentTableMap = {
+            project: 'project_comments',
+            activity: 'activity_comments',
+            resource: 'resource_comments'
+        };
+
         const likeTable = likeTableMap[postType as keyof typeof likeTableMap];
-        if (!likeTable) {
+        const commentTable = commentTableMap[postType as keyof typeof commentTableMap];
+        
+        if (!likeTable || !commentTable) {
             return NextResponse.json({ error: '지원하지 않는 게시물 타입입니다.' }, { status: 400 });
         }
 
@@ -79,13 +87,25 @@ export async function POST(
             isLiked = true;
         }
 
-        // 실제 좋아요 수 계산
-        const { data: likeCountData } = await supabase
-            .from(likeTable)
-            .select('id', { count: 'exact' })
-            .eq('comment_id', commentIdNum);
+        // 댓글 테이블에서 업데이트된 likes_count 가져오기 (트리거가 자동으로 업데이트함)
+        const { data: commentData, error: commentError } = await supabase
+            .from(commentTable)
+            .select('likes_count')
+            .eq('id', commentIdNum)
+            .single();
 
-        likesCount = likeCountData?.length || 0;
+        if (commentError) {
+            console.error('댓글 좋아요 수 조회 실패:', commentError);
+            // 폴백: 직접 계산
+            const { data: likeCountData } = await supabase
+                .from(likeTable)
+                .select('id', { count: 'exact' })
+                .eq('comment_id', commentIdNum);
+            
+            likesCount = likeCountData?.length || 0;
+        } else {
+            likesCount = commentData?.likes_count || 0;
+        }
 
         return NextResponse.json({
             success: true,

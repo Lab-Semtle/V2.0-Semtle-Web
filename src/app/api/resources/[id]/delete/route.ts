@@ -16,6 +16,20 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
             );
         }
 
+        // 자료 정보 조회 (작성자 확인용)
+        const { data: resource, error: resourceError } = await supabase
+            .from('resources')
+            .select('id, author_id')
+            .eq('id', resourceId)
+            .maybeSingle();
+
+        if (resourceError || !resource) {
+            return NextResponse.json(
+                { error: '자료를 찾을 수 없습니다.' },
+                { status: 404 }
+            );
+        }
+
         // 사용자 프로필 확인
         const { data: userProfile } = await supabase
             .from('user_profiles')
@@ -23,9 +37,13 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
             .eq('id', user.id)
             .single();
 
-        if (!userProfile || !['admin', 'super_admin'].includes(userProfile.role)) {
+        const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'super_admin';
+        const isAuthor = resource.author_id === user.id;
+
+        // 관리자 또는 작성자만 삭제 가능
+        if (!isAdmin && !isAuthor) {
             return NextResponse.json(
-                { error: '관리자 권한이 필요합니다.' },
+                { error: '자료를 삭제할 권한이 없습니다.' },
                 { status: 403 }
             );
         }

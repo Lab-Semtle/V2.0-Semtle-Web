@@ -9,7 +9,7 @@ interface ActivityFormData {
   title: string;
   subtitle?: string;
   category_id: number;
-  thumbnail?: string;
+  thumbnail?: string | string[];
   status?: string;
   location?: string;
   start_date?: string;
@@ -47,11 +47,24 @@ export default function WriteActivityPage() {
       }
 
       // 상태에 따라 다른 메시지 표시
+      const responseData = await response.json();
+
       if (formData.status === 'draft') {
-        alert('활동이 임시저장되었습니다!');
+        // 임시저장된 활동의 편집 페이지로 이동 (버전 목록 확인 가능)
+        if (responseData.activity?.id) {
+          // alert는 비동기로 처리하고, 렌더링 완료 후 이동
+          window.setTimeout(() => {
+            alert('활동이 임시저장되었습니다!');
+            router.push(`/activities/edit/${responseData.activity.id}`);
+          }, 100);
+        } else {
+          alert('활동이 임시저장되었습니다!');
+        }
       } else {
-        alert('활동이 성공적으로 등록되었습니다!');
-        router.push('/activities');
+        window.setTimeout(() => {
+          alert('활동이 성공적으로 등록되었습니다!');
+          router.push('/activities');
+        }, 100);
       }
     } catch (error) {
       throw error;

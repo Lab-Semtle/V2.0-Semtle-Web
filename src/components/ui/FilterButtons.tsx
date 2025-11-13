@@ -20,13 +20,13 @@ export default function FilterButtons({
     compact = false
 }: FilterButtonsProps) {
     return (
-        <div className={`flex flex-wrap gap-2 ${className}`}>
+        <div className={`flex flex-wrap gap-1.5 sm:gap-2 ${className}`}>
             {filters.map((filter) => (
                 <button
                     key={filter}
                     onClick={() => onFilterChange(filter)}
-                    className={`group relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 transform hover:scale-105 ${selectedFilter === filter
-                        ? `bg-${activeColor} text-white shadow-md hover:shadow-lg border border-${activeColor}/30`
+                    className={`group relative flex items-center gap-1 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 ${selectedFilter === filter
+                        ? `bg-${activeColor} text-white border border-${activeColor}/30`
                         : 'bg-white/90 backdrop-blur-sm text-slate-600 hover:bg-slate-50 hover:text-slate-800 border border-slate-200/60 hover:border-slate-300/60 hover:shadow-sm'
                         } ${compact ? 'px-3 py-2 text-xs' : ''}`}
                 >

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
 @theme {
   --color-background: #ffffff;
   --color-foreground: #171717;
@@ -21,6 +23,29 @@
   --color-input: #e4e4e7;
   --color-ring: #171717;
   --radius: 0.5rem;
+}
+
+:root {
+  /* shadcn/ui 호환을 위한 변수 (hsl 형식 지원) */
+  --background: 0 0% 100%;
+  --foreground: 0 0% 9%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 9%;
+  --primary: 0 0% 9%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 9%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 45%;
+  --accent: 0 0% 96%;
+  --accent-foreground: 0 0% 9%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 89%;
+  --input: 0 0% 89%;
+  --ring: 0 0% 9%;
 }
 
 body {
@@ -99,12 +124,291 @@ p, span, div, a, button {
   animation-delay: 0.6s;
 }
 
+/* Floating animation for hero background - 더 강한 움직임 */
+@keyframes float-slow {
+  0%, 100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  25% {
+    transform: translate(60px, -50px) scale(1.2) rotate(5deg);
+  }
+  50% {
+    transform: translate(-40px, 40px) scale(0.85) rotate(-5deg);
+  }
+  75% {
+    transform: translate(50px, 30px) scale(1.15) rotate(3deg);
+  }
+}
+
+@keyframes float-medium {
+  0%, 100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  33% {
+    transform: translate(-70px, 60px) scale(1.25) rotate(-7deg);
+  }
+  66% {
+    transform: translate(50px, -40px) scale(0.9) rotate(7deg);
+  }
+}
+
+@keyframes float-slow-delay {
+  0%, 100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  30% {
+    transform: translate(-50px, 70px) scale(1.18) rotate(-6deg);
+  }
+  60% {
+    transform: translate(70px, -30px) scale(0.88) rotate(6deg);
+  }
+}
+
+@keyframes float-medium-delay {
+  0%, 100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  40% {
+    transform: translate(80px, 50px) scale(1.22) rotate(8deg);
+  }
+  80% {
+    transform: translate(-60px, -50px) scale(0.92) rotate(-8deg);
+  }
+}
+
+@keyframes float-fast {
+  0%, 100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  20% {
+    transform: translate(40px, -60px) scale(1.3) rotate(10deg);
+  }
+  40% {
+    transform: translate(-50px, 50px) scale(0.8) rotate(-10deg);
+  }
+  60% {
+    transform: translate(60px, 40px) scale(1.2) rotate(8deg);
+  }
+  80% {
+    transform: translate(-30px, -40px) scale(0.95) rotate(-8deg);
+  }
+}
+
+@keyframes wave {
+  0%, 100% {
+    transform: translateY(0) scaleY(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(-20px) scaleY(1.1);
+    opacity: 0.8;
+  }
+}
+
+@keyframes wave-strong {
+  0%, 100% {
+    transform: translateY(0) scaleY(1) scaleX(1);
+    opacity: 0.6;
+  }
+  25% {
+    transform: translateY(-30px) scaleY(1.15) scaleX(1.05);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translateY(-40px) scaleY(1.2) scaleX(1.1);
+    opacity: 1;
+  }
+  75% {
+    transform: translateY(-20px) scaleY(1.1) scaleX(1.03);
+    opacity: 0.85;
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 25s ease-in-out infinite;
+}
+
+.animate-float-medium {
+  animation: float-medium 18s ease-in-out infinite;
+}
+
+.animate-float-slow-delay {
+  animation: float-slow-delay 22s ease-in-out infinite;
+  animation-delay: -5s;
+}
+
+.animate-float-medium-delay {
+  animation: float-medium-delay 20s ease-in-out infinite;
+  animation-delay: -8s;
+}
+
+.animate-float-fast {
+  animation: float-fast 12s ease-in-out infinite;
+}
+
+.animate-wave {
+  animation: wave 8s ease-in-out infinite;
+}
+
+.animate-wave-strong {
+  animation: wave-strong 10s ease-in-out infinite;
+}
+
+/* 바다 파도 애니메이션 */
+@keyframes wave-float-1 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(50px, -30px) scale(1.1);
+  }
+  50% {
+    transform: translate(-40px, 20px) scale(0.95);
+  }
+  75% {
+    transform: translate(30px, -20px) scale(1.05);
+  }
+}
+
+@keyframes wave-float-2 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-60px, 40px) scale(1.15);
+  }
+  66% {
+    transform: translate(50px, -30px) scale(0.9);
+  }
+}
+
+@keyframes wave-float-3 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  30% {
+    transform: translate(70px, -40px) scale(1.2);
+  }
+  60% {
+    transform: translate(-50px, 30px) scale(0.85);
+  }
+}
+
+@keyframes wave-float-4 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  20% {
+    transform: translate(-40px, 50px) scale(1.25);
+  }
+  40% {
+    transform: translate(60px, -25px) scale(0.88);
+  }
+  60% {
+    transform: translate(-30px, 40px) scale(1.1);
+  }
+  80% {
+    transform: translate(45px, -35px) scale(0.95);
+  }
+}
+
+@keyframes wave-move-1 {
+  0% {
+    transform: translateX(0) translateY(0);
+  }
+  50% {
+    transform: translateX(100px) translateY(-10px);
+  }
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+}
+
+@keyframes wave-move-2 {
+  0% {
+    transform: translateX(0) translateY(0);
+  }
+  50% {
+    transform: translateX(-100px) translateY(10px);
+  }
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+}
+
+@keyframes wave-move-3 {
+  0% {
+    transform: translateX(0) translateY(0);
+  }
+  50% {
+    transform: translateX(120px) translateY(-15px);
+  }
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+}
+
+.animate-wave-float-1 {
+  animation: wave-float-1 20s ease-in-out infinite;
+}
+
+.animate-wave-float-2 {
+  animation: wave-float-2 18s ease-in-out infinite;
+  animation-delay: -3s;
+}
+
+.animate-wave-float-3 {
+  animation: wave-float-3 22s ease-in-out infinite;
+  animation-delay: -6s;
+}
+
+.animate-wave-float-4 {
+  animation: wave-float-4 16s ease-in-out infinite;
+  animation-delay: -9s;
+}
+
+/* 파도 패턴 - SVG를 사용한 파도 모양 (양 끝이 자연스럽게 페이드, 더 잘 보이게) */
+.wave-pattern-1 {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='waveGrad1' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='rgba(14,165,233,0)' stop-opacity='0'/%3E%3Cstop offset='10%25' stop-color='rgba(14,165,233,0.15)' stop-opacity='0.6'/%3E%3Cstop offset='50%25' stop-color='rgba(14,165,233,0.22)' stop-opacity='1'/%3E%3Cstop offset='90%25' stop-color='rgba(14,165,233,0.15)' stop-opacity='0.6'/%3E%3Cstop offset='100%25' stop-color='rgba(14,165,233,0)' stop-opacity='0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0,60 C300,100 600,20 900,60 C1050,80 1150,40 1200,60 L1200,120 L0,120 Z' fill='url(%23waveGrad1)'%3E%3Canimate attributeName='d' dur='20s' repeatCount='indefinite' values='M0,60 C300,100 600,20 900,60 C1050,80 1150,40 1200,60 L1200,120 L0,120 Z;M0,80 C300,40 600,100 900,80 C1050,60 1150,100 1200,80 L1200,120 L0,120 Z;M0,60 C300,100 600,20 900,60 C1050,80 1150,40 1200,60 L1200,120 L0,120 Z'/%3E%3C/path%3E%3C/svg%3E");
+  background-size: 1200px 120px;
+  background-repeat: repeat-x;
+  background-position: 0 bottom;
+  animation: wave-move-1 20s linear infinite;
+  opacity: 1;
+  mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+}
+
+.wave-pattern-2 {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='waveGrad2' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='rgba(59,130,246,0)' stop-opacity='0'/%3E%3Cstop offset='10%25' stop-color='rgba(59,130,246,0.12)' stop-opacity='0.6'/%3E%3Cstop offset='50%25' stop-color='rgba(59,130,246,0.18)' stop-opacity='1'/%3E%3Cstop offset='90%25' stop-color='rgba(59,130,246,0.12)' stop-opacity='0.6'/%3E%3Cstop offset='100%25' stop-color='rgba(59,130,246,0)' stop-opacity='0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0,80 C300,40 600,100 900,80 C1050,60 1150,100 1200,80 L1200,120 L0,120 Z' fill='url(%23waveGrad2)'%3E%3Canimate attributeName='d' dur='15s' repeatCount='indefinite' values='M0,80 C300,40 600,100 900,80 C1050,60 1150,100 1200,80 L1200,120 L0,120 Z;M0,60 C300,100 600,20 900,60 C1050,80 1150,40 1200,60 L1200,120 L0,120 Z;M0,80 C300,40 600,100 900,80 C1050,60 1150,100 1200,80 L1200,120 L0,120 Z'/%3E%3C/path%3E%3C/svg%3E");
+  background-size: 1200px 120px;
+  background-repeat: repeat-x;
+  background-position: 0 bottom;
+  animation: wave-move-2 15s linear infinite;
+  opacity: 1;
+  mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+}
+
+.wave-pattern-3 {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='waveGrad3' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='rgba(20,184,166,0)' stop-opacity='0'/%3E%3Cstop offset='10%25' stop-color='rgba(20,184,166,0.1)' stop-opacity='0.6'/%3E%3Cstop offset='50%25' stop-color='rgba(20,184,166,0.15)' stop-opacity='1'/%3E%3Cstop offset='90%25' stop-color='rgba(20,184,166,0.1)' stop-opacity='0.6'/%3E%3Cstop offset='100%25' stop-color='rgba(20,184,166,0)' stop-opacity='0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0,70 C300,90 600,30 900,70 C1050,50 1150,90 1200,70 L1200,120 L0,120 Z' fill='url(%23waveGrad3)'%3E%3Canimate attributeName='d' dur='12s' repeatCount='indefinite' values='M0,70 C300,90 600,30 900,70 C1050,50 1150,90 1200,70 L1200,120 L0,120 Z;M0,50 C300,70 600,10 900,50 C1050,30 1150,70 1200,50 L1200,120 L0,120 Z;M0,70 C300,90 600,30 900,70 C1050,50 1150,90 1200,70 L1200,120 L0,120 Z'/%3E%3C/path%3E%3C/svg%3E");
+  background-size: 1200px 120px;
+  background-repeat: repeat-x;
+  background-position: 0 bottom;
+  animation: wave-move-3 12s linear infinite;
+  opacity: 1;
+  mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+}
+
 /* 텍스트 클램프 유틸리티 */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .line-clamp-3 {
@@ -112,6 +416,310 @@ p, span, div, a, button {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
+:root {
+  --sidebar: hsl(0 0% 98%);
+  --sidebar-foreground: hsl(240 5.3% 26.1%);
+  --sidebar-primary: hsl(240 5.9% 10%);
+  --sidebar-primary-foreground: hsl(0 0% 98%);
+  --sidebar-accent: hsl(240 4.8% 95.9%);
+  --sidebar-accent-foreground: hsl(240 5.9% 10%);
+  --sidebar-border: hsl(220 13% 91%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+  --novel-highlight-default: hsl(var(--background));
+  --novel-highlight-purple: #f3e8ff;
+  --novel-highlight-red: #fee2e2;
+  --novel-highlight-yellow: #fef9c3;
+  --novel-highlight-blue: #dbeafe;
+  --novel-highlight-green: #dcfce7;
+  --novel-highlight-orange: #fed7aa;
+  --novel-highlight-pink: #fce7f3;
+  --novel-highlight-gray: #f3f4f6;
+  --novel-stone-100: #f5f5f4;
+  --novel-stone-200: #e7e5e4;
+  --novel-stone-800: #292524;
+}
+
+.dark {
+  --sidebar: hsl(240 5.9% 10%);
+  --sidebar-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-primary: hsl(224.3 76.3% 48%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(240 3.7% 15.9%);
+  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-border: hsl(240 3.7% 15.9%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+  --novel-highlight-default: hsl(var(--background));
+  --novel-highlight-purple: #f3e8ff;
+  --novel-highlight-red: #fee2e2;
+  --novel-highlight-yellow: #fef9c3;
+  --novel-highlight-blue: #dbeafe;
+  --novel-highlight-green: #dcfce7;
+  --novel-highlight-orange: #fed7aa;
+  --novel-highlight-pink: #fce7f3;
+  --novel-highlight-gray: #f3f4f6;
+  --novel-stone-100: #1c1917;
+  --novel-stone-200: #292524;
+  --novel-stone-800: #78716c;
+}
+
+@theme inline {
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    scrollbar-gutter: stable;
+  }
+}
+
+/* ActivityPostForm 사이드바 레이아웃 통합 - fixed를 relative로 변경하여 나란히 배치 */
+@layer components {
+  /* SidebarProvider가 충분히 긴 높이 차지 */
+  [class*="group/sidebar-wrapper"]:has([data-sidebar="sidebar"]) {
+    min-height: 100vh !important;
+    height: 100vh !important;
+  }
+  
+  /* 사이드바 컴포넌트의 fixed div를 레이아웃 플로우에 포함시키기 (애니메이션 유지) */
+  div.group.peer[data-side="left"] > div:nth-child(2)[class*="fixed"][class*="inset-y-0"] {
+    position: relative !important;
+    top: 3rem !important;
+    left: auto !important;
+    right: auto !important;
+    height: calc(100vh - 3rem) !important;
+    min-height: calc(100vh - 3rem) !important;
+    max-height: calc(100vh - 3rem) !important;
+    z-index: 0 !important;
+    width: var(--sidebar-width) !important;
+    /* 자연스러운 스프링 느낌의 transition - 리사이즈 중에는 transition 비활성화 */
+    transition: width 250ms cubic-bezier(0.4, 0, 0.2, 1), opacity 250ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+  
+  /* 리사이즈 중에는 transition 비활성화 */
+  body:has([data-sidebar="resize-handle"]:active) div.group.peer[data-side="left"] > div:nth-child(2)[class*="fixed"][class*="inset-y-0"] {
+    transition: none !important;
+  }
+  
+  /* 사이드바 내부 콘텐츠도 전체 높이 사용 */
+  div.group.peer[data-side="left"] > div:nth-child(2) > div[data-sidebar="sidebar"] {
+    height: calc(100vh - 3rem) !important;
+    min-height: calc(100vh - 3rem) !important;
+    max-height: calc(100vh - 3rem) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    /* Sheet와 동일한 배경색 적용 */
+    background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 50%, #f8fafc 100%) !important;
+  }
+  
+  /* SidebarHeader 높이 자동 조정 */
+  div.group.peer[data-side="left"] [data-sidebar="header"] {
+    flex-shrink: 0 !important;
+  }
+  
+  /* SidebarContent가 나머지 공간을 모두 차지하도록 - 전체 높이 확보 및 스크롤 활성화 */
+  div.group.peer[data-side="left"] [data-sidebar="content"] {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    /* 하단 여백 제거하여 전체 높이 사용 */
+    padding-bottom: 0 !important;
+    /* 스크롤바를 리사이즈 핸들보다 낮게 */
+    padding-right: 0 !important;
+  }
+  
+  /* 사이드바 스크롤바 위치 조정 - 리사이즈 핸들을 가리지 않도록 */
+  div.group.peer[data-side="left"] [data-sidebar="content"] {
+    /* 스크롤바를 왼쪽으로 여유 공간 확보 */
+    padding-right: 1rem !important;
+  }
+  
+  div.group.peer[data-side="left"] [data-sidebar="content"]::-webkit-scrollbar {
+    width: 6px !important;
+  }
+  
+  div.group.peer[data-side="left"] [data-sidebar="content"]::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.5) !important;
+    border-radius: 3px !important;
+  }
+  
+  div.group.peer[data-side="left"] [data-sidebar="content"]::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(148, 163, 184, 0.8) !important;
+  }
+  
+  /* 리사이즈 핸들이 스크롤바보다 위에 오도록 */
+  [data-sidebar="resize-handle"] {
+    z-index: 100 !important;
+    position: absolute !important;
+    right: -4px !important;
+  }
+  
+  /* ActivityPostForm 메인 콘텐츠 스크롤 - 네비게이션바에 가려지지 않도록 */
+  main:has([data-sidebar="sidebar"]) {
+    padding-top: 1.5rem !important;
+    margin-top: 3rem !important;
+    scroll-padding-top: 4.5rem !important;
+    /* 스크롤바 시작 위치 조정 */
+    overflow-y: auto !important;
+  }
+  
+  /* 메인 콘텐츠 내부 요소 스크롤 시작 위치 조정 */
+  main:has([data-sidebar="sidebar"]) > div {
+    scroll-margin-top: 4.5rem !important;
+  }
+  
+  /* 메인 콘텐츠 스크롤바 스타일 */
+  main:has([data-sidebar="sidebar"])::-webkit-scrollbar {
+    width: 6px !important;
+  }
+  
+  main:has([data-sidebar="sidebar"])::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.5) !important;
+    border-radius: 3px !important;
+  }
+  
+  main:has([data-sidebar="sidebar"])::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(148, 163, 184, 0.8) !important;
+  }
+  
+  /* 사이드바 내부 요소들의 반응형 스타일 제거 - 고정 크기 유지 (항상 적용) */
+  div.group.peer[data-side="left"] [data-sidebar="sidebar"] {
+    /* 사이드바 내부 콘텐츠가 닫히는 동안에도 텍스트 크기 유지 */
+    contain: layout style paint !important;
+  }
+  
+  /* 사이드바 내부 모든 텍스트 요소 고정 크기 유지 */
+  div.group.peer[data-side="left"] [data-sidebar="sidebar"] h2,
+  div.group.peer[data-side="left"] [data-sidebar="sidebar"] h3,
+  div.group.peer[data-side="left"] [data-sidebar="sidebar"] label,
+  div.group.peer[data-side="left"] [data-sidebar="sidebar"] span,
+  div.group.peer[data-side="left"] [data-sidebar="sidebar"] p {
+    font-size: inherit !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  
+  /* 사이드바 내부 input, select 등 고정 크기 - 닫히는 동안에도 유지 */
+  div.group.peer[data-side="left"] [data-sidebar="sidebar"] input,
+  div.group.peer[data-side="left"] [data-sidebar="sidebar"] select,
+  div.group.peer[data-side="left"] [data-sidebar="sidebar"] textarea,
+  div.group.peer[data-side="left"] [data-sidebar="sidebar"] button {
+    font-size: inherit !important;
+  }
+  
+  /* SidebarContent 내부 요소들이 너비 변화에 반응하지 않도록 */
+  div.group.peer[data-side="left"] [data-sidebar="content"] > * {
+    min-width: 0 !important;
+    flex-shrink: 0 !important;
+  }
+  
+  /* 사이드바가 닫혀있을 때 애니메이션과 함께 숨김 */
+  div.group.peer[data-state="collapsed"][data-side="left"] > div:nth-child(2)[class*="fixed"] {
+    width: 0 !important;
+    opacity: 0 !important;
+    overflow: hidden !important;
+    min-width: 0 !important;
+  }
+  
+  /* 사이드바가 열려있을 때 애니메이션과 함께 표시 */
+  div.group.peer[data-state="expanded"][data-side="left"] > div:nth-child(2)[class*="fixed"] {
+    width: var(--sidebar-width) !important;
+    opacity: 1 !important;
+  }
+  
+  /* 모바일 Sheet 애니메이션 개선 - 더 자연스러운 스프링 느낌 */
+  /* Sheet Content의 애니메이션 개선 */
+  [data-sidebar="sidebar"][data-mobile="true"],
+  [data-slot="sheet-content"][data-sidebar="sidebar"] {
+    transition: transform 350ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+  
+  /* 모바일 Sheet Overlay 애니메이션 개선 */
+  [data-slot="sheet-overlay"] {
+    transition: opacity 250ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+  
+  /* Sheet 애니메이션 타이밍 개선 */
+  [data-slot="sheet-content"] {
+    transition-duration: 350ms !important;
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+  
+  /* ActivityPostForm 모바일 Sheet 너비 및 배경색 개선 */
+  [data-sidebar="sidebar"][data-mobile="true"] {
+    max-width: 26rem !important; /* 더 넓게 (기존 18rem → 26rem) */
+    width: 85% !important; /* 화면의 85% */
+    background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 50%, #f8fafc 100%) !important;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12) !important;
+    border-right: 1px solid rgba(226, 232, 240, 0.8) !important;
+  }
+
+  /* Color Selector 드롭다운 스크롤바 스타일 */
+  .color-selector-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .color-selector-scroll::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 3px;
+  }
+
+  .color-selector-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.4);
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+  }
+
+  .color-selector-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(148, 163, 184, 0.7);
+  }
+
+  /* Firefox 스크롤바 */
+  .color-selector-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+  }
+
+  /* Slash Command 드롭다운 스크롤바 스타일 */
+  .slash-command-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .slash-command-scroll::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 3px;
+  }
+
+  .slash-command-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.4);
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+  }
+
+  .slash-command-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(148, 163, 184, 0.7);
+  }
+
+  /* Firefox 스크롤바 */
+  .slash-command-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+  }
+}
 

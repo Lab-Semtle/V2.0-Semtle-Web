@@ -11,3 +11,12 @@ COMMENT ON COLUMN resources.file_size IS '파일 크기 (바이트)';
 COMMENT ON COLUMN resources.file_extension IS '파일 확장자';
 COMMENT ON COLUMN resources.original_filename IS '원본 파일명';
 COMMENT ON COLUMN resources.file_type IS '파일 MIME 타입';
+
+
+
+
+
+
+
+
+

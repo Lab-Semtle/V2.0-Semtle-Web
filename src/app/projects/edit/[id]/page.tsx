@@ -160,6 +160,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
             onSave={handleSave}
             isEditing={true}
             loading={false}
+            postId={resolvedParams.id}
             initialData={{
                 title: project.title,
                 description: project.subtitle,

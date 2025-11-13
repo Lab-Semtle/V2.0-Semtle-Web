@@ -46,20 +46,20 @@ export default function UserDropdownShadcn() {
     return (
         <DropdownMenu modal={false} open={isOpen} onOpenChange={setIsOpen}>
             <DropdownMenuTrigger asChild>
-                <button className="group flex items-center space-x-1 md:space-x-2 lg:space-x-2 px-2 md:px-3 lg:px-3 py-1.5 md:py-1.5 lg:py-1.5 rounded-lg md:rounded-xl lg:rounded-xl bg-white/90 backdrop-blur-sm transition-all duration-200 w-auto md:w-40 lg:w-44 focus:outline-none focus:ring-0">
+                <button className="group flex items-center space-x-1.5 md:space-x-2 px-2 md:px-2.5 py-1.5 md:py-1.5 rounded-lg bg-transparent hover:bg-secondary transition-all duration-200 w-auto focus:outline-none focus:ring-0">
                     {/* 아바타 */}
                     <div className="relative flex-shrink-0">
-                        <div className="w-6 md:w-7 lg:w-7 h-6 md:h-7 lg:h-7 bg-slate-200 rounded-full flex items-center justify-center shadow-sm overflow-hidden relative">
+                        <div className="w-6 md:w-7 h-6 md:h-7 bg-muted rounded-full flex items-center justify-center overflow-hidden relative">
                             {profile?.profile_image ? (
                                 <Image
                                     src={profile.profile_image}
                                     alt={profile.nickname || profile.name || '사용자'}
                                     fill
-                                    sizes="32px"
+                                    sizes="28px"
                                     className="object-cover"
                                 />
                             ) : (
-                                <span className="text-slate-600 text-xs md:text-sm font-semibold">
+                                <span className="text-muted-foreground text-xs md:text-sm font-semibold">
                                     {(profile?.nickname || profile?.name || '사용자').charAt(0).toUpperCase()}
                                 </span>
                             )}
@@ -67,30 +67,30 @@ export default function UserDropdownShadcn() {
                     </div>
 
                     {/* 사용자 이름 - 태블릿부터 표시 */}
-                    <span className="hidden md:block text-xs lg:text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 flex-1 text-left truncate">
+                    <span className="hidden md:block text-xs md:text-sm font-medium text-foreground group-hover:text-foreground/80 transition-colors duration-200 flex-1 text-left truncate">
                         {profile?.nickname || profile?.name || '사용자'}
                     </span>
 
                     {/* 드롭다운 토글 아이콘 - 상태 기반 제어 */}
-                    <div className="flex-shrink-0 w-3 h-3 md:w-3 md:h-3 lg:w-4 lg:h-4 flex items-center justify-center relative">
+                    <div className="flex-shrink-0 w-3 h-3 md:w-3.5 md:h-3.5 flex items-center justify-center relative">
                         {!isOpen ? (
-                            <ChevronDown className="w-3 h-3 md:w-3 md:h-3 lg:w-4 lg:h-4 text-gray-500 group-hover:text-blue-600 transition-all duration-200" />
+                            <ChevronDown className="w-3 h-3 md:w-3.5 md:h-3.5 text-muted-foreground group-hover:text-foreground transition-all duration-200" />
                         ) : (
-                            <ChevronUp className="w-3 h-3 md:w-3 md:h-3 lg:w-4 lg:h-4 text-gray-500 group-hover:text-blue-600 transition-all duration-200" />
+                            <ChevronUp className="w-3 h-3 md:w-3.5 md:h-3.5 text-muted-foreground group-hover:text-foreground transition-all duration-200" />
                         )}
                     </div>
                 </button>
             </DropdownMenuTrigger>
 
             <DropdownMenuContent
-                className="w-72 md:w-60 lg:w-64 bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl p-2"
+                className="w-72 md:w-60 lg:w-64 bg-background border border-border rounded-2xl p-2 shadow-none"
                 align="end"
                 sideOffset={8}
                 onCloseAutoFocus={(e) => e.preventDefault()}
             >
                 <DropdownMenuLabel className="px-3 md:px-3 lg:px-4 py-2">
                     <div className="flex items-center space-x-3">
-                        <div className="w-8 md:w-9 lg:w-10 h-8 md:h-9 lg:h-10 bg-slate-200 rounded-full flex items-center justify-center shadow-lg overflow-hidden relative">
+                        <div className="w-8 md:w-9 lg:w-10 h-8 md:h-9 lg:h-10 bg-slate-200 rounded-full flex items-center justify-center overflow-hidden relative">
                             {profile?.profile_image ? (
                                 <Image
                                     src={profile.profile_image}

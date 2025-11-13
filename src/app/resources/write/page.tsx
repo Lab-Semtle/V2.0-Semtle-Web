@@ -7,7 +7,9 @@ import ResourcePostForm from '@/components/forms/ResourcePostForm';
 interface PostFormData {
   title: string;
   description: string;
+  subtitle?: string;
   category: string;
+  category_id?: number;
   thumbnail: string;
   status?: string;
   resource_type_id?: number;
@@ -24,7 +26,7 @@ interface PostFormData {
 }
 
 export default function WriteResourcePage() {
-  const { user, loading, profile } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
 
   const handleSave = async (formData: PostFormData, content: unknown) => {
@@ -46,19 +48,25 @@ export default function WriteResourcePage() {
         throw new Error(errorData.error || '자료 저장에 실패했습니다.');
       }
 
-      await response.json();
-
       // 상태에 따라 다른 메시지 표시
+      const responseData = await response.json();
+
       if (formData.status === 'draft') {
-        alert('자료가 임시저장되었습니다!');
-      } else {
-        alert('자료가 성공적으로 등록되었습니다!');
-        // 사용자 프로필 페이지로 이동
-        if (profile?.nickname) {
-          router.push(`/profile/${profile.nickname}`);
+        // 임시저장된 자료의 편집 페이지로 이동 (버전 목록 확인 가능)
+        if (responseData.resource?.id) {
+          // alert는 비동기로 처리하고, 렌더링 완료 후 이동
+          window.setTimeout(() => {
+            alert('자료가 임시저장되었습니다!');
+            router.push(`/resources/edit/${responseData.resource.id}`);
+          }, 100);
         } else {
-          router.push('/mypage');
+          alert('자료가 임시저장되었습니다!');
         }
+      } else {
+        window.setTimeout(() => {
+          alert('자료가 성공적으로 등록되었습니다!');
+          router.push('/resources');
+        }, 100);
       }
     } catch (error) {
       throw error;

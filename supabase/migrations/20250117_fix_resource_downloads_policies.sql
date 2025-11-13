@@ -37,3 +37,12 @@ CREATE POLICY "resource_downloads_delete_policy" ON resource_downloads
             AND resources.author_id = auth.uid()
         )
     );
+
+
+
+
+
+
+
+
+

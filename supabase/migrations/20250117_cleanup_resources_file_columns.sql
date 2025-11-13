@@ -33,3 +33,12 @@ COMMENT ON TABLE resource_files IS '자료에 첨부된 파일들 (여러 파일
 -- COMMENT ON COLUMN resources.file_extension IS '파일 확장자';
 -- COMMENT ON COLUMN resources.original_filename IS '원본 파일명';
 -- COMMENT ON COLUMN resources.file_type IS '파일 MIME 타입';
+
+
+
+
+
+
+
+
+

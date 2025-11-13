@@ -16,7 +16,7 @@ interface RawComment {
     updated_at?: string;
     parent_id?: number;
     is_deleted: boolean;
-    likes_count: { count: number }[];
+    likes_count: number; // 테이블에 직접 저장된 값
 }
 
 // 최종 변환된 댓글 타입
@@ -32,16 +32,11 @@ interface CommentWithLikes {
     replies?: CommentWithLikes[];
 }
 
-// 좋아요 수를 숫자로 변환하는 헬퍼 함수
-function normalizeLikesCount(likesCount: { count: number }[]): number {
-    return likesCount[0]?.count || 0;
-}
-
 // RawComment를 CommentWithLikes로 변환하는 헬퍼 함수
 function transformComment(rawComment: RawComment): CommentWithLikes {
     return {
         ...rawComment,
-        likes_count: normalizeLikesCount(rawComment.likes_count)
+        likes_count: rawComment.likes_count || 0
     };
 }
 
@@ -80,28 +75,100 @@ export async function GET(
         };
 
         const postTable = postTableMap[postType as keyof typeof postTableMap];
-        const postIdField = postType === 'activity' ? 'id' : 'id';
 
-        const { data: post } = await supabase
-            .from(postTable)
-            .select('id, status')
-            .eq(postIdField, postIdNum)
-            .eq('status', 'published')
-            .single();
+        // 댓글은 활동 게시물(activities) 테이블과 직접 연결됨 (버전과 무관)
+        // activity_versions ID가 전달되면 activities 테이블 ID로 변환
+        interface Post {
+            id: number;
+            status?: string;
+        }
+
+        let actualPostId = postIdNum;
+        let post: Post | null = null;
+
+        if (postType === 'activity') {
+            // 중요: 댓글은 activities 테이블 ID로 조회해야 함
+            // 먼저 activities 테이블에서 직접 조회 시도
+            const { data: activityDirect } = await supabase
+                .from('activities')
+                .select('id, status')
+                .eq('id', postIdNum)
+                .maybeSingle();
+
+            if (activityDirect) {
+                // activities 테이블에서 직접 찾음 - 올바른 ID
+                post = activityDirect;
+                actualPostId = postIdNum;
+            } else {
+                // activities 테이블에서 찾지 못했으면 activity_versions의 ID일 가능성
+                // activity_versions에서 activity_id 찾기 (댓글은 activities ID로 조회해야 함)
+                const { data: version } = await supabase
+                    .from('activity_versions')
+                    .select('activity_id')
+                    .eq('id', postIdNum)
+                    .maybeSingle();
+
+                if (version && version.activity_id) {
+                    // activity_versions의 ID를 activities 테이블 ID로 변환
+                    // 댓글은 항상 activities 테이블 ID로 조회해야 함
+                    actualPostId = version.activity_id;
+
+                    // 올바른 activity_id로 activities 테이블에서 조회
+                    const { data: activityRetry } = await supabase
+                        .from('activities')
+                        .select('id, status')
+                        .eq('id', actualPostId)
+                        .maybeSingle();
+
+                    if (activityRetry) {
+                        post = activityRetry;
+                    }
+                }
+            }
+        } else if (postType === 'resource') {
+            // resources 테이블의 경우 새 스키마 고려
+            // resources 테이블의 status는 enum 타입 ('draft', 'public', 'private')
+            const { data: resourceData, error: resourceError } = await supabase
+                .from('resources')
+                .select('id, status')
+                .eq('id', postIdNum)
+                .eq('status', 'public')
+                .maybeSingle();
+
+            if (resourceError || !resourceData) {
+                console.error('❌ resources 조회 실패 - error:', resourceError);
+                post = null;
+            } else {
+                post = resourceData;
+            }
+        } else {
+            // 다른 타입은 기존 로직 사용
+            let postQuery = supabase
+                .from(postTable)
+                .select('id, status')
+                .eq('id', postIdNum);
+
+            if (postType === 'activity') {
+                // activities: status가 'public' 또는 'private'인 경우만 (draft는 제외)
+                postQuery = postQuery.in('status', ['public', 'private']);
+            } else {
+                // projects: 기존대로 'published' 상태만
+                postQuery = postQuery.eq('status', 'published');
+            }
+
+            const { data: postData } = await postQuery.maybeSingle();
+            post = postData;
+        }
 
         if (!post) {
             return NextResponse.json({ error: '게시물을 찾을 수 없습니다.' }, { status: 404 });
         }
 
-        // 댓글 조회 (부모 댓글만) - 좋아요 수 포함
-        const likeTable = commentTable.replace('_comments', '_comment_likes');
+        // 댓글 조회 (부모 댓글만) - 좋아요 수는 테이블에 저장된 값 사용
         const { data: comments, error } = await supabase
             .from(commentTable)
-            .select(`
-                *,
-                likes_count:${likeTable}(count)
-            `)
-            .eq(`${postType}_id`, postIdNum)
+            .select('*')
+            .eq(`${postType}_id`, actualPostId)
             .is('parent_id', null)
             .eq('is_deleted', false)
             .order('created_at', { ascending: true });
@@ -116,10 +183,7 @@ export async function GET(
             (comments as unknown as RawComment[] || []).map(async (comment: RawComment) => {
                 const { data: replies } = await supabase
                     .from(commentTable)
-                    .select(`
-                        *,
-                        likes_count:${likeTable}(count)
-                    `)
+                    .select('*')
                     .eq('parent_id', comment.id)
                     .eq('is_deleted', false)
                     .order('created_at', { ascending: true });
@@ -175,10 +239,12 @@ export async function POST(
     request: NextRequest,
     { params }: { params: Promise<{ postType: string; postId: string }> }
 ) {
+    console.log('📝 POST /api/comments/[postType]/[postId] - 댓글 생성 요청');
     try {
         const supabase = await createServerSupabase();
         const resolvedParams = await params;
         const { postType, postId } = resolvedParams;
+        console.log('📝 파라미터 - postType:', postType, 'postId:', postId);
         const postIdNum = parseInt(postId);
 
         if (isNaN(postIdNum)) {
@@ -219,19 +285,119 @@ export async function POST(
         const postTable = postTableMap[postType as keyof typeof postTableMap];
         const postIdField = postType === 'activity' ? 'id' : 'id';
 
-        const { data: post } = await supabase
-            .from(postTable)
-            .select('id, title, author_id')
-            .eq(postIdField, postIdNum)
-            .eq('status', 'published')
-            .single();
-
-        if (!post) {
-            return NextResponse.json({ error: '게시물을 찾을 수 없습니다.' }, { status: 404 });
+        interface PostForComment {
+            id: number;
+            title: string;
+            author_id: string;
         }
 
+        let post: PostForComment | null = null;
+
+        if (postType === 'activity') {
+            // activities 테이블의 경우 새 스키마 고려
+            // activities 테이블에는 title이 없고, published_version_id를 통해 activity_versions에서 가져와야 함
+            const { data: activityData, error: activityError } = await supabase
+                .from('activities')
+                .select('id, published_version_id')
+                .eq('id', postIdNum)
+                .in('status', ['public', 'private'])
+                .single();
+
+            console.log('📝 activities 조회 결과 - activityData:', activityData, 'error:', activityError);
+
+            if (activityError || !activityData) {
+                console.error('❌ activities 조회 실패 - error:', activityError);
+                return NextResponse.json({ error: '게시물을 찾을 수 없습니다.' }, { status: 404 });
+            }
+
+            // published_version_id를 통해 실제 컨텐츠 정보 가져오기
+            if (activityData.published_version_id) {
+                const { data: versionData, error: versionError } = await supabase
+                    .from('activity_versions')
+                    .select('id, title, author_id')
+                    .eq('id', activityData.published_version_id)
+                    .single();
+
+                console.log('📝 activity_versions 조회 결과 - versionData:', versionData, 'error:', versionError);
+
+                if (versionError || !versionData) {
+                    console.error('❌ activity_versions 조회 실패 - error:', versionError);
+                    return NextResponse.json({ error: '게시물을 찾을 수 없습니다.' }, { status: 404 });
+                }
+
+                post = {
+                    id: activityData.id,
+                    title: versionData.title,
+                    author_id: versionData.author_id
+                };
+            } else {
+                console.error('❌ published_version_id가 없음');
+                return NextResponse.json({ error: '게시물을 찾을 수 없습니다.' }, { status: 404 });
+            }
+        } else if (postType === 'resource') {
+            // resources 테이블의 경우 새 스키마 고려
+            // resources 테이블에는 title이 없고, published_version_id를 통해 resource_versions에서 가져와야 함
+            const { data: resourceData, error: resourceError } = await supabase
+                .from('resources')
+                .select('id, published_version_id')
+                .eq('id', postIdNum)
+                .eq('status', 'public')
+                .single();
+
+            console.log('📝 resources 조회 결과 - resourceData:', resourceData, 'error:', resourceError);
+
+            if (resourceError || !resourceData) {
+                console.error('❌ resources 조회 실패 - error:', resourceError);
+                return NextResponse.json({ error: '게시물을 찾을 수 없습니다.' }, { status: 404 });
+            }
+
+            // published_version_id를 통해 실제 컨텐츠 정보 가져오기
+            if (resourceData.published_version_id) {
+                const { data: versionData, error: versionError } = await supabase
+                    .from('resource_versions')
+                    .select('id, title, author_id')
+                    .eq('id', resourceData.published_version_id)
+                    .single();
+
+                console.log('📝 resource_versions 조회 결과 - versionData:', versionData, 'error:', versionError);
+
+                if (versionError || !versionData) {
+                    console.error('❌ resource_versions 조회 실패 - error:', versionError);
+                    return NextResponse.json({ error: '게시물을 찾을 수 없습니다.' }, { status: 404 });
+                }
+
+                post = {
+                    id: resourceData.id,
+                    title: versionData.title,
+                    author_id: versionData.author_id
+                };
+            } else {
+                console.error('❌ published_version_id가 없음');
+                return NextResponse.json({ error: '게시물을 찾을 수 없습니다.' }, { status: 404 });
+            }
+        } else {
+            // projects: 기존 로직 사용
+            const postQuery = supabase
+                .from(postTable)
+                .select('id, title, author_id')
+                .eq(postIdField, postIdNum)
+                .eq('status', 'published');
+
+            const { data: postData, error: postError } = await postQuery.single();
+
+            if (!postData || postError) {
+                console.error('❌ 게시물 조회 실패 - post:', postData, 'error:', postError);
+                return NextResponse.json({ error: '게시물을 찾을 수 없습니다.' }, { status: 404 });
+            }
+
+            post = postData;
+        }
+
+        console.log('✅ 게시물 조회 성공 - id:', post.id, 'title:', post.title, 'author_id:', post.author_id);
+
         // 댓글 생성
-        const likeTable = commentTable.replace('_comments', '_comment_likes');
+        console.log('📝 댓글 생성 시작 - commentTable:', commentTable, 'postIdNum:', postIdNum, 'userId:', user.id);
+
         const { data: newComment, error } = await supabase
             .from(commentTable)
             .insert({
@@ -240,16 +406,15 @@ export async function POST(
                 content: content.trim(),
                 parent_id: parent_id || null
             })
-            .select(`
-                *,
-                likes_count:${likeTable}(count)
-            `)
+            .select('*')
             .single();
 
         if (error) {
-            console.error('댓글 생성 오류:', error);
+            console.error('❌ 댓글 생성 오류:', error);
             return NextResponse.json({ error: '댓글 생성에 실패했습니다.' }, { status: 500 });
         }
+
+        console.log('✅ 댓글 생성 성공 - commentId:', newComment?.id);
 
         // 사용자 정보 조회
         const { data: userProfile } = await supabase

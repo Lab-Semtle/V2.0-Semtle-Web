@@ -6,9 +6,18 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id: activityId } = await params;
+        const { id: idParam } = await params;
         const { voteOption } = await request.json();
         const supabase = await createServerSupabase();
+
+        // activityId를 숫자로 변환
+        const activityId = parseInt(idParam);
+        if (isNaN(activityId)) {
+            return NextResponse.json(
+                { error: '유효하지 않은 활동 ID입니다.' },
+                { status: 400 }
+            );
+        }
 
         // 사용자 인증 확인
         const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -19,22 +28,61 @@ export async function POST(
             );
         }
 
-        // 활동 정보 조회
+        // 활동 정보 조회 (새 스키마: activities 테이블에는 메타데이터만 있고, 내용은 activity_versions에 있음)
         const { data: activity, error: activityError } = await supabase
             .from('activities')
-            .select('id, title, has_voting, vote_deadline, vote_options')
+            .select('id, published_version_id')
             .eq('id', activityId)
-            .single();
+            .maybeSingle();
 
-        if (activityError || !activity) {
+        if (activityError) {
+            console.error('활동 조회 오류:', activityError);
+            return NextResponse.json(
+                { error: '활동 조회 중 오류가 발생했습니다.' },
+                { status: 500 }
+            );
+        }
+
+        if (!activity) {
+            console.error('활동을 찾을 수 없음:', { activityId, userId: user.id });
             return NextResponse.json(
                 { error: '활동을 찾을 수 없습니다.' },
                 { status: 404 }
             );
         }
 
+        // 출판된 버전 정보 조회 (투표 관련 정보는 버전에 있음)
+        if (!activity.published_version_id) {
+            return NextResponse.json(
+                { error: '출판된 버전이 없습니다. 먼저 활동을 출판해주세요.' },
+                { status: 400 }
+            );
+        }
+
+        const { data: versionInfo, error: versionError } = await supabase
+            .from('activity_versions')
+            .select('id, has_voting, vote_deadline, vote_options')
+            .eq('id', activity.published_version_id)
+            .maybeSingle();
+
+        if (versionError) {
+            console.error('버전 조회 오류:', versionError);
+            return NextResponse.json(
+                { error: '버전 조회 중 오류가 발생했습니다.' },
+                { status: 500 }
+            );
+        }
+
+        if (!versionInfo) {
+            console.error('버전을 찾을 수 없음:', { publishedVersionId: activity.published_version_id, activityId });
+            return NextResponse.json(
+                { error: '출판된 버전을 찾을 수 없습니다.' },
+                { status: 404 }
+            );
+        }
+
         // 투표 기능이 활성화되어 있는지 확인
-        if (!activity.has_voting) {
+        if (!versionInfo.has_voting) {
             return NextResponse.json(
                 { error: '이 활동은 투표 기능이 비활성화되어 있습니다.' },
                 { status: 400 }
@@ -42,8 +90,8 @@ export async function POST(
         }
 
         // 투표 마감일 확인
-        if (activity.vote_deadline) {
-            const deadline = new Date(activity.vote_deadline);
+        if (versionInfo.vote_deadline) {
+            const deadline = new Date(versionInfo.vote_deadline);
             const now = new Date();
             if (now > deadline) {
                 return NextResponse.json(
@@ -54,7 +102,14 @@ export async function POST(
         }
 
         // 투표 옵션이 유효한지 확인
-        const voteOptions = activity.vote_options as Array<{ text: string }>;
+        const voteOptions = versionInfo.vote_options as Array<{ text: string }>;
+        if (!voteOptions || !Array.isArray(voteOptions)) {
+            return NextResponse.json(
+                { error: '투표 옵션이 설정되지 않았습니다.' },
+                { status: 400 }
+            );
+        }
+
         const isValidOption = voteOptions.some(option => option.text === voteOption);
         if (!isValidOption) {
             return NextResponse.json(
@@ -154,8 +209,17 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id: activityId } = await params;
+        const { id: idParam } = await params;
         const supabase = await createServerSupabase();
+
+        // activityId를 숫자로 변환
+        const activityId = parseInt(idParam);
+        if (isNaN(activityId)) {
+            return NextResponse.json(
+                { error: '유효하지 않은 활동 ID입니다.' },
+                { status: 400 }
+            );
+        }
 
         // 사용자 인증 확인
         const { data: { user }, error: authError } = await supabase.auth.getUser();

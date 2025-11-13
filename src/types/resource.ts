@@ -7,12 +7,45 @@ import { Post } from './post';
 export interface ResourcePost extends Post {
     resource_data?: ResourceData;
     files?: ResourceFile[];
-    // resources 테이블에 직접 저장되는 필드들
+    downloads_count?: number;
+    published_version_id?: number;
+    republished_at?: string;
+    // 버전 관리로 인해 이 필드들은 resource_versions로 이동
+    // subject?: string;
+    // professor?: string;
+    // semester?: string;
+    // year?: number;
+    // difficulty_level?: 'beginner' | 'intermediate' | 'advanced';
+}
+
+export interface ResourceVersion {
+    id: number;
+    resource_id: number;
+    author_id: string;
+    version_number: number;
+    version_code: string;
+    parent_version_id?: number;
+    version_label?: string;
+    title: string;
+    subtitle?: string;
+    content: unknown;
+    thumbnail?: string[];
+    category_id?: number;
+    resource_type_id?: number;
+    file_url?: string;
+    file_size?: number;
+    file_extension?: string;
+    original_filename?: string;
+    year?: number;
+    semester?: string;
     subject?: string;
     professor?: string;
-    semester?: string;
-    year?: number;
     difficulty_level?: 'beginner' | 'intermediate' | 'advanced';
+    rating?: number;
+    rating_count?: number;
+    tags?: string[];
+    created_at: string;
+    updated_at: string;
 }
 
 export interface ResourceFile {
@@ -67,13 +100,13 @@ export interface ResourceCreateData {
     title: string;
     subtitle?: string;
     content: unknown;
-    thumbnail?: string;
+    thumbnail?: string | string[];
     category_id: number;
-    status?: 'draft' | 'published';
+    status?: 'draft' | 'public' | 'private';  // 새 스키마: draft, public, private
     tags?: string[];
 
     // 자료 특화 정보
-    resource_type_id: number;
+    resource_type_id?: number;
     file_extension?: string;
     original_filename?: string;
     file_size?: number;
@@ -82,9 +115,9 @@ export interface ResourceCreateData {
     professor?: string;
     semester?: string;
     year?: number;
-    difficulty_level: 'beginner' | 'intermediate' | 'advanced';
-    rating: number;
-    rating_count: number;
+    difficulty_level?: 'beginner' | 'intermediate' | 'advanced';
+    rating?: number;
+    rating_count?: number;
 }
 
 export interface ResourceUpdateData {
@@ -92,9 +125,9 @@ export interface ResourceUpdateData {
     title?: string;
     subtitle?: string;
     content?: unknown;
-    thumbnail?: string;
+    thumbnail?: string | string[];
     category_id?: number;
-    status?: 'draft' | 'published' | 'hidden';
+    status?: 'draft' | 'public' | 'private';  // 새 스키마
     tags?: string[];
 
     // 자료 특화 정보

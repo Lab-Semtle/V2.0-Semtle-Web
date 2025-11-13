@@ -16,35 +16,50 @@ export interface BoardCategory {
     created_at: string;
 }
 
+// Post 타입 정의 복사
 export interface Post {
     id: number;
     title: string;
     subtitle?: string;
-    content: JSONContent;
     thumbnail?: string;
-    board_type: 'activities' | 'projects' | 'resources';
-    category_id: number;
-    category?: BoardCategory;
-    author_id: string;
-    author?: {
-        id: string;
-        nickname: string;
-        name: string;
-        profile_image?: string;
-        role: string;
-    };
-    status: 'draft' | 'published' | 'hidden' | 'deleted';
-    is_pinned: boolean;
-    is_featured: boolean;
+  post_type: 'project' | 'resource' | 'activity';
+  status: 'published' | 'draft' | 'hidden' | 'private';
+  visibility?: 'public' | 'private' | 'unlisted';
     views: number;
     likes_count: number;
+  comments_count: number;
     bookmarks_count: number;
-    comments_count: number;
-    tags: string[];
-    attachments: unknown[];
     created_at: string;
-    updated_at: string;
     published_at?: string;
+  author_id: string;
+  category?: {
+    name: string;
+    color?: string;
+  };
+  project_type?: { name: string };
+  resource_type?: { name: string };
+  activity_type?: { name: string };
+  project_data?: {
+    needed_skills?: string[];
+    team_size?: number;
+    current_members?: number;
+    difficulty?: string;
+    location?: string;
+    deadline?: string;
+    project_status?: string;
+    progress_percentage?: number;
+  };
+  project_status_info?: {
+    name: string;
+    display_name: string;
+    color: string;
+    icon: string;
+  };
+  author?: {
+    profile_image?: string;
+    nickname?: string;
+    name?: string;
+  };
 }
 
 export interface PostCreateData {

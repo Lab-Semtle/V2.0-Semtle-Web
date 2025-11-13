@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
         const project_status = searchParams.get('project_status'); // 기본값 제거
         const deadline_from = searchParams.get('deadline_from');
         const deadline_to = searchParams.get('deadline_to');
+        const author_id = searchParams.get('author_id');
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '20');
 
@@ -52,6 +53,10 @@ export async function GET(request: NextRequest) {
 
         if (project_status && project_status !== 'all') {
             query = query.eq('project_status', project_status);
+        }
+
+        if (author_id) {
+            query = query.eq('author_id', author_id);
         }
 
         if (deadline_from) {

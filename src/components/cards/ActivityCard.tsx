@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ActivityPost } from '@/types/activity';
-import { Calendar, MapPin, Users, Clock, Vote, Pin, Star, CheckCircle, ArrowRight } from 'lucide-react';
+import { Calendar, MapPin, Users, Clock, Vote, Pin, CheckCircle, ArrowRight } from 'lucide-react';
 
 interface ActivityCardProps {
     activity: ActivityPost;
@@ -14,14 +14,21 @@ interface ActivityCardProps {
 export default function ActivityCard({ activity, className = '' }: ActivityCardProps) {
     const [imageError, setImageError] = useState(false);
 
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('ko-KR', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+    const formatDate = (dateString: string | null | undefined) => {
+        if (!dateString) return '';
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+            return date.toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch {
+            return '';
+        }
     };
 
 
@@ -61,34 +68,36 @@ export default function ActivityCard({ activity, className = '' }: ActivityCardP
             <article className={`group bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden hover:shadow-2xl hover:border-blue-200 transition-all duration-300 hover:-translate-y-2 hover:bg-blue-50/30 ${className}`}>
                 {/* 썸네일 */}
                 <div className="relative aspect-video w-full overflow-hidden">
-                    {activity.thumbnail && !imageError ? (
-                        <Image
-                            src={activity.thumbnail}
-                            alt={activity.title}
-                            fill
-                            className="object-cover group-hover:scale-110 transition-transform duration-300"
-                            onError={() => setImageError(true)}
-                        />
-                    ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center group-hover:from-blue-200 group-hover:to-indigo-200 transition-all duration-300">
-                            <span className="text-blue-400 text-4xl font-bold group-hover:text-blue-500 transition-colors duration-300">
-                                A
-                            </span>
-                        </div>
-                    )}
+                    {(() => {
+                        // thumbnail을 배열로 변환하고 첫 번째 이미지 사용
+                        const thumbnails = Array.isArray(activity.thumbnail)
+                            ? activity.thumbnail
+                            : (activity.thumbnail ? [activity.thumbnail] : []);
+                        const firstThumbnail = thumbnails.length > 0 ? thumbnails[0] : null;
+
+                        return firstThumbnail && !imageError ? (
+                            <Image
+                                src={firstThumbnail}
+                                alt={activity.title}
+                                fill
+                                className="object-cover group-hover:scale-110 transition-transform duration-300"
+                                onError={() => setImageError(true)}
+                            />
+                        ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center group-hover:from-blue-200 group-hover:to-indigo-200 transition-all duration-300">
+                                <span className="text-blue-400 text-4xl font-bold group-hover:text-blue-500 transition-colors duration-300">
+                                    A
+                                </span>
+                            </div>
+                        );
+                    })()}
 
                     {/* 배지들 */}
                     <div className="absolute top-3 left-3 flex gap-2">
-                        {activity.is_pinned && (
+                        {((activity as unknown as { is_pinned?: boolean }).is_pinned === true) && (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-amber-500 text-white shadow-md">
                                 <Pin className="w-3 h-3 mr-1" />
                                 고정
-                            </span>
-                        )}
-                        {activity.is_featured && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-purple-500 text-white shadow-md">
-                                <Star className="w-3 h-3 mr-1" />
-                                추천
                             </span>
                         )}
                     </div>
@@ -132,84 +141,78 @@ export default function ActivityCard({ activity, className = '' }: ActivityCardP
                     )}
 
                     {/* 활동 정보 */}
-                    {activity.activity_data && (
-                        <div className="space-y-2 mb-4">
-                            {activity.activity_data.start_date && (
-                                <div className="flex items-center gap-2 text-sm text-slate-600">
-                                    <Calendar className="w-4 h-4" />
-                                    <span>{formatDate(activity.activity_data.start_date)}</span>
-                                    {activity.activity_data.end_date && (
-                                        <span>~ {formatDate(activity.activity_data.end_date)}</span>
-                                    )}
-                                </div>
-                            )}
+                    <div className="space-y-2 mb-4">
+                        {/* 시작일자와 종료일자가 모두 있는 경우에만 표시, 없으면 게시물 작성일자 표시 */}
+                        {activity.activity_data?.start_date && activity.activity_data?.end_date ? (
+                            <div className="flex items-center gap-2 text-sm text-slate-600">
+                                <Calendar className="w-4 h-4" />
+                                <span>{formatDate(activity.activity_data.start_date)}</span>
+                                <span>~ {formatDate(activity.activity_data.end_date)}</span>
+                            </div>
+                        ) : (
+                            (() => {
+                                // 게시물 작성일자: published_at 우선, 없으면 activity_versions의 created_at, 마지막으로 activity의 id 기준 추정
+                                interface ActivityWithDates extends Omit<ActivityPost, 'created_at'> {
+                                    published_at?: string;
+                                    created_at?: string;
+                                }
+                                const activityWithDates = activity as ActivityWithDates;
+                                const displayDate = activityWithDates.published_at
+                                    || activityWithDates.created_at  // activity_versions의 created_at
+                                    || null;
 
-                            {activity.activity_data.location && (
-                                <div className="flex items-center gap-2 text-sm text-slate-600">
-                                    <MapPin className="w-4 h-4" />
-                                    <span>{activity.activity_data.location}</span>
-                                </div>
-                            )}
+                                if (!displayDate) {
+                                    return null;
+                                }
 
-                            {activity.activity_data.max_participants && (
-                                <div className="flex items-center gap-2 text-sm text-slate-600">
-                                    <Users className="w-4 h-4" />
-                                    <span>
-                                        {activity.activity_data.current_participants} / {activity.activity_data.max_participants}명
-                                    </span>
-                                </div>
-                            )}
+                                const formattedDate = formatDate(displayDate);
+                                // 날짜가 포맷되었을 때만 표시
+                                return formattedDate ? (
+                                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                                        <Calendar className="w-4 h-4" />
+                                        <span>{formattedDate}</span>
+                                    </div>
+                                ) : null;
+                            })()
+                        )}
 
-                            {activity.activity_data?.has_voting && activity.activity_data?.vote_options && (
-                                <div className="flex items-center gap-2 text-sm text-slate-600">
-                                    <Vote className="w-4 h-4" />
-                                    <span>{activity.activity_data.vote_options.length}개 옵션</span>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                        {activity.activity_data?.location && (
+                            <div className="flex items-center gap-2 text-sm text-slate-600">
+                                <MapPin className="w-4 h-4" />
+                                <span>{activity.activity_data.location}</span>
+                            </div>
+                        )}
 
-                    {/* 태그 */}
-                    {activity.tags && activity.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-4">
-                            {activity.tags.slice(0, 3).map((tag, index) => (
-                                <span
-                                    key={index}
-                                    className="px-2 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium"
-                                >
-                                    #{tag}
+                        {activity.activity_data?.max_participants && (
+                            <div className="flex items-center gap-2 text-sm text-slate-600">
+                                <Users className="w-4 h-4" />
+                                <span>
+                                    {activity.activity_data.current_participants} / {activity.activity_data.max_participants}명
+                                </span>
+                            </div>
+                        )}
+
+                        {activity.activity_data?.has_voting && activity.activity_data?.vote_options && (
+                            <div className="flex items-center gap-2 text-sm text-slate-600">
+                                <Vote className="w-4 h-4" />
+                                <span>{activity.activity_data.vote_options.length}개 옵션</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 태그 - 하단 */}
+                    {(((activity as unknown as { tags?: string[] }).tags ?? []).length > 0) && (
+                        <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1">
+                            {(((activity as unknown as { tags?: string[] }).tags ?? []).slice(0, 3)).map((tag: string, index: number) => (
+                                <span key={index} className="px-2 py-1 bg-black/70 text-white rounded-lg text-xs font-medium shadow-sm">
+                                    {tag}
                                 </span>
                             ))}
-                            {activity.tags.length > 3 && (
-                                <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium">
-                                    +{activity.tags.length - 3}
+                            {(((activity as unknown as { tags?: string[] }).tags ?? []).length > 3) && (
+                                <span className="px-2 py-1 bg-black/70 text-white rounded-lg text-xs font-medium shadow-sm">
+                                    +{(((activity as unknown as { tags?: string[] }).tags ?? []).length - 3)}
                                 </span>
                             )}
-                        </div>
-                    )}
-
-                    {/* 작성자 정보 */}
-                    {activity.author && (
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
-                                {activity.author.profile_image ? (
-                                    <Image
-                                        src={activity.author.profile_image}
-                                        alt={activity.author.nickname}
-                                        width={32}
-                                        height={32}
-                                        className="w-full h-full object-cover rounded-full"
-                                    />
-                                ) : (
-                                    <span className="text-white text-sm font-bold">
-                                        {activity.author.nickname.charAt(0).toUpperCase()}
-                                    </span>
-                                )}
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-900">{activity.author.nickname}</p>
-                                <p className="text-xs text-slate-500">{activity.author.name}</p>
-                            </div>
                         </div>
                     )}
 

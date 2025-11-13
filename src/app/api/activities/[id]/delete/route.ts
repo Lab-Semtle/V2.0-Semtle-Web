@@ -16,6 +16,20 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
             );
         }
 
+        // 활동 정보 조회 (작성자 확인용)
+        const { data: activity, error: activityError } = await supabase
+            .from('activities')
+            .select('id, author_id')
+            .eq('id', activityId)
+            .maybeSingle();
+
+        if (activityError || !activity) {
+            return NextResponse.json(
+                { error: '활동을 찾을 수 없습니다.' },
+                { status: 404 }
+            );
+        }
+
         // 사용자 프로필 확인
         const { data: userProfile } = await supabase
             .from('user_profiles')
@@ -23,9 +37,13 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
             .eq('id', user.id)
             .single();
 
-        if (!userProfile || !['admin', 'super_admin'].includes(userProfile.role)) {
+        const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'super_admin';
+        const isAuthor = activity.author_id === user.id;
+
+        // 관리자 또는 작성자만 삭제 가능
+        if (!isAdmin && !isAuthor) {
             return NextResponse.json(
-                { error: '관리자 권한이 필요합니다.' },
+                { error: '활동을 삭제할 권한이 없습니다.' },
                 { status: 403 }
             );
         }

@@ -18,12 +18,8 @@ export async function GET(request: NextRequest) {
                 .eq('is_active', true)
                 .order('sort_order');
         } else if (boardType === 'activities') {
-            // 활동 타입 조회
-            typesResult = await supabase
-                .from('activity_types')
-                .select('*')
-                .eq('is_active', true)
-                .order('sort_order');
+            // 활동 타입 조회 (activity_types 테이블이 제거되어 더 이상 사용하지 않음)
+            typesResult = { data: [], error: null };
         } else if (boardType === 'resources') {
             // 자료실 타입 조회
             typesResult = await supabase

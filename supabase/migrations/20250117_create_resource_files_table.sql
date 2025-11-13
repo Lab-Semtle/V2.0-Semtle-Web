@@ -56,3 +56,12 @@ COMMENT ON COLUMN resource_files.file_extension IS '파일 확장자';
 COMMENT ON COLUMN resource_files.original_filename IS '원본 파일명';
 COMMENT ON COLUMN resource_files.file_type IS '파일 MIME 타입';
 COMMENT ON COLUMN resource_files.upload_order IS '업로드 순서';
+
+
+
+
+
+
+
+
+

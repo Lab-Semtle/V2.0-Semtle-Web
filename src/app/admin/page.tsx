@@ -109,7 +109,7 @@ interface Activity {
         nickname: string;
         profile_image?: string;
     };
-    status: 'published' | 'draft' | 'private';
+    status: 'public' | 'draft' | 'private';
     is_pinned: boolean;
     is_featured: boolean;
     views: number;
@@ -193,7 +193,7 @@ export default function AdminPage() {
     // 활동 관리 상태
     const [activities, setActivities] = useState<Activity[]>([]);
     const [activitiesLoading, setActivitiesLoading] = useState(false);
-    const [activityFilter, setActivityFilter] = useState<'all' | 'published' | 'draft' | 'private'>('all');
+    const [activityFilter, setActivityFilter] = useState<'all' | 'public' | 'draft' | 'private'>('all');
     const [activitySearch, setActivitySearch] = useState('');
     const [activityPage, setActivityPage] = useState(1);
     const [activityPagination, setActivityPagination] = useState({
@@ -203,6 +203,12 @@ export default function AdminPage() {
         totalPages: 0,
         hasNext: false,
         hasPrev: false
+    });
+    const [activityStats, setActivityStats] = useState({
+        total: 0,
+        published: 0,
+        draft: 0,
+        private: 0
     });
 
     // 참가자 관리 상태
@@ -392,12 +398,42 @@ export default function AdminPage() {
         }
     }, [activityPage, activitySearch, activityFilter]);
 
+    // 활동 통계 가져오기
+    const fetchActivityStats = useCallback(async () => {
+        try {
+            // 전체 통계를 가져오기 위해 각 상태별로 요청
+            const [allRes, publishedRes, draftRes, privateRes] = await Promise.all([
+                fetch('/api/admin/activities?limit=1&page=1'),
+                fetch('/api/admin/activities?status=public&limit=1&page=1'),
+                fetch('/api/admin/activities?status=draft&limit=1&page=1'),
+                fetch('/api/admin/activities?status=private&limit=1&page=1')
+            ]);
+
+            const allData = allRes.ok ? await allRes.json() : { pagination: { total: 0 } };
+            const publishedData = publishedRes.ok ? await publishedRes.json() : { pagination: { total: 0 } };
+            const draftData = draftRes.ok ? await draftRes.json() : { pagination: { total: 0 } };
+            const privateData = privateRes.ok ? await privateRes.json() : { pagination: { total: 0 } };
+
+            setActivityStats({
+                total: allData.pagination?.total || 0,
+                published: publishedData.pagination?.total || 0,
+                draft: draftData.pagination?.total || 0,
+                private: privateData.pagination?.total || 0
+            });
+        } catch {
+            // 통계 가져오기 오류 시 무시
+        }
+    }, []);
+
     // 활동 탭 활성화 시 데이터 로드
     useEffect(() => {
-        if (activeTab === 'activities' && activities.length === 0) {
+        if (activeTab === 'activities') {
+            if (activities.length === 0) {
             fetchActivities();
         }
-    }, [activeTab, activities.length, fetchActivities]);
+            fetchActivityStats();
+        }
+    }, [activeTab, activities.length, fetchActivities, fetchActivityStats]);
 
     const fetchResources = useCallback(async (page: number = resourcePage, search: string = resourceSearch, status: string = resourceFilter) => {
         try {
@@ -859,7 +895,7 @@ export default function AdminPage() {
         fetchActivities(1, search, activityFilter);
     };
 
-    const handleActivityFilterChange = (filter: 'all' | 'published' | 'draft' | 'private') => {
+    const handleActivityFilterChange = (filter: 'all' | 'public' | 'draft' | 'private') => {
         setActivityFilter(filter);
         setActivityPage(1);
         fetchActivities(1, activitySearch, filter);
@@ -900,7 +936,7 @@ export default function AdminPage() {
         }
     };
 
-    const handleActivityStatusChange = async (activityId: number, status: 'published' | 'private') => {
+    const handleActivityStatusChange = async (activityId: number, status: 'public' | 'private') => {
         try {
             if (!confirm(`활동을 ${status === 'private' ? '비공개' : '공개'} 상태로 변경하시겠습니까?`)) {
                 return;
@@ -928,6 +964,9 @@ export default function AdminPage() {
                 )
             );
 
+            // 통계 새로고침
+            fetchActivityStats();
+
             alert(result.message);
         } catch {
             alert('활동 상태 변경에 실패했습니다.');
@@ -951,6 +990,9 @@ export default function AdminPage() {
             const result = await response.json();
 
             setActivities(prev => prev.filter(activity => activity.id !== activityId));
+
+            // 통계 새로고침
+            fetchActivityStats();
 
             alert(result.message);
         } catch {
@@ -1647,6 +1689,17 @@ export default function AdminPage() {
                                                 <h2 className="text-base font-medium text-gray-900">활동게시판 관리</h2>
                                                 <p className="mt-1 text-sm text-gray-500">활동 게시물을 관리하고 모니터링합니다</p>
                                             </div>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => router.push('/activities')}
+                                                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                    게시판 보기
+                                                </button>
                                             <button
                                                 onClick={() => router.push('/activities/write')}
                                                 className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1656,9 +1709,63 @@ export default function AdminPage() {
                                                 </svg>
                                                 활동 작성
                                             </button>
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="p-4 sm:p-6">
+                                        {/* 활동 통계 카드 */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                                            <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-gray-600">전체 활동</p>
+                                                        <p className="text-2xl font-bold text-gray-900 mt-1">{activityStats.total}</p>
+                                                    </div>
+                                                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                                        <Activity className="w-6 h-6 text-blue-600" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-gray-600">발행됨</p>
+                                                        <p className="text-2xl font-bold text-green-700 mt-1">{activityStats.published}</p>
+                                                    </div>
+                                                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                                        <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-gray-600">임시저장</p>
+                                                        <p className="text-2xl font-bold text-gray-600 mt-1">{activityStats.draft}</p>
+                                                    </div>
+                                                    <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                                                        <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                        </svg>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="bg-white border border-gray-200 rounded-lg p-4">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-gray-600">비공개</p>
+                                                        <p className="text-2xl font-bold text-red-700 mt-1">{activityStats.private}</p>
+                                                    </div>
+                                                    <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                                                        <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                                        </svg>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                         {/* 필터 및 검색 */}
                                         <div className="mb-6 flex flex-col sm:flex-row gap-4">
                                             <div className="flex flex-wrap gap-2">
@@ -1669,16 +1776,16 @@ export default function AdminPage() {
                                                         : 'text-gray-700 hover:bg-gray-50'
                                                         }`}
                                                 >
-                                                    전체
+                                                    전체 ({activityStats.total})
                                                 </button>
                                                 <button
-                                                    onClick={() => handleActivityFilterChange('published')}
-                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${activityFilter === 'published'
+                                                    onClick={() => handleActivityFilterChange('public')}
+                                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-md ${activityFilter === 'public'
                                                         ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20'
                                                         : 'text-gray-700 hover:bg-gray-50'
                                                         }`}
                                                 >
-                                                    발행됨
+                                                    발행됨 ({activityStats.published})
                                                 </button>
                                                 <button
                                                     onClick={() => handleActivityFilterChange('draft')}
@@ -1687,7 +1794,7 @@ export default function AdminPage() {
                                                         : 'text-gray-700 hover:bg-gray-50'
                                                         }`}
                                                 >
-                                                    임시저장
+                                                    임시저장 ({activityStats.draft})
                                                 </button>
                                                 <button
                                                     onClick={() => handleActivityFilterChange('private')}
@@ -1696,7 +1803,7 @@ export default function AdminPage() {
                                                         : 'text-gray-700 hover:bg-gray-50'
                                                         }`}
                                                 >
-                                                    비공개
+                                                    비공개 ({activityStats.private})
                                                 </button>
                                             </div>
                                             <div className="flex gap-2 flex-1">
@@ -1742,13 +1849,13 @@ export default function AdminPage() {
                                                                                 고정
                                                                             </span>
                                                                         )}
-                                                                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${activity.status === 'published'
+                                                                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${activity.status === 'public'
                                                                             ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20'
                                                                             : activity.status === 'draft'
                                                                                 ? 'bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/20'
                                                                                 : 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20'
                                                                             }`}>
-                                                                            {activity.status === 'published' ? '발행됨' : activity.status === 'draft' ? '임시저장' : '비공개'}
+                                                                            {activity.status === 'public' ? '발행됨' : activity.status === 'draft' ? '임시저장' : '비공개'}
                                                                         </span>
                                                                     </div>
                                                                     <h3 className="text-sm font-medium text-gray-900 mb-1">{activity.title}</h3>
@@ -1756,7 +1863,6 @@ export default function AdminPage() {
                                                                         <p className="text-sm text-gray-600 mb-2">{activity.subtitle}</p>
                                                                     )}
                                                                     <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                                                                        <span>작성자: {activity.author.nickname}</span>
                                                                         {activity.location && <span>장소: {activity.location}</span>}
                                                                         {activity.start_date && (
                                                                             <span>시작: {new Date(activity.start_date).toLocaleDateString('ko-KR')}</span>
@@ -1791,10 +1897,10 @@ export default function AdminPage() {
                                                                         {activity.is_pinned ? '고정 해제' : '고정'}
                                                                     </button>
                                                                     <button
-                                                                        onClick={() => handleActivityStatusChange(activity.id, activity.status === 'published' ? 'private' : 'published')}
+                                                                        onClick={() => handleActivityStatusChange(activity.id, activity.status === 'public' ? 'private' : 'public')}
                                                                         className="px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap"
                                                                     >
-                                                                        {activity.status === 'published' ? '비공개' : '공개'}
+                                                                        {activity.status === 'public' ? '비공개' : '공개'}
                                                                     </button>
                                                                     {activity.max_participants && (
                                                                         <button
@@ -1943,7 +2049,6 @@ export default function AdminPage() {
                                                                 </div>
                                                                 <h3 className="text-sm font-medium text-gray-900 mb-1 truncate">{resource.title}</h3>
                                                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-500">
-                                                                    <span>작성자: {resource.author.nickname}</span>
                                                                     {resource.subject && <span>과목: {resource.subject}</span>}
                                                                     {resource.professor && <span>교수: {resource.professor}</span>}
                                                                     <span>조회: {resource.views || 0}</span>
@@ -2142,7 +2247,6 @@ export default function AdminPage() {
                                                                 </div>
                                                                 <h3 className="text-sm font-medium text-gray-900 mb-1 truncate">{project.title}</h3>
                                                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-500">
-                                                                    <span>작성자: {project.author.nickname}</span>
                                                                     <span>조회: {project.views || 0}</span>
                                                                     <span>좋아요: {project.likes_count || 0}</span>
                                                                     <span>댓글: {project.comments_count || 0}</span>

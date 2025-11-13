@@ -10,7 +10,7 @@ interface ActivityFormData {
   title: string;
   subtitle?: string;
   category_id: number;
-  thumbnail?: string;
+  thumbnail?: string | string[];
   status?: string;
   location?: string;
   start_date?: string;
@@ -30,7 +30,7 @@ interface Activity {
   subtitle?: string;
   content: JSONContent;
   category_id: number;
-  thumbnail?: string;
+  thumbnail?: string | string[];
   status: string;
   location?: string;
   start_date?: string;
@@ -57,7 +57,12 @@ export default function EditActivityPage() {
   useEffect(() => {
     const fetchActivity = async () => {
       try {
-        const response = await fetch(`/api/activities/${id}`);
+          // 편집 모드임을 표시하는 헤더 추가
+          const response = await fetch(`/api/activities/${id}`, {
+            headers: {
+              'x-edit-mode': 'true'
+            }
+          });
         if (!response.ok) {
           throw new Error('활동을 불러올 수 없습니다.');
         }
@@ -119,10 +124,17 @@ export default function EditActivityPage() {
     return null;
   }
 
+  console.log(`[DEBUG] EditActivityPage: URL 파라미터 id=${id}, 파싱된 activityId=${parseInt(id)}, activity?.id=${activity?.id}`);
+  
+  // activity.id와 URL 파라미터가 다르면 activity.id를 우선 사용
+  const finalActivityId = activity?.id || parseInt(id);
+
   return (
     <ActivityPostForm
       onSave={handleSave}
       isEditing={true}
+      activityId={finalActivityId}
+      postId={String(finalActivityId)}
       initialData={activity}
       loading={false}
     />

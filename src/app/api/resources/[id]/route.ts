@@ -1,295 +1,286 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 
-// 개별 자료 조회
-export async function GET(
-    request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-) {
+// 특정 자료 조회
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const supabase = await createServerSupabase();
+
     try {
-        const supabase = await createServerSupabase();
-        const resolvedParams = await params;
-        const resourceId = parseInt(resolvedParams.id);
+        const { id: idParam } = await params;
 
-        if (isNaN(resourceId)) {
-            return NextResponse.json({ error: '유효하지 않은 자료 ID입니다.' }, { status: 400 });
+        // 먼저 resources 테이블에서 조회 시도
+        interface ResourceMeta {
+            id: number;
+            author_id: string;
+            status: string;
+            is_pinned?: boolean;
+            views_count_cached: number;
+            likes_count_cached: number;
+            bookmarks_count_cached: number;
+            comments_count_cached: number;
+            downloads_count_cached: number;
+            published_at?: string | null;
+            republished_at?: string | null;
+            published_version_id: number | null;
         }
 
-        // 자료 조회 (단계별로 안전하게)
-        const { data: resource, error } = await supabase
+        let resourceId: string | null = idParam;
+        let resourceMeta: ResourceMeta | null = null;
+        let metaError: Error | null = null;
+
+        const { data: resourceMetaDirect, error: directError } = await supabase
             .from('resources')
-            .select('*')
-            .eq('id', resourceId)
-            .single();
+            .select(`
+                id,
+                author_id,
+                status,
+                is_pinned,
+                views_count_cached,
+                likes_count_cached,
+                bookmarks_count_cached,
+                comments_count_cached,
+                downloads_count_cached,
+                published_at,
+                republished_at,
+                published_version_id
+            `)
+            .eq('id', idParam)
+            .maybeSingle();
 
-        if (error) {
-            console.error('자료 조회 오류:', error);
-            return NextResponse.json({ error: '자료를 찾을 수 없습니다.' }, { status: 404 });
-        }
+        if (resourceMetaDirect) {
+            resourceMeta = resourceMetaDirect;
+        } else {
+            // resources 테이블에서 찾지 못했으면 resource_versions 테이블에서 resource_id 찾기
+            const { data: version, error: versionError } = await supabase
+                .from('resource_versions')
+                .select('resource_id')
+                .eq('id', idParam)
+                .maybeSingle();
 
-        if (!resource) {
-            return NextResponse.json({ error: '자료를 찾을 수 없습니다.' }, { status: 404 });
-        }
+            if (version && version.resource_id) {
+                resourceId = version.resource_id;
 
-        // 카테고리 정보 조회
-        const { data: categoryData } = await supabase
-            .from('resource_categories')
-            .select('*')
-            .eq('id', resource.category_id)
-            .single();
+                const { data: resourceMetaRetry, error: retryError } = await supabase
+                    .from('resources')
+                    .select(`
+                        id,
+                        author_id,
+                        status,
+                        is_pinned,
+                        views_count_cached,
+                        likes_count_cached,
+                        bookmarks_count_cached,
+                        comments_count_cached,
+                        downloads_count_cached,
+                        published_at,
+                        republished_at,
+                        published_version_id
+                    `)
+                    .eq('id', resourceId)
+                    .maybeSingle();
 
-        // 파일 목록 조회
-        const { data: filesData } = await supabase
-            .from('resource_files')
-            .select('*')
-            .eq('resource_id', resourceId)
-            .order('upload_order');
-
-        console.log('자료 조회 성공:', { id: resourceId, title: resource.title });
-        console.log('카테고리 데이터:', categoryData);
-        console.log('파일 데이터:', filesData);
-        console.log('resource_data 필드:', resource.resource_data);
-        console.log('전체 resource 객체:', JSON.stringify(resource, null, 2));
-
-        // 자료 상세 정보 필드들 개별 확인
-        console.log('=== 자료 상세 정보 필드 확인 ===');
-        console.log('subject:', resource.subject);
-        console.log('professor:', resource.professor);
-        console.log('semester:', resource.semester);
-        console.log('year:', resource.year);
-        console.log('difficulty_level:', resource.difficulty_level);
-        console.log('resource_data:', resource.resource_data);
-
-        // resource_data가 JSON 문자열인지 확인
-        if (resource.resource_data && typeof resource.resource_data === 'string') {
-            try {
-                const parsedResourceData = JSON.parse(resource.resource_data);
-                console.log('parsed resource_data:', parsedResourceData);
-            } catch (e) {
-                console.log('resource_data 파싱 실패:', e);
+                if (resourceMetaRetry) {
+                    resourceMeta = resourceMetaRetry;
+                } else {
+                    metaError = retryError;
+                }
+            } else {
+                metaError = directError || versionError;
             }
         }
 
-        // 실제 좋아요 수 계산
-        const { data: likeCountData } = await supabase
-            .from('resource_likes')
-            .select('id', { count: 'exact' })
-            .eq('resource_id', resourceId);
+        if (metaError) {
+            console.error('Error fetching resource metadata:', metaError);
+            return NextResponse.json({ error: '자료를 조회하는 중 오류가 발생했습니다.' }, { status: 500 });
+        }
 
-        const actualLikesCount = likeCountData?.length || 0;
+        if (!resourceMeta) {
+            return NextResponse.json({ error: '자료를 찾을 수 없습니다.' }, { status: 404 });
+        }
 
-        // 실제 다운로드 수 계산
-        const { data: downloadCountData } = await supabase
-            .from('resource_downloads')
-            .select('id', { count: 'exact' })
-            .eq('resource_id', resourceId);
+        // 버전 데이터 조회
+        const isEditMode = request.headers.get('x-edit-mode') === 'true';
+        
+        interface ResourceVersion {
+            id: number;
+            resource_id: number;
+            title: string;
+            subtitle?: string;
+            content: unknown;
+            thumbnail?: string | string[] | null;
+            category_id?: number | null;
+            resource_type_id?: number | null;
+            subject?: string | null;
+            professor?: string | null;
+            year?: number | null;
+            semester?: string | null;
+            created_at: string;
+            updated_at?: string | null;
+        }
 
-        const actualDownloadsCount = downloadCountData?.length || 0;
+        interface ResourceCategory {
+            id: number;
+            name: string;
+            color: string;
+            icon?: string;
+        }
 
-        // 실제 댓글 수 계산 (답글 제외, 부모 댓글만)
-        const { data: commentCountData } = await supabase
-            .from('resource_comments')
-            .select('id', { count: 'exact' })
-            .eq('resource_id', resourceId)
-            .is('parent_id', null);
+        interface ResourceType {
+            id: number;
+            name: string;
+            icon?: string;
+            color?: string;
+        }
 
-        const actualCommentsCount = commentCountData?.length || 0;
+        type Resource = ResourceMeta & Partial<ResourceVersion> & {
+            category?: ResourceCategory | null;
+            resource_type?: ResourceType | null;
+            comments_count?: number;
+            current_participants?: number;
+            views?: number;
+            likes_count?: number;
+            bookmarks_count?: number;
+            downloads_count?: number;
+            files?: Array<{
+                resource_id: number;
+                file_path: string;
+                file_size: number;
+                file_extension: string;
+                original_filename: string;
+                file_type: string;
+                upload_order: number;
+            }>;
+            author?: { id: string; nickname: string; name?: string; profile_image?: string | null } | null;
+        };
+        
+        let resource: Resource = resourceMeta;
+        
+        const requestedVersionId = request.headers.get('x-version-id');
+        let targetVersionId = isEditMode && requestedVersionId
+            ? parseInt(requestedVersionId)
+            : resourceMeta.published_version_id;
+
+        if (isEditMode && !targetVersionId) {
+            targetVersionId = resourceMeta.published_version_id;
+        }
+
+        // published_version_id가 없으면 최신 버전 조회 (비공개/임시저장 게시물)
+        if (!targetVersionId) {
+            const { data: latestVersion } = await supabase
+                .from('resource_versions')
+                .select('id')
+                .eq('resource_id', resourceMeta.id)
+                .order('version_number', { ascending: false })
+                .limit(1)
+                .single();
+
+            if (latestVersion) {
+                targetVersionId = latestVersion.id;
+            }
+        }
+
+        if (targetVersionId) {
+            const { data: version, error: versionError } = await supabase
+                .from('resource_versions')
+                .select(`
+                    id,
+                    resource_id,
+                    title,
+                    subtitle,
+                    content,
+                    thumbnail,
+                    category_id,
+                    resource_type_id,
+                    file_url,
+                    file_size,
+                    file_extension,
+                    original_filename,
+                    year,
+                    semester,
+                    subject,
+                    professor,
+                    difficulty_level,
+                    rating,
+                    rating_count,
+                    tags,
+                    created_at,
+                    updated_at
+                `)
+                .eq('id', targetVersionId)
+                .single();
+
+            if (!versionError && version) {
+                let category = null;
+                if (version.category_id) {
+                    const { data: categoryData } = await supabase
+                        .from('resource_categories')
+                        .select('id, name, color, icon')
+                        .eq('id', version.category_id)
+                        .single();
+
+                    category = categoryData;
+                }
+
+                let resource_type = null;
+                if (version.resource_type_id) {
+                    const { data: typeData } = await supabase
+                        .from('resource_types')
+                        .select('id, name, icon, color')
+                        .eq('id', version.resource_type_id)
+                        .single();
+
+                    resource_type = typeData;
+                }
+
+                resource = {
+                    ...resourceMeta,
+                    ...version,
+                    id: resourceMeta.id,
+                    category,
+                    resource_type
+                };
+            }
+        } else if (isEditMode) {
+            resource = resourceMeta;
+        }
 
         // 작성자 정보 조회
-        const { data: authorData } = await supabase
-            .from('user_profiles')
-            .select('id, nickname, name, profile_image, role')
-            .eq('id', resource.author_id)
-            .single();
-
-        // resources 테이블의 likes_count, downloads_count, comments_count를 실제 값으로 업데이트
-        await supabase
-            .from('resources')
-            .update({
-                likes_count: actualLikesCount,
-                downloads_count: actualDownloadsCount,
-                comments_count: actualCommentsCount
-            })
-            .eq('id', resourceId);
-
-        return NextResponse.json({
-            resource: {
-                ...resource,
-                category: categoryData,
-                files: filesData || [],
-                likes_count: actualLikesCount,
-                downloads_count: actualDownloadsCount,
-                comments_count: actualCommentsCount,
-                author: authorData
-            }
-        });
-    } catch (error) {
-        console.error('자료 API 오류:', error);
-        return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
-    }
-}
-
-// 자료 수정
-export async function PATCH(
-    request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    try {
-        const supabase = await createServerSupabase();
-        const resolvedParams = await params;
-        const resourceId = parseInt(resolvedParams.id);
-
-        if (isNaN(resourceId)) {
-            return NextResponse.json({ error: '유효하지 않은 자료 ID입니다.' }, { status: 400 });
-        }
-
-        // 현재 사용자 확인
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) {
-            return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
-        }
-
-        const updateData = await request.json();
-
-        // 작성자 확인
-        const { data: existingResource, error: existingError } = await supabase
-            .from('resources')
-            .select('author_id')
-            .eq('id', resourceId)
-            .single();
-
-        if (existingError) {
-            return NextResponse.json({ error: '자료를 찾을 수 없습니다.' }, { status: 404 });
-        }
-
-        if (!existingResource || existingResource.author_id !== user.id) {
-            return NextResponse.json({ error: '수정 권한이 없습니다.' }, { status: 403 });
-        }
-
-        // 카테고리 ID 찾기
-        let category_id = null;
-        if (updateData.category) {
-            const { data: categoryData } = await supabase
-                .from('resource_categories')
-                .select('id')
-                .eq('name', updateData.category)
+        if (resource && resource.author_id) {
+            const { data: author } = await supabase
+                .from('user_profiles')
+                .select('id, nickname, name, profile_image')
+                .eq('id', resource.author_id)
                 .single();
-            category_id = categoryData?.id;
+
+            resource.author = author;
         }
 
-        // 자료 업데이트
-        const { data: updatedResource, error: updateError } = await supabase
-            .from('resources')
-            .update({
-                title: updateData.title,
-                subtitle: updateData.description || '',
-                content: updateData.content || null,
-                thumbnail: updateData.thumbnail,
-                category_id,
-                status: updateData.status === 'published' ? 'published' : 'draft',
-                subject: updateData.subject || '',
-                professor: updateData.professor || '',
-                semester: updateData.semester || '',
-                year: updateData.year ? parseInt(updateData.year) : undefined,
-                difficulty_level: updateData.difficulty_level || '',
-                published_at: updateData.status === 'published' ? new Date().toISOString() : null,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', resourceId)
-            .select()
-            .single();
+        // 다운로드 수 집계 (댓글 개수는 트리거에서 자동 관리)
+        const { count: downloadsCount } = await supabase
+            .from('resource_downloads')
+            .select('*', { count: 'exact', head: true })
+            .eq('resource_id', resourceId);
 
-        if (updateError) {
-            return NextResponse.json({ error: '자료 수정에 실패했습니다.' }, { status: 500 });
+        // 파일 정보 조회
+        const { data: files } = await supabase
+            .from('resource_files')
+            .select('id, resource_id, file_path, file_size, file_extension, original_filename, file_type, upload_order')
+            .eq('resource_id', resourceId)
+            .order('upload_order', { ascending: true });
+
+        // 댓글 개수와 다운로드 수를 자료 데이터에 추가
+        if (resource) {
+            resource.comments_count = resource.comments_count_cached || 0;
+            resource.downloads_count = downloadsCount || 0;
+            resource.views = resource.views_count_cached || 0;
+            resource.likes_count = resource.likes_count_cached || 0;
+            resource.bookmarks_count = resource.bookmarks_count_cached || 0;
+            resource.files = files || [];
         }
 
-        // 파일 처리 (기존 파일 삭제 후 새 파일 추가)
-        if (updateData.files && Array.isArray(updateData.files)) {
-            // 기존 파일들 삭제
-            const { error: deleteFilesError } = await supabase
-                .from('resource_files')
-                .delete()
-                .eq('resource_id', resourceId);
-
-            if (deleteFilesError) {
-                console.log('기존 파일 삭제 오류:', deleteFilesError);
-            }
-
-            // 새 파일들 추가
-            if (updateData.files.length > 0) {
-                const fileRecords = updateData.files.map((file: { file_path?: string; url?: string; name?: string; size?: number; type?: string }, index: number) => ({
-                    resource_id: resourceId,
-                    file_path: file.file_path || file.url || '',
-                    original_filename: file.name || '',
-                    file_size: file.size || 0,
-                    file_type: file.type || 'application/octet-stream',
-                    upload_order: index + 1
-                }));
-
-                const { error: insertFilesError } = await supabase
-                    .from('resource_files')
-                    .insert(fileRecords);
-
-                if (insertFilesError) {
-                    console.log('새 파일 추가 오류:', insertFilesError);
-                }
-            }
-        }
-
-        return NextResponse.json({ resource: updatedResource });
-    } catch {
+        return NextResponse.json({ resource });
+    } catch (error) {
+        console.error('Server error:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
-
-// 자료 삭제
-export async function DELETE(
-    request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    try {
-        const supabase = await createServerSupabase();
-        const resolvedParams = await params;
-        const resourceId = parseInt(resolvedParams.id);
-
-        if (isNaN(resourceId)) {
-            return NextResponse.json({ error: '유효하지 않은 자료 ID입니다.' }, { status: 400 });
-        }
-
-        // 현재 사용자 확인
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) {
-            return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
-        }
-
-        // 작성자 확인
-        const { data: existingResource } = await supabase
-            .from('resources')
-            .select('author_id')
-            .eq('id', resourceId)
-            .single();
-
-        if (!existingResource || existingResource.author_id !== user.id) {
-            return NextResponse.json({ error: '삭제 권한이 없습니다.' }, { status: 403 });
-        }
-
-        // 자료 삭제
-        const { error: deleteError } = await supabase
-            .from('resources')
-            .delete()
-            .eq('id', resourceId);
-
-        if (deleteError) {
-            return NextResponse.json({ error: '자료 삭제에 실패했습니다.' }, { status: 500 });
-        }
-
-        return NextResponse.json({ message: '자료가 삭제되었습니다.' });
-    } catch {
-        return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
-    }
-}
-
-
-
-
-

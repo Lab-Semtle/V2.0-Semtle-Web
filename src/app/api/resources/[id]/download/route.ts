@@ -65,35 +65,72 @@ export async function GET(
             return NextResponse.json({ error: '파일 다운로드에 실패했습니다.' }, { status: 500 });
         }
 
-        // 다운로드 기록 추가 (비동기)
-        const downloadRecord = {
-            resource_id: resourceId,
-            user_id: user?.id || null,
-            downloaded_at: new Date().toISOString(),
-            ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
-            user_agent: request.headers.get('user-agent') || 'unknown'
-        };
+        // 다운로드 기록 추가 및 다운로드 수 증가 (비동기 처리)
+        try {
+            // 1시간 이내 동일 유저의 다운로드 기록이 있는지 확인
+            const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+            
+            let shouldInsertDownload = false;
+            
+            if (user?.id) {
+                // 로그인한 유저의 경우: 1시간 이내 다운로드 기록 확인
+                const { data: recentDownloads } = await supabase
+                    .from('resource_downloads')
+                    .select('id')
+                    .eq('resource_id', resourceId)
+                    .eq('user_id', user.id)
+                    .gte('downloaded_at', oneHourAgo);
+                
+                shouldInsertDownload = !recentDownloads || recentDownloads.length === 0;
+            } else {
+                // 비로그인 유저의 경우: IP 주소와 user_agent로 확인
+                const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+                const { data: recentDownloads } = await supabase
+                    .from('resource_downloads')
+                    .select('id')
+                    .eq('resource_id', resourceId)
+                    .eq('ip_address', ipAddress)
+                    .gte('downloaded_at', oneHourAgo);
+                
+                shouldInsertDownload = !recentDownloads || recentDownloads.length === 0;
+            }
+            
+            // 1시간 이내 다운로드 기록이 없을 때만 추가
+            if (shouldInsertDownload) {
+                const downloadRecord = {
+                    resource_id: resourceId,
+                    user_id: user?.id || null,
+                    downloaded_at: new Date().toISOString(),
+                    ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+                    user_agent: request.headers.get('user-agent') || 'unknown'
+                };
+                
+                // 다운로드 기록 추가 (트리거가 있으면 자동으로 카운트 증가)
+                const { error: insertError } = await supabase
+                    .from('resource_downloads')
+                    .insert(downloadRecord);
 
-        // 다운로드 기록 추가 (비동기 처리)
-        supabase
-            .from('resource_downloads')
-            .insert(downloadRecord);
-
-        // 다운로드 수 증가 (비동기 처리)
-        supabase
-            .from('resources')
-            .select('downloads_count')
-            .eq('id', resourceId)
-            .single()
-            .then(({ data: resourceData, error: selectError }) => {
-                if (!selectError && resourceData) {
-                    const newCount = (resourceData.downloads_count || 0) + 1;
-                    supabase
+                if (insertError) {
+                    console.error('다운로드 기록 추가 오류:', insertError);
+                    // 트리거가 작동하지 않을 경우 수동으로 카운트 증가
+                    const { data: resourceData } = await supabase
                         .from('resources')
-                        .update({ downloads_count: newCount })
-                        .eq('id', resourceId);
+                        .select('downloads_count')
+                        .eq('id', resourceId)
+                        .single();
+
+                    if (resourceData) {
+                        const newCount = (resourceData.downloads_count || 0) + 1;
+                        await supabase
+                            .from('resources')
+                            .update({ downloads_count: newCount })
+                            .eq('id', resourceId);
+                    }
                 }
-            });
+            }
+        } catch (error) {
+            console.error('다운로드 카운트 업데이트 오류:', error);
+        }
 
         // 파일을 ArrayBuffer로 변환
         const arrayBuffer = await fileData.arrayBuffer();

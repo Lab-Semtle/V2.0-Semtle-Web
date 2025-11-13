@@ -204,8 +204,24 @@ export default function CommentSystem({ postType, postId }: CommentSystemProps) 
                     ...prev,
                     [commentId]: data.isLiked
                 }));
-                // 댓글 새로고침으로 좋아요 수 업데이트
-                fetchComments();
+                // 댓글 목록에서 해당 댓글의 likes_count 직접 업데이트
+                setComments(prevComments => prevComments.map(comment => {
+                    if (comment.id === commentId) {
+                        return { ...comment, likes_count: data.likesCount || 0 };
+                    }
+                    // 대댓글도 업데이트
+                    if (comment.replies) {
+                        return {
+                            ...comment,
+                            replies: comment.replies.map(reply => 
+                                reply.id === commentId 
+                                    ? { ...reply, likes_count: data.likesCount || 0 }
+                                    : reply
+                            )
+                        };
+                    }
+                    return comment;
+                }));
             }
         } catch {
             // 댓글 좋아요 오류 시 무시
@@ -289,14 +305,20 @@ export default function CommentSystem({ postType, postId }: CommentSystemProps) 
     const parentComments = comments.filter(comment => !comment.parent_id);
     const totalComments = parentComments.length;
 
-    const formatDate = (dateString: string, isEdited?: boolean) => {
-        const date = new Date(dateString);
+    const formatDate = (createdAt: string, updatedAt?: string) => {
+        const date = new Date(updatedAt || createdAt);
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         const hours = String(date.getHours()).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
         const formattedDate = `${year}.${month}.${day} ${hours}:${minutes}`;
+        
+        // updated_at이 존재하고 created_at과 실제로 다른 경우에만 (수정됨) 표시
+        // 댓글 수정 API에서 실제로 내용이 변경된 경우에만 updated_at을 업데이트하므로,
+        // updated_at이 존재하면 수정된 것으로 간주
+        const isEdited = updatedAt && updatedAt !== createdAt;
+        
         return isEdited ? `${formattedDate} (수정됨)` : formattedDate;
     };
 
@@ -313,18 +335,6 @@ export default function CommentSystem({ postType, postId }: CommentSystemProps) 
             <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-900 mb-6">
                 {totalComments > 0 ? `댓글 ${totalComments}개` : '댓글'}
             </h3>
-
-            {/* 댓글 작성 안내 문구 */}
-            <div className="mb-4">
-                <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-slate-600 text-sm">
-                        댓글 및 답글은 수정이 불가능하니 신중하게 작성해주세요.
-                    </span>
-                </div>
-            </div>
 
             {/* 댓글 작성 폼 */}
             <div className="mb-8">
@@ -368,6 +378,7 @@ export default function CommentSystem({ postType, postId }: CommentSystemProps) 
                                             src={comment.user.profile_image}
                                             alt={comment.user.nickname}
                                             fill
+                                            sizes="40px"
                                             className="object-cover rounded-full"
                                         />
                                     ) : (
@@ -382,7 +393,7 @@ export default function CommentSystem({ postType, postId }: CommentSystemProps) 
                                     <div className="mb-2">
                                         <div className="font-semibold text-slate-900">{comment.user.nickname}</div>
                                         <div className="text-sm text-slate-500">
-                                            {formatDate(comment.updated_at || comment.created_at, !!comment.updated_at)}
+                                            {formatDate(comment.created_at, comment.updated_at)}
                                         </div>
                                     </div>
 
@@ -505,6 +516,7 @@ export default function CommentSystem({ postType, postId }: CommentSystemProps) 
                                                                         src={reply.user.profile_image}
                                                                         alt={reply.user.nickname}
                                                                         fill
+                                                                        sizes="32px"
                                                                         className="object-cover rounded-full"
                                                                     />
                                                                 ) : (
@@ -517,7 +529,7 @@ export default function CommentSystem({ postType, postId }: CommentSystemProps) 
                                                                 <div className="mb-1">
                                                                     <div className="font-semibold text-slate-900 text-sm">{reply.user.nickname}</div>
                                                                     <div className="text-xs text-slate-500">
-                                                                        {formatDate(reply.updated_at || reply.created_at, !!reply.updated_at)}
+                                                                        {formatDate(reply.created_at, reply.updated_at)}
                                                                     </div>
                                                                 </div>
 

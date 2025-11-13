@@ -59,3 +59,12 @@ CREATE POLICY "Admins can delete contact inquiries" ON contact_inquiries
 
 
 
+
+
+
+
+
+
+
+
+

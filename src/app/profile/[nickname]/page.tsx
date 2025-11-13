@@ -3,12 +3,20 @@
 import { useState, useEffect, use } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import ProfileHeader from '@/components/profile/ProfileHeader';
-import ProfilePostCard from '@/components/profile/ProfilePostCard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import ProfileProjectCard from '@/components/profile/ProfileProjectCard';
+import ResourceCard from '@/components/resources/ResourceCard';
+import ContributionGraph from '@/components/profile/ContributionGraph';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import { ResourcePost } from '@/types/resource';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Bookmark, User, Plus } from 'lucide-react';
+import { FileText, User, Github, ExternalLink, Linkedin, Hash, GraduationCap, Mail, Bookmark } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import BookmarkProjectCard from '@/components/profile/BookmarkProjectCard';
+import BookmarkResourceCard from '@/components/profile/BookmarkResourceCard';
+import { Post } from '@/types/post';
 
 interface Profile {
     id: string;
@@ -47,46 +55,6 @@ interface Profile {
     };
 }
 
-interface Post {
-    id: number;
-    title: string;
-    subtitle?: string;
-    thumbnail?: string;
-    post_type: 'project' | 'resource' | 'activity';
-    status: 'published' | 'draft' | 'private';
-    views: number;
-    likes_count: number;
-    comments_count: number;
-    bookmarks_count: number;
-    created_at: string;
-    published_at?: string;
-    author_id: string;
-    category?: {
-        name: string;
-        color?: string;
-    };
-    project_type?: { name: string };
-    resource_type?: { name: string };
-    activity_type?: { name: string };
-    // 프로젝트 관련 필드들
-    project_data?: {
-        needed_skills?: string[];
-        team_size?: number;
-        current_members?: number;
-        difficulty?: string;
-        location?: string;
-        deadline?: string;
-        project_status?: string;
-        progress_percentage?: number;
-    };
-    project_status_info?: {
-        name: string;
-        display_name: string;
-        color: string;
-        icon: string;
-    };
-}
-
 export default function UserProfilePage({ params }: { params: Promise<{ nickname: string }> }) {
     const { user, profile, loading } = useAuth();
     const router = useRouter();
@@ -94,15 +62,29 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
     // params를 unwrap
     const resolvedParams = use(params);
 
+    // Helper functions
+    const getRoleBadge = (role: string) => {
+        switch (role) {
+            case 'super_admin':
+                return <Badge className="bg-red-100 text-red-800">대표 관리자</Badge>;
+            case 'admin':
+                return <Badge className="bg-blue-100 text-blue-800">관리자</Badge>;
+            case 'member':
+                return <Badge variant="outline">회원</Badge>;
+            default:
+                return <Badge variant="outline">회원</Badge>;
+        }
+    };
+
     const [profileData, setProfileData] = useState<Profile | null>(null);
     const [myPosts, setMyPosts] = useState<Post[]>([]);
     const [myResources, setMyResources] = useState<Post[]>([]);
+    const [bookmarkedPosts, setBookmarkedPosts] = useState<Record<string, unknown>[]>([]);
     const [otherPosts, setOtherPosts] = useState<Post[]>([]);
-    const [bookmarkedPosts, setBookmarkedPosts] = useState<Post[]>([]);
     const [loadingProfile, setLoadingProfile] = useState(true);
     const [loadingPosts, setLoadingPosts] = useState(true);
     const [loadingResources, setLoadingResources] = useState(true);
-    const [loadingBookmarks, setLoadingBookmarks] = useState(true);
+    const [loadingBookmarks, setLoadingBookmarks] = useState(false);
     const [isFollowing, setIsFollowing] = useState(false);
     const [isFollowingLoading, setIsFollowingLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -111,9 +93,40 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
     const [projectPage, setProjectPage] = useState(1);
     const [hasMoreProjects, setHasMoreProjects] = useState(true);
     const [loadingMoreProjects, setLoadingMoreProjects] = useState(false);
+    const [activeTab, setActiveTab] = useState<string>('');
 
     // 로딩 중이거나 profile이 없으면 isOwnProfile을 false로 설정
     const isOwnProfile = !loading && profile?.nickname === resolvedParams.nickname;
+
+    // URL 해시를 읽어서 탭 설정
+    useEffect(() => {
+        const updateTabFromHash = () => {
+            const hash = window.location.hash.replace('#', '');
+            if (hash) {
+                setActiveTab(hash);
+            } else {
+                // 기본 탭 설정
+                setActiveTab(isOwnProfile ? 'my-projects' : 'projects');
+            }
+        };
+
+        // 초기 로드 시 탭 설정
+        updateTabFromHash();
+
+        // hashchange 이벤트 리스너 추가 (리다이렉트 등으로 해시가 변경될 때 감지)
+        window.addEventListener('hashchange', updateTabFromHash);
+
+        return () => {
+            window.removeEventListener('hashchange', updateTabFromHash);
+        };
+    }, [isOwnProfile]);
+
+    // 탭 변경 시 URL 해시 업데이트
+    const handleTabChange = (value: string) => {
+        setActiveTab(value);
+        // URL 해시 업데이트 (히스토리 추가하지 않음)
+        window.history.replaceState({}, '', `#${value}`);
+    };
 
     // 프로필 공개 여부 확인 (본인 프로필이거나 프로필이 공개된 경우)
     const isProfilePublic = isOwnProfile || profileData?.privacy?.profileVisibility === 'public';
@@ -270,30 +283,49 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
                 if (isOwnProfile) {
                     // 내 프로필인 경우: 모든 타입의 게시물 로드 (임시저장 포함)
                     const [projectsResponse, resourcesResponse] = await Promise.all([
-                        fetch(`/api/profile/${profileData.id}/posts?type=project&page=1&limit=9&include_drafts=true`),
-                        fetch(`/api/profile/${profileData.id}/posts?type=resource&page=1&limit=9&include_drafts=true`)
+                        fetch(`/api/profile/${profileData.id}/posts?type=project&page=1&limit=100&include_drafts=true`),
+                        fetch(`/api/profile/${profileData.id}/posts?type=resource&page=1&limit=100&include_drafts=true`)
                     ]);
 
                     if (projectsResponse.ok) {
                         const data = await projectsResponse.json();
-                        setMyPosts(data.posts);
+                        const projects = (data.posts || []).map((p: unknown) => ({ ...(p as Post), post_type: 'project' }));
+                        setMyPosts(projects);
                         setProjectPage(1);
-                        setHasMoreProjects(data.posts.length === 9);
+                        setHasMoreProjects(projects.length === 9);
                     }
 
                     if (resourcesResponse.ok) {
                         const data = await resourcesResponse.json();
-                        setMyResources(data.posts || []);
+                        const resources = (data.posts || []).map((p: unknown) => ({ ...(p as Post), post_type: 'resource' }));
+                        setMyResources(resources);
                     }
                 } else {
                     // 다른 사람 프로필인 경우: 공개 게시물만 (페이지네이션 적용)
-                    const response = await fetch(`/api/profile/${profileData.id}/posts?type=project&page=1&limit=9&include_drafts=false`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        setOtherPosts(data.posts);
+                    const [projectsResponse, resourcesResponse] = await Promise.all([
+                        fetch(`/api/profile/${profileData.id}/posts?type=project&page=1&limit=100&include_drafts=false`),
+                        fetch(`/api/profile/${profileData.id}/posts?type=resource&page=1&limit=100&include_drafts=false`)
+                    ]);
+
+                    // 게시물 데이터 설정 (post_type 추가)
+                    const allPosts: Post[] = [];
+
+                    if (projectsResponse.ok) {
+                        const projectsData = await projectsResponse.json();
+                        const projects = (projectsData.posts || []).map((p: unknown) => ({ ...(p as Post), post_type: 'project' }));
+                        allPosts.push(...projects);
                         setProjectPage(1);
-                        setHasMoreProjects(data.posts.length === 9);
+                        setHasMoreProjects(projects.length === 9);
                     }
+
+                    if (resourcesResponse.ok) {
+                        const resourcesData = await resourcesResponse.json();
+                        const resources = (resourcesData.posts || []).map((p: unknown) => ({ ...(p as Post), post_type: 'resource' }));
+                        allPosts.push(...resources);
+                    }
+
+                    // 다른 사용자의 모든 게시물을 otherPosts에 저장
+                    setOtherPosts(allPosts);
                 }
             } catch {
                 console.error('게시물 로딩 오류');
@@ -308,91 +340,35 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
         }
     }, [profileData, isOwnProfile]);
 
-
-    // 북마크한 게시물 로드 (내 프로필인 경우만)
+    // 북마크 데이터 로드 (내 프로필인 경우만)
     useEffect(() => {
-        const fetchBookmarkedPosts = async () => {
-            if (!isOwnProfile || !user) return; // 사용자가 로그인되어 있지 않으면 API 호출하지 않음
+        const fetchBookmarks = async () => {
+            if (!isOwnProfile || !user) return;
 
             try {
-                const response = await fetch('/api/profile/bookmarks?type=all', {
-                    credentials: 'include'
-                });
+                setLoadingBookmarks(true);
+                const response = await fetch('/api/profile/bookmarks?type=all');
 
                 if (response.ok) {
                     const data = await response.json();
                     setBookmarkedPosts(data.posts || []);
                 }
             } catch {
+                setBookmarkedPosts([]);
             } finally {
                 setLoadingBookmarks(false);
             }
         };
 
-        if (isOwnProfile) {
-            fetchBookmarkedPosts();
+        if (user && isOwnProfile) {
+            fetchBookmarks();
         }
-    }, [isOwnProfile, error, user]);
+    }, [user, isOwnProfile]);
+
+
 
     const handleEditProfile = () => {
         router.push('/settings');
-    };
-
-    const handleEditPost = (postId: number, postType: string) => {
-        router.push(`/${postType}s/edit/${postId}`);
-    };
-
-    const handleDeletePost = async (postId: number, postType: string) => {
-        if (confirm('정말로 이 게시물을 삭제하시겠습니까?')) {
-            try {
-                const response = await fetch(`/api/${postType}s/${postId}?userId=${user?.id}`, {
-                    method: 'DELETE'
-                });
-
-                if (response.ok) {
-                    // 즉시 UI에서 제거
-                    setMyPosts(prev => prev.filter(post => !(post.id === postId && post.post_type === postType)));
-                    alert('게시물이 삭제되었습니다.');
-                } else {
-                    const errorData = await response.json();
-                    alert(`삭제에 실패했습니다: ${errorData.error || '알 수 없는 오류'}`);
-                }
-            } catch {
-                alert('삭제 중 오류가 발생했습니다.');
-            }
-        }
-    };
-
-    const handleStatusChange = (postId: number, postType: string, newStatus: string) => {
-        // 게시물 상태 즉시 업데이트 (스크롤 위치 유지)
-        setMyPosts(prev => prev.map(post =>
-            post.id === postId ? { ...post, status: newStatus as 'published' | 'draft' | 'private' } : post
-        ));
-    };
-
-    const handlePublishPost = async (postId: number, postType: string) => {
-        try {
-            const response = await fetch(`/api/${postType}s/${postId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ status: 'published' })
-            });
-
-            if (response.ok) {
-                setMyPosts(prev => prev.map(post =>
-                    post.id === postId && post.post_type === postType
-                        ? { ...post, status: 'published' as const, published_at: new Date().toISOString() }
-                        : post
-                ));
-                alert('게시물이 공개되었습니다.');
-            } else {
-                alert('공개에 실패했습니다.');
-            }
-        } catch {
-            alert('공개 중 오류가 발생했습니다.');
-        }
     };
 
     if (loading || loadingProfile) {
@@ -433,303 +409,436 @@ export default function UserProfilePage({ params }: { params: Promise<{ nickname
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-gray-100">
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-8">
-                {/* 프로필 헤더 */}
-                <ProfileHeader
-                    profile={profileData}
-                    isOwnProfile={isOwnProfile}
-                    onEditProfile={handleEditProfile}
-                    isFollowing={isFollowing}
-                    onFollow={handleFollow}
-                    isFollowingLoading={isFollowingLoading}
-                />
+        <div className="min-h-screen bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-8">
+                {/* GitHub 스타일 레이아웃 */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {/* 좌측 프로필 사이드바 */}
+                    <div className="lg:col-span-3 order-2 lg:order-1">
+                        <div className="space-y-4">
+                            {/* 프로필 이미지 */}
+                            <Avatar className="w-64 h-64 shadow-lg">
+                                <AvatarImage src={profileData.profile_image} alt={profileData.nickname} />
+                                <AvatarFallback className="text-4xl bg-gray-300 text-gray-700 font-semibold border-0">
+                                    {(profileData.nickname || profileData.name).charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                            </Avatar>
 
-                {/* 게시물 탭 */}
-                {isProfilePublic ? (
-                    <Tabs defaultValue={isOwnProfile ? "my-projects" : "projects"} className="space-y-8">
-                        {isOwnProfile ? (
-                            <TabsList className="grid w-full grid-cols-3 bg-transparent p-0 h-auto border-b border-gray-200">
-                                <TabsTrigger value="my-projects" className="bg-transparent border-0 rounded-none px-0 py-4 text-gray-500 hover:text-gray-700 data-[state=active]:text-gray-900 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-gray-900 data-[state=active]:shadow-none relative">내 프로젝트</TabsTrigger>
-                                <TabsTrigger value="my-resources" className="bg-transparent border-0 rounded-none px-0 py-4 text-gray-500 hover:text-gray-700 data-[state=active]:text-gray-900 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-gray-900 data-[state=active]:shadow-none relative">내 자료실</TabsTrigger>
-                                <TabsTrigger value="bookmarked" className="bg-transparent border-0 rounded-none px-0 py-4 text-gray-500 hover:text-gray-700 data-[state=active]:text-gray-900 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-gray-900 data-[state=active]:shadow-none relative">북마크</TabsTrigger>
-                            </TabsList>
-                        ) : (
-                            <TabsList className="grid w-full grid-cols-2 bg-transparent p-0 h-auto border-b border-gray-200">
-                                <TabsTrigger value="projects" className="bg-transparent border-0 rounded-none px-0 py-4 text-gray-500 hover:text-gray-700 data-[state=active]:text-gray-900 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-gray-900 data-[state=active]:shadow-none relative">프로젝트</TabsTrigger>
-                                <TabsTrigger value="resources" className="bg-transparent border-0 rounded-none px-0 py-4 text-gray-500 hover:text-gray-700 data-[state=active]:text-gray-900 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-gray-900 data-[state=active]:shadow-none relative">자료실</TabsTrigger>
-                            </TabsList>
-                        )}
+                            {/* 권한 뱃지 */}
+                            <div className="mb-2">
+                                {getRoleBadge(profileData.role)}
+                            </div>
 
-                        {/* 내 프로젝트 (내 프로필인 경우만) */}
-                        {isOwnProfile && (
-                            <TabsContent value="my-projects" className="space-y-6">
-                                <div className="flex justify-end">
-                                    <Button variant="outline" onClick={() => router.push('/projects/write')} className="bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700">
-                                        <Plus className="w-4 h-4 mr-1" />
-                                        새 프로젝트 추가
+                            {/* 닉네임과 이름 */}
+                            <div>
+                                <h1 className="text-2xl">
+                                    <span className="font-bold text-gray-900">{profileData.nickname}</span>
+                                    {profileData.name !== profileData.nickname && (
+                                        <>
+                                            <span className="text-gray-400 font-normal mx-2">·</span>
+                                            <span className="text-gray-600 font-normal">{profileData.name}</span>
+                                        </>
+                                    )}
+                                </h1>
+                            </div>
+
+                            {/* 소개글 */}
+                            {profileData.bio && (
+                                <p className="text-gray-700">{profileData.bio}</p>
+                            )}
+
+                            {/* 팔로우 버튼 */}
+                            <div className="flex items-center gap-3">
+                                {isOwnProfile ? (
+                                    <Button
+                                        onClick={handleEditProfile}
+                                        className="w-full bg-blue-500 text-white font-semibold hover:bg-blue-600 shadow-md hover:shadow-lg transition-all"
+                                    >
+                                        프로필 편집
                                     </Button>
-                                </div>
-
-                                {loadingPosts ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {Array.from({ length: 6 }).map((_, i) => (
-                                            <Card key={i} className="animate-pulse bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
-                                                <div className="aspect-square bg-gray-200"></div>
-                                                <CardContent className="p-6">
-                                                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                                                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
-                                    </div>
-                                ) : myPosts.filter(post => post.post_type === 'project').length > 0 ? (
-                                    <div>
-                                        {/* 모든 프로젝트를 작성 순서대로 표시 */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                            {myPosts
-                                                .filter(post => post.post_type === 'project')
-                                                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                                                .map((post) => (
-                                                    <ProfilePostCard
-                                                        key={`${post.post_type}_${post.id}`}
-                                                        post={post}
-                                                        isOwnPost={true}
-                                                        onEdit={handleEditPost}
-                                                        onDelete={handleDeletePost}
-                                                        onPublish={handlePublishPost}
-                                                        onStatusChange={handleStatusChange}
-                                                    />
-                                                ))}
-                                        </div>
-
-                                        {/* 더 많은 프로젝트 로딩 */}
-                                        {hasMoreProjects && (
-                                            <div className="flex justify-center py-8">
-                                                <Button
-                                                    variant="outline"
-                                                    onClick={fetchMoreProjects}
-                                                    disabled={loadingMoreProjects}
-                                                    className="px-8 py-2"
-                                                >
-                                                    {loadingMoreProjects ? (
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-gray-600"></div>
-                                                            로딩 중...
-                                                        </div>
-                                                    ) : (
-                                                        '더 많은 프로젝트 보기'
-                                                    )}
-                                                </Button>
-                                            </div>
+                                ) : (
+                                    <Button
+                                        onClick={handleFollow}
+                                        disabled={isFollowingLoading}
+                                        className={`w-full ${isFollowing
+                                            ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                                            }`}
+                                    >
+                                        {isFollowingLoading ? (
+                                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></div>
+                                        ) : isFollowing ? (
+                                            '팔로잉'
+                                        ) : (
+                                            '팔로우'
                                         )}
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-16">
-                                        <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                                            <FileText className="w-8 h-8 text-blue-600" />
-                                        </div>
-                                        <h3 className="text-xl font-semibold text-gray-900 mb-3">아직 작성한 프로젝트가 없습니다</h3>
-                                        <p className="text-gray-500 mb-6">첫 번째 프로젝트를 작성해보세요!</p>
-                                        <Button onClick={() => router.push('/projects/write')} className="bg-blue-600 hover:bg-blue-700 text-white">
-                                            새 프로젝트 추가
-                                        </Button>
-
-                                    </div>
-                                )}
-                            </TabsContent>
-                        )}
-
-                        {/* 내 자료실 (내 프로필인 경우만) */}
-                        {isOwnProfile && (
-                            <TabsContent value="my-resources" className="space-y-6">
-                                <div className="flex justify-end">
-                                    <Button variant="outline" onClick={() => router.push('/resources/write')} className="bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700">
-                                        <Plus className="w-4 h-4 mr-1" />
-                                        새 자료 추가
                                     </Button>
-                                </div>
-
-                                {loadingResources ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {Array.from({ length: 6 }).map((_, i) => (
-                                            <Card key={i} className="animate-pulse bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
-                                                <div className="aspect-square bg-gray-200"></div>
-                                                <CardContent className="p-6">
-                                                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                                                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
-                                    </div>
-                                ) : myResources.length > 0 ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {myResources
-                                            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                                            .map((post) => (
-                                                <ProfilePostCard
-                                                    key={`${post.post_type}_${post.id}`}
-                                                    post={post}
-                                                    isOwnPost={true}
-                                                    onEdit={handleEditPost}
-                                                    onDelete={handleDeletePost}
-                                                    onPublish={handlePublishPost}
-                                                    onStatusChange={handleStatusChange}
-                                                />
-                                            ))}
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-16">
-                                        <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                                            <Bookmark className="w-8 h-8 text-blue-600" />
-                                        </div>
-                                        <h3 className="text-xl font-semibold text-gray-900 mb-3">아직 업로드한 자료가 없습니다</h3>
-                                        <p className="text-gray-500 mb-6">첫 번째 자료를 업로드해보세요!</p>
-                                        <Button onClick={() => router.push('/resources/write')} className="bg-blue-600 hover:bg-blue-700 text-white">
-                                            자료 업로드
-                                        </Button>
-                                    </div>
                                 )}
-                            </TabsContent>
-                        )}
+                            </div>
 
+                            {/* 팔로우/팔로워 수 */}
+                            <div className="flex gap-4 text-sm">
+                                <button className="hover:underline">
+                                    <span className="font-semibold">{profileData.stats.followers_count}</span>
+                                    <span className="text-gray-600 ml-1">팔로워</span>
+                                </button>
+                                <button className="hover:underline">
+                                    <span className="font-semibold">{profileData.stats.following_count}</span>
+                                    <span className="text-gray-600 ml-1">팔로잉</span>
+                                </button>
+                                <button className="hover:underline">
+                                    <span className="font-semibold">{profileData.stats.posts.total}</span>
+                                    <span className="text-gray-600 ml-1">게시물</span>
+                                </button>
+                            </div>
 
-                        {/* 북마크한 게시물 (내 프로필인 경우만) */}
-                        {isOwnProfile && (
-                            <TabsContent value="bookmarked" className="space-y-6">
-
-                                {loadingBookmarks ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {Array.from({ length: 6 }).map((_, i) => (
-                                            <Card key={i} className="animate-pulse bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
-                                                <div className="aspect-square bg-gray-200"></div>
-                                                <CardContent className="p-6">
-                                                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                                                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
-                                    </div>
-                                ) : bookmarkedPosts.length > 0 ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {bookmarkedPosts.map((post) => (
-                                            <ProfilePostCard key={`${post.post_type}_${post.id}`} post={post} />
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-16">
-                                        <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                                            <Bookmark className="w-8 h-8 text-blue-600" />
-                                        </div>
-                                        <h3 className="text-xl font-semibold text-gray-900 mb-3">북마크한 게시물이 없습니다</h3>
-                                        <p className="text-gray-500">마음에 드는 게시물을 북마크해보세요!</p>
-                                    </div>
-                                )}
-                            </TabsContent>
-                        )}
-
-                        {/* 프로젝트 (다른 사용자 프로필) */}
-                        <TabsContent value="projects" className="space-y-6">
-                            {loadingPosts ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {Array.from({ length: 6 }).map((_, i) => (
-                                        <Card key={i} className="animate-pulse bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
-                                            <div className="aspect-square bg-gray-200"></div>
-                                            <CardContent className="p-6">
-                                                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                                                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                                            </CardContent>
-                                        </Card>
-                                    ))}
+                            {/* 학번 */}
+                            {profileData.student_id && profileData.student_id_public && (
+                                <div className="flex items-center gap-2 text-sm text-gray-700">
+                                    <Hash className="w-4 h-4 text-gray-400" />
+                                    <span className="font-medium">{profileData.student_id}</span>
                                 </div>
-                            ) : otherPosts.filter(post => post.post_type === 'project').length > 0 ? (
-                                <div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {otherPosts
-                                            .filter(post => post.post_type === 'project')
-                                            .map((post) => (
-                                                <ProfilePostCard key={`${post.post_type}_${post.id}`} post={post} />
-                                            ))}
-                                    </div>
+                            )}
 
-                                    {/* 더 많은 프로젝트 로딩 */}
-                                    {hasMoreProjects && (
-                                        <div className="flex justify-center py-8">
-                                            <Button
-                                                variant="outline"
-                                                onClick={fetchMoreProjects}
-                                                disabled={loadingMoreProjects}
-                                                className="px-8 py-2"
-                                            >
-                                                {loadingMoreProjects ? (
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-gray-600"></div>
-                                                        로딩 중...
-                                                    </div>
-                                                ) : (
-                                                    '더 많은 프로젝트 보기'
-                                                )}
-                                            </Button>
-                                        </div>
+                            {/* 전공/학년 */}
+                            {profileData.major_grade_public && (profileData.major || profileData.grade) && (
+                                <div className="flex flex-wrap items-center gap-2 text-sm text-gray-700">
+                                    {profileData.major && (
+                                        <>
+                                            <GraduationCap className="w-4 h-4 text-gray-400" />
+                                            <span className="font-medium">{profileData.major}</span>
+                                        </>
+                                    )}
+                                    {profileData.grade && (
+                                        <>
+                                            {!profileData.major && <GraduationCap className="w-4 h-4 text-gray-400" />}
+                                            <span className="font-medium">{profileData.grade}학년</span>
+                                        </>
                                     )}
                                 </div>
-                            ) : (
-                                <div className="text-center py-16">
-                                    <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                                        <FileText className="w-8 h-8 text-blue-600" />
-                                    </div>
-                                    <h3 className="text-xl font-semibold text-gray-900 mb-3">프로젝트가 없습니다</h3>
-                                    <p className="text-gray-500">이 사용자는 아직 프로젝트를 작성하지 않았습니다.</p>
-                                </div>
                             )}
-                        </TabsContent>
 
-                        {/* 자료실 (다른 사용자 프로필) */}
-                        <TabsContent value="resources" className="space-y-6">
-                            {loadingPosts ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {Array.from({ length: 6 }).map((_, i) => (
-                                        <Card key={i} className="animate-pulse bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
-                                            <div className="aspect-square bg-gray-200"></div>
-                                            <CardContent className="p-6">
-                                                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                                                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                                            </CardContent>
-                                        </Card>
-                                    ))}
-                                </div>
-                            ) : otherPosts.filter(post => post.post_type === 'resource').length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {otherPosts
-                                        .filter(post => post.post_type === 'resource')
-                                        .map((post) => (
-                                            <ProfilePostCard key={`${post.post_type}_${post.id}`} post={post} />
-                                        ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-16">
-                                    <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                                        <Bookmark className="w-8 h-8 text-blue-600" />
-                                    </div>
-                                    <h3 className="text-xl font-semibold text-gray-900 mb-3">자료가 없습니다</h3>
-                                    <p className="text-gray-500">이 사용자는 업로드한 자료가 없습니다.</p>
+                            {/* 이메일 */}
+                            {profileData.email && profileData.email_public && (
+                                <div className="flex items-center gap-2 text-sm text-gray-700">
+                                    <Mail className="w-4 h-4 text-gray-400" />
+                                    <span className="font-medium">{profileData.email}</span>
                                 </div>
                             )}
-                        </TabsContent>
-                    </Tabs>
-                ) : (
-                    /* 프로필 비공개 메시지 */
-                    <div className="text-center py-16">
-                        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <User className="w-10 h-10 text-gray-400" />
+
+                            {/* 소셜 링크 */}
+                            {(profileData.github_url || profileData.portfolio_url || profileData.linkedin_url) && (
+                                <div className="flex gap-2 mt-2">
+                                    {profileData.github_url && (
+                                        <a href={profileData.github_url} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg shadow-sm hover:shadow transition-all">
+                                            <Github className="w-4 h-4" />
+                                        </a>
+                                    )}
+                                    {profileData.portfolio_url && (
+                                        <a href={profileData.portfolio_url} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded-lg shadow-sm hover:shadow transition-all">
+                                            <ExternalLink className="w-4 h-4" />
+                                        </a>
+                                    )}
+                                    {profileData.linkedin_url && (
+                                        <a href={profileData.linkedin_url} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg shadow-sm hover:shadow transition-all">
+                                            <Linkedin className="w-4 h-4" />
+                                        </a>
+                                    )}
+                                </div>
+                            )}
                         </div>
-                        <h3 className="text-2xl font-light text-gray-900 mb-4">게시물 비공개한 유저입니다</h3>
-                        <p className="text-gray-600 max-w-md mx-auto leading-relaxed">
-                            이 사용자는 프로필을 비공개로 설정하여 게시물을 볼 수 없습니다.
-                        </p>
                     </div>
-                )}
-            </div>
-        </div>
+
+                    {/* 우측 게시물 영역 */}
+                    <div className="lg:col-span-9 order-1 lg:order-2 space-y-6">
+                        {/* GitHub 잔디 그래프 */}
+                        {((isOwnProfile && [...myPosts, ...myResources].length > 0) || (!isOwnProfile && otherPosts.filter(post => post.post_type !== 'activity').length > 0)) && (
+                            <ContributionGraph
+                                posts={[...myPosts, ...myResources, ...otherPosts.filter(post => post.post_type !== 'activity')].filter(post => post.created_at)}
+                                userCreatedAt={profileData?.created_at}
+                            />
+                        )}
+
+                        {/* 게시물 탭 */}
+                        {isProfilePublic ? (
+                            <Tabs value={activeTab || (isOwnProfile ? "my-projects" : "projects")} onValueChange={handleTabChange} className="space-y-6">
+                                <TabsList className="inline-flex h-auto items-center justify-start gap-1 p-1 bg-transparent w-auto mb-8">
+                                    <TabsTrigger
+                                        value={isOwnProfile ? "my-projects" : "projects"}
+                                        className="px-4 py-2 text-sm font-semibold text-gray-500 rounded-lg data-[state=active]:bg-blue-50 data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all duration-200"
+                                    >
+                                        프로젝트
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value={isOwnProfile ? "my-resources" : "resources"}
+                                        className="px-4 py-2 text-sm font-semibold text-gray-500 rounded-lg data-[state=active]:bg-blue-50 data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all duration-200"
+                                    >
+                                        자료실
+                                    </TabsTrigger>
+                                    {isOwnProfile && (
+                                        <TabsTrigger
+                                            value="bookmarks"
+                                            className="px-4 py-2 text-sm font-semibold text-gray-500 rounded-lg data-[state=active]:bg-blue-50 data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all duration-200"
+                                        >
+                                            북마크
+                                        </TabsTrigger>
+                                    )}
+                                </TabsList>
+
+                                {/* 내 프로젝트 (내 프로필인 경우만) */}
+                                {isOwnProfile && (
+                                    <TabsContent value="my-projects" className="space-y-6">
+                                        {loadingPosts ? (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                {Array.from({ length: 6 }).map((_, i) => (
+                                                    <Card key={i} className="animate-pulse bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
+                                                        <div className="aspect-square bg-gray-200"></div>
+                                                        <CardContent className="p-6">
+                                                            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                                            <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                                        </CardContent>
+                                                    </Card>
+                                                ))}
+                                            </div>
+                                        ) : myPosts.filter(post => post.post_type === 'project').length > 0 ? (
+                                            <div>
+                                                {/* 모든 프로젝트를 작성 순서대로 표시 */}
+                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                    {myPosts
+                                                        .filter(post => post.post_type === 'project')
+                                                        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                                                        .map((post) => (
+                                                            <ProfileProjectCard
+                                                                key={`${post.post_type}_${post.id}`}
+                                                                project={post as unknown as Post}
+                                                            />
+                                                        ))}
+                                                </div>
+
+                                                {/* 더 많은 프로젝트 로딩 */}
+                                                {hasMoreProjects && (
+                                                    <div className="flex justify-center py-8">
+                                                        <Button
+                                                            variant="outline"
+                                                            onClick={fetchMoreProjects}
+                                                            disabled={loadingMoreProjects}
+                                                            className="px-8 py-2"
+                                                        >
+                                                            {loadingMoreProjects ? (
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-gray-600"></div>
+                                                                    로딩 중...
+                                                                </div>
+                                                            ) : (
+                                                                '더 많은 프로젝트 보기'
+                                                            )}
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <Empty>
+                                                <EmptyHeader>
+                                                    <EmptyMedia variant="icon">
+                                                        <FileText className="size-6" />
+                                                    </EmptyMedia>
+                                                    <EmptyTitle>작성한 프로젝트가 없습니다</EmptyTitle>
+                                                    <EmptyDescription>이 사용자는 아직 프로젝트를 작성하지 않았습니다.</EmptyDescription>
+                                                </EmptyHeader>
+                                            </Empty>
+                                        )}
+                                    </TabsContent>
+                                )}
+
+                                {/* 내 자료실 (내 프로필인 경우만) */}
+                                {isOwnProfile && (
+                                    <TabsContent value="my-resources" className="space-y-6">
+                                        {loadingResources ? (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                {Array.from({ length: 6 }).map((_, i) => (
+                                                    <Card key={i} className="animate-pulse bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
+                                                        <div className="aspect-square bg-gray-200"></div>
+                                                        <CardContent className="p-6">
+                                                            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                                            <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                                        </CardContent>
+                                                    </Card>
+                                                ))}
+                                            </div>
+                                        ) : myResources.length > 0 ? (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                {myResources
+                                                    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                                                    .map((resource) => (
+                                                        <ResourceCard
+                                                            key={`${resource.post_type}_${resource.id}`}
+                                                            resource={resource as unknown as ResourcePost}
+                                                        />
+                                                    ))}
+                                            </div>
+                                        ) : (
+                                            <Empty>
+                                                <EmptyHeader>
+                                                    <EmptyMedia variant="icon">
+                                                        <FileText className="size-6" />
+                                                    </EmptyMedia>
+                                                    <EmptyTitle>업로드한 자료가 없습니다</EmptyTitle>
+                                                    <EmptyDescription>아직 업로드한 자료가 없습니다.</EmptyDescription>
+                                                </EmptyHeader>
+                                            </Empty>
+                                        )}
+                                    </TabsContent>
+                                )}
+
+                                {/* 프로젝트 (다른 사용자 프로필) */}
+                                <TabsContent value="projects" className="space-y-6">
+                                    {loadingPosts ? (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            {Array.from({ length: 6 }).map((_, i) => (
+                                                <Card key={i} className="animate-pulse bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
+                                                    <div className="aspect-square bg-gray-200"></div>
+                                                    <CardContent className="p-6">
+                                                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                                    </CardContent>
+                                                </Card>
+                                            ))}
+                                        </div>
+                                    ) : otherPosts.filter(post => post.post_type === 'project').length > 0 ? (
+                                        <div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                {otherPosts
+                                                    .filter(post => post.post_type === 'project')
+                                                    .map((post) => (
+                                                        <ProfileProjectCard key={`${post.post_type}_${post.id}`} project={post as unknown as Post} />
+                                                    ))}
+                                            </div>
+
+                                            {/* 더 많은 프로젝트 로딩 */}
+                                            {hasMoreProjects && (
+                                                <div className="flex justify-center py-8">
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={fetchMoreProjects}
+                                                        disabled={loadingMoreProjects}
+                                                        className="px-8 py-2"
+                                                    >
+                                                        {loadingMoreProjects ? (
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-gray-600"></div>
+                                                                로딩 중...
+                                                            </div>
+                                                        ) : (
+                                                            '더 많은 프로젝트 보기'
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <Empty>
+                                            <EmptyHeader>
+                                                <EmptyMedia variant="icon">
+                                                    <FileText className="size-6" />
+                                                </EmptyMedia>
+                                                <EmptyTitle>프로젝트가 없습니다</EmptyTitle>
+                                                <EmptyDescription>이 사용자는 아직 프로젝트를 작성하지 않았습니다.</EmptyDescription>
+                                            </EmptyHeader>
+                                        </Empty>
+                                    )}
+                                </TabsContent>
+
+                                {/* 자료실 (다른 사용자 프로필) */}
+                                <TabsContent value="resources" className="space-y-6">
+                                    {loadingPosts ? (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            {Array.from({ length: 6 }).map((_, i) => (
+                                                <Card key={i} className="animate-pulse bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
+                                                    <div className="aspect-square bg-gray-200"></div>
+                                                    <CardContent className="p-6">
+                                                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                                    </CardContent>
+                                                </Card>
+                                            ))}
+                                        </div>
+                                    ) : otherPosts.filter(post => post.post_type === 'resource').length > 0 ? (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            {otherPosts
+                                                .filter(post => post.post_type === 'resource')
+                                                .map((resource) => (
+                                                    <ResourceCard key={`${resource.post_type}_${resource.id}`} resource={resource as unknown as ResourcePost} />
+                                                ))}
+                                        </div>
+                                    ) : (
+                                        <Empty>
+                                            <EmptyHeader>
+                                                <EmptyMedia variant="icon">
+                                                    <FileText className="size-6" />
+                                                </EmptyMedia>
+                                                <EmptyTitle>자료가 없습니다</EmptyTitle>
+                                                <EmptyDescription>아직 업로드한 자료가 없습니다.</EmptyDescription>
+                                            </EmptyHeader>
+                                        </Empty>
+                                    )}
+                                </TabsContent>
+
+                                {/* 북마크 (내 프로필인 경우만) */}
+                                {isOwnProfile && (
+                                    <TabsContent value="bookmarks" className="space-y-6">
+                                        {loadingBookmarks ? (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                {Array.from({ length: 6 }).map((_, i) => (
+                                                    <Card key={i} className="animate-pulse bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
+                                                        <div className="aspect-square bg-gray-200"></div>
+                                                        <CardContent className="p-6">
+                                                            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                                            <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                                        </CardContent>
+                                                    </Card>
+                                                ))}
+                                            </div>
+                                        ) : bookmarkedPosts.length > 0 ? (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                {bookmarkedPosts
+                                                    .filter(post => post.post_type === 'project' || post.post_type === 'resource')
+                                                    .map((post) => {
+                                                        if (post.post_type === 'project') {
+                                                            return <BookmarkProjectCard key={`${post.post_type}_${post.id}`} project={post as unknown as Post} />;
+                                                        } else if (post.post_type === 'resource') {
+                                                            return <BookmarkResourceCard key={`${post.post_type}_${post.id}`} resource={post as unknown as ResourcePost} />;
+                                                        }
+                                                        return null;
+                                                    })}
+                                            </div>
+                                        ) : (
+                                            <Empty>
+                                                <EmptyHeader>
+                                                    <EmptyMedia variant="icon">
+                                                        <Bookmark className="size-6" />
+                                                    </EmptyMedia>
+                                                    <EmptyTitle>북마크한 게시물이 없습니다</EmptyTitle>
+                                                    <EmptyDescription>아직 북마크한 게시물이 없습니다.</EmptyDescription>
+                                                </EmptyHeader>
+                                            </Empty>
+                                        )}
+                                    </TabsContent>
+                                )}
+                            </Tabs>
+                        ) : (
+                            <div className="text-center py-16">
+                                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <User className="w-10 h-10 text-gray-400" />
+                                </div>
+                                <h3 className="text-2xl font-light text-gray-900 mb-4">게시물 비공개한 유저입니다</h3>
+                                <p className="text-gray-600 max-w-md mx-auto leading-relaxed">
+                                    이 사용자는 프로필을 비공개로 설정하여 게시물을 볼 수 없습니다.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div >
+            </div >
+        </div >
     );
 }

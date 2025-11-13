@@ -4,16 +4,17 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import Navigation from '@/components/layout/Navigation';
 import CommentSystem from '@/components/common/CommentSystem';
 import NovelEditor from '@/components/editor/NovelEditor';
 import { ResourcePost } from '@/types/resource';
-import { Download, File, Star, Pin, Heart, Bookmark, ArrowLeft, MessageCircle, Share } from 'lucide-react';
+import { Download, ArrowLeft, MessageCircle, Share, Heart, Bookmark, Edit, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { JSONContent } from 'novel';
+import { useRouter } from 'next/navigation';
 
 export default function ResourceDetailPage() {
     const params = useParams();
+    const router = useRouter();
     const resourceId = params.id as string;
     const [resource, setResource] = useState<ResourcePost | null>(null);
     const [loading, setLoading] = useState(true);
@@ -24,7 +25,7 @@ export default function ResourceDetailPage() {
     const [isDownloading, setIsDownloading] = useState(false);
     const [isFollowing, setIsFollowing] = useState(false);
     const [isFollowingLoading, setIsFollowingLoading] = useState(false);
-    const { user } = useAuth();
+    const { user, isAdmin } = useAuth();
 
     const fetchResource = useCallback(async () => {
         try {
@@ -103,14 +104,21 @@ export default function ResourceDetailPage() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                credentials: 'include'
             });
 
             if (response.ok) {
                 const data = await response.json();
                 setIsLiked(data.isLiked);
-                setLikesCount(data.likesCount);
+                setLikesCount(data.likesCount || 0);
+            } else {
+                const errorData = await response.json().catch(() => ({ error: '좋아요 처리 중 오류가 발생했습니다.' }));
+                console.error('좋아요 처리 오류:', errorData);
+                alert(errorData.error || '좋아요 처리 중 오류가 발생했습니다.');
             }
-        } catch {
+        } catch (error) {
+            console.error('좋아요 처리 중 오류:', error);
+            alert('좋아요 처리 중 오류가 발생했습니다.');
         }
     };
 
@@ -191,6 +199,9 @@ export default function ResourceDetailPage() {
                     document.body.removeChild(link);
                     window.URL.revokeObjectURL(url);
                 }
+
+                // 다운로드 후 자료 정보 갱신
+                await fetchResource();
             } else {
                 alert('다운로드에 실패했습니다.');
             }
@@ -272,18 +283,37 @@ export default function ResourceDetailPage() {
         return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
     };
 
-    const getFileTypeIcon = () => {
-        return File;
+    const handleDelete = async () => {
+        if (!resource) return;
+
+        if (!confirm('정말로 이 자료를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/resources/${resourceId}/delete`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                alert('자료가 성공적으로 삭제되었습니다.');
+                router.push('/resources');
+            } else {
+                const data = await response.json();
+                alert(data.error || '자료 삭제에 실패했습니다.');
+            }
+        } catch (error) {
+            console.error('자료 삭제 오류:', error);
+            alert('자료 삭제 중 오류가 발생했습니다.');
+        }
     };
 
-    const getFileTypeLabel = () => {
-        return '파일';
-    };
+    // getFileTypeIcon, getFileTypeLabel 함수 정의 및 관련 사용 코드 모두 삭제
 
     if (loading) {
         return (
             <div className="min-h-screen bg-white">
-                <Navigation />
                 <div className="flex items-center justify-center min-h-[400px]">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
                 </div>
@@ -294,7 +324,6 @@ export default function ResourceDetailPage() {
     if (error || !resource) {
         return (
             <div className="min-h-screen bg-white">
-                <Navigation />
                 <div className="flex items-center justify-center min-h-[400px]">
                     <div className="text-center">
                         <h1 className="text-2xl font-bold text-slate-900 mb-4">자료를 찾을 수 없습니다</h1>
@@ -312,105 +341,54 @@ export default function ResourceDetailPage() {
         );
     }
 
-    const FileTypeIcon = getFileTypeIcon();
+    // getFileTypeIcon 함수 정의 제거
+    // const FileTypeIcon = getFileTypeIcon();
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-gray-100">
-            <Navigation />
 
             <main className="pt-12 sm:pt-24 pb-24 lg:pb-16 px-4 sm:px-6 lg:px-8">
-                <div className="max-w-5xl mx-auto relative">
+                <div className="max-w-7xl mx-auto">
 
-                    {/* 자료 대표 이미지 */}
-                    {/* 모바일용 대표이미지 - 전체 너비 */}
-                    <div className="sm:hidden -mx-4 mb-6">
-                        <div className="relative w-full h-64 overflow-hidden">
-                            {resource.thumbnail ? (
-                                <Image
-                                    src={resource.thumbnail}
-                                    alt={resource.title}
-                                    fill
-                                    priority
-                                    className="object-cover"
-                                />
-                            ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
-                                    <FileTypeIcon className="w-16 h-16 text-purple-400" />
-                                </div>
-                            )}
-
-                            {/* 배지들 */}
-                            <div className="absolute top-4 left-4 flex gap-2">
-                                {resource.is_pinned && (
-                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-amber-500/90 text-white shadow-md">
-                                        <Pin className="w-4 h-4 mr-1" />
-                                        고정
-                                    </span>
-                                )}
-                                {resource.is_featured && (
-                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-purple-500/90 text-white shadow-md">
-                                        <Star className="w-4 h-4 mr-1" />
-                                        추천
-                                    </span>
-                                )}
+                    {/* 상단 버튼들 */}
+                    <div className="flex mb-6 sm:mb-8 items-center justify-between gap-2 sm:gap-4">
+                        {/* 좌측: 자료실 게시판으로 버튼 (항상 표시) */}
+                        <Link
+                            href="/resources"
+                            className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white text-xs sm:text-base rounded-lg sm:rounded-xl hover:bg-blue-700 hover:shadow-md transition-all duration-300 font-medium group whitespace-nowrap"
+                        >
+                            <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:-translate-x-1 transition-transform duration-300 flex-shrink-0" />
+                            <span className="hidden sm:inline">자료실 게시판으로</span>
+                            <span className="sm:hidden">목록</span>
+                        </Link>
+                        {/* 우측: 권한 있는 유저용 수정/삭제 버튼 */}
+                        {(isAdmin() || (user && resource?.author_id === user.id)) && (
+                            <div className="flex items-center gap-3">
+                                <Link
+                                    href={`/resources/edit/${resourceId}`}
+                                    className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-amber-600 text-white text-xs sm:text-base rounded-lg sm:rounded-xl hover:bg-amber-700 hover:shadow-md transition-all duration-300 font-medium group whitespace-nowrap"
+                                >
+                                    <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                                    <span className="hidden sm:inline">수정하기</span>
+                                    <span className="sm:hidden">수정</span>
+                                </Link>
+                                <button
+                                    onClick={handleDelete}
+                                    className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-red-600 text-white text-xs sm:text-base rounded-lg sm:rounded-xl hover:bg-red-700 hover:shadow-md transition-all duration-300 font-medium group whitespace-nowrap"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                                    <span className="hidden sm:inline">삭제하기</span>
+                                    <span className="sm:hidden">삭제</span>
+                                </button>
                             </div>
-
-                            {/* 파일 타입 */}
-                            <div className="absolute top-4 right-4">
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-white/90 text-slate-700 shadow-md">
-                                    {getFileTypeLabel()}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 데스크톱용 대표이미지 - 네모박스 */}
-                    <div className="hidden sm:block mb-8">
-                        <div className="relative aspect-video w-full rounded-2xl overflow-hidden shadow-xl bg-gradient-to-br from-gray-50 to-gray-100">
-                            {resource.thumbnail ? (
-                                <Image
-                                    src={resource.thumbnail}
-                                    alt={resource.title}
-                                    fill
-                                    priority
-                                    className="object-cover"
-                                />
-                            ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
-                                    <FileTypeIcon className="w-16 h-16 text-purple-400" />
-                                </div>
-                            )}
-
-                            {/* 배지들 */}
-                            <div className="absolute top-4 left-4 flex gap-2">
-                                {resource.is_pinned && (
-                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-amber-500/90 text-white shadow-md">
-                                        <Pin className="w-4 h-4 mr-1" />
-                                        고정
-                                    </span>
-                                )}
-                                {resource.is_featured && (
-                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-purple-500/90 text-white shadow-md">
-                                        <Star className="w-4 h-4 mr-1" />
-                                        추천
-                                    </span>
-                                )}
-                            </div>
-
-                            {/* 파일 타입 */}
-                            <div className="absolute top-4 right-4">
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-white/90 text-slate-700 shadow-md">
-                                    {getFileTypeLabel()}
-                                </span>
-                            </div>
-                        </div>
+                        )}
                     </div>
 
                     {/* 자료 헤더 */}
-                    <div className="p-4 sm:p-8">
+                    <div>
                         <div className="flex items-start justify-between mb-6">
                             <div className="flex-1">
-                                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mb-4">{resource.title}</h1>
+                                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mb-4 pt-4 sm:pt-0">{resource.title}</h1>
                                 {resource.subtitle && (
                                     <p className="text-base sm:text-lg lg:text-xl text-slate-600 mb-3 leading-relaxed">{resource.subtitle}</p>
                                 )}
@@ -426,14 +404,14 @@ export default function ResourceDetailPage() {
                                             >
                                                 {resource.author.profile_image ? (
                                                     <Image
-                                                        src={resource.author.profile_image}
-                                                        alt={resource.author.nickname}
+                                                        src={resource.author.profile_image ?? ''}
+                                                        alt={resource.author.nickname ?? ''}
                                                         fill
                                                         className="object-cover"
                                                     />
                                                 ) : (
                                                     <span className="text-slate-600 text-sm font-bold">
-                                                        {resource.author.nickname.charAt(0).toUpperCase()}
+                                                        {(resource.author.nickname?.charAt(0).toUpperCase()) ?? ''}
                                                     </span>
                                                 )}
                                             </div>
@@ -468,7 +446,17 @@ export default function ResourceDetailPage() {
 
                                     {/* 작성일자 */}
                                     <p className="text-sm text-slate-500">
-                                        {formatDate(resource.created_at)}
+                                        {(() => {
+                                            interface ResourceWithCreatedAt extends Omit<ResourcePost, 'created_at'> {
+                                                created_at?: string;
+                                            }
+                                            const resourceWithDate = resource as ResourceWithCreatedAt;
+                                            return resource.published_at
+                                                ? formatDate(resource.published_at)
+                                                : resourceWithDate.created_at
+                                                    ? formatDate(resourceWithDate.created_at)
+                                                    : '날짜 정보 없음';
+                                        })()}
                                     </p>
                                 </div>
 
@@ -479,7 +467,7 @@ export default function ResourceDetailPage() {
                                         {/* 다운로드 수 */}
                                         <div className="flex items-center gap-1">
                                             <Download className="w-4 h-4 text-purple-600" />
-                                            <span className="text-sm font-medium text-gray-600">{resource?.resource_data?.downloads_count || 0}</span>
+                                            <span className="text-sm font-medium text-gray-600">{resource?.downloads_count ?? 0}</span>
                                         </div>
 
                                         {/* 댓글 수 */}
@@ -542,38 +530,52 @@ export default function ResourceDetailPage() {
                     </div>
 
                     {/* 자료 정보 */}
-                    <div className="mb-8 px-4 sm:px-8">
+                    <div className="mb-8">
                         {/* 구분선 */}
                         <div className="border-b border-gray-200 mb-6"></div>
 
                         {/* 자료 상세 정보 뱃지들 */}
                         <div className="flex flex-wrap gap-2 mb-6">
-                            {/* 연도 + 학기 */}
-                            {(resource.year || resource.semester) && (
-                                <span className="inline-flex items-center px-3 py-1.5 bg-orange-100 text-orange-800 rounded-lg text-sm font-medium">
-                                    {resource.year && resource.semester ? `${resource.year}년도 ${resource.semester}` :
-                                        resource.year ? `${resource.year}년도` : resource.semester}
-                                </span>
-                            )}
-                            {/* 과목 */}
-                            {resource.subject && (
-                                <span className="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-800 rounded-lg text-sm font-medium">
-                                    {resource.subject}
-                                </span>
-                            )}
-                            {/* 교수 */}
-                            {resource.professor && (
-                                <span className="inline-flex items-center px-3 py-1.5 bg-emerald-100 text-emerald-800 rounded-lg text-sm font-medium">
-                                    {resource.professor}
-                                </span>
-                            )}
-                            {/* 난이도 */}
-                            {resource.difficulty_level && (
-                                <span className="inline-flex items-center px-3 py-1.5 bg-slate-100 text-slate-800 rounded-lg text-sm font-medium">
-                                    {resource.difficulty_level === 'beginner' ? '초급' :
-                                        resource.difficulty_level === 'intermediate' ? '중급' : '고급'}
-                                </span>
-                            )}
+                            {(() => {
+                                interface ResourceWithDetails extends ResourcePost {
+                                    year?: number | null;
+                                    semester?: string | null;
+                                    subject?: string | null;
+                                    professor?: string | null;
+                                    difficulty_level?: 'beginner' | 'intermediate' | 'advanced' | null;
+                                }
+                                const resourceWithDetails = resource as ResourceWithDetails;
+                                return (
+                                    <>
+                                        {/* 연도 + 학기 */}
+                                        {(resourceWithDetails.year || resourceWithDetails.semester) && (
+                                            <span className="inline-flex items-center px-3 py-1.5 bg-orange-100 text-orange-800 rounded-lg text-sm font-medium">
+                                                {resourceWithDetails.year && resourceWithDetails.semester ? `${resourceWithDetails.year}년도 ${resourceWithDetails.semester}` :
+                                                    resourceWithDetails.year ? `${resourceWithDetails.year}년도` : resourceWithDetails.semester}
+                                            </span>
+                                        )}
+                                        {/* 과목 */}
+                                        {resourceWithDetails.subject && (
+                                            <span className="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-800 rounded-lg text-sm font-medium">
+                                                {resourceWithDetails.subject}
+                                            </span>
+                                        )}
+                                        {/* 교수 */}
+                                        {resourceWithDetails.professor && (
+                                            <span className="inline-flex items-center px-3 py-1.5 bg-emerald-100 text-emerald-800 rounded-lg text-sm font-medium">
+                                                {resourceWithDetails.professor}
+                                            </span>
+                                        )}
+                                        {/* 난이도 */}
+                                        {resourceWithDetails.difficulty_level && (
+                                            <span className="inline-flex items-center px-3 py-1.5 bg-slate-100 text-slate-800 rounded-lg text-sm font-medium">
+                                                {resourceWithDetails.difficulty_level === 'beginner' ? '초급' :
+                                                    resourceWithDetails.difficulty_level === 'intermediate' ? '중급' : '고급'}
+                                            </span>
+                                        )}
+                                    </>
+                                );
+                            })()}
                         </div>
 
                         {/* 첨부 파일 - 자료정보 위쪽에 표시 */}
@@ -604,11 +606,11 @@ export default function ResourceDetailPage() {
                     </div>
 
                     {/* 자료 내용 */}
-                    {resource.content && (
-                        <div className="mb-4 pt-4 pb-4 px-4 sm:px-8">
+                    {((resource as unknown as { content?: JSONContent }).content) && (
+                        <div className="mb-4 pt-4 pb-4">
                             <div className="prose prose-sm sm:prose-lg max-w-none [&_.novel-editor]:!min-h-0 [&_.novel-editor]:!h-auto">
                                 <NovelEditor
-                                    initialContent={resource.content as JSONContent | null | undefined}
+                                    initialContent={(resource as unknown as { content?: JSONContent }).content}
                                     editable={false}
                                     className="!min-h-0"
                                 />
@@ -622,10 +624,8 @@ export default function ResourceDetailPage() {
             {/* 댓글 섹션 */}
             {resource && (
                 <div className="px-4 sm:px-6 lg:px-8">
-                    <div className="max-w-5xl mx-auto">
-                        <div className="p-4 sm:p-8">
-                            <CommentSystem postType="resource" postId={resource.id} />
-                        </div>
+                    <div className="max-w-7xl mx-auto">
+                        <CommentSystem postType="resource" postId={resource.id} />
                     </div>
                 </div>
             )}

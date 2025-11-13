@@ -22,3 +22,12 @@ CREATE TRIGGER update_resource_downloads_count_trigger
 -- 트리거 테스트를 위한 코멘트
 COMMENT ON FUNCTION update_resource_downloads_count() IS 'resource_downloads 테이블에 INSERT될 때 resources.downloads_count를 자동으로 증가시키는 트리거 함수';
 COMMENT ON TRIGGER update_resource_downloads_count_trigger ON resource_downloads IS '다운로드 수 자동 증가 트리거';
+
+
+
+
+
+
+
+
+

@@ -59,25 +59,40 @@ export async function POST(
                 });
 
             if (insertError) {
-                return NextResponse.json({ error: '좋아요 추가에 실패했습니다.' }, { status: 500 });
+                console.error('좋아요 추가 오류:', insertError);
+                console.error('resourceId:', resourceId, 'userId:', user.id);
+                return NextResponse.json({ 
+                    error: '좋아요 추가에 실패했습니다.',
+                    details: insertError.message 
+                }, { status: 500 });
             }
 
             isLiked = true;
         }
 
         // 실제 좋아요 수 계산
-        const { data: likeCountData } = await supabase
+        const { count, error: countError } = await supabase
             .from('resource_likes')
-            .select('id', { count: 'exact' })
+            .select('*', { count: 'exact', head: true })
             .eq('resource_id', resourceId);
 
-        likesCount = likeCountData?.length || 0;
+        if (countError) {
+            console.error('좋아요 수 계산 오류:', countError);
+            return NextResponse.json({ error: '좋아요 수를 계산할 수 없습니다.' }, { status: 500 });
+        }
 
-        // resources 테이블의 likes_count 업데이트
-        await supabase
+        likesCount = count || 0;
+
+        // resources 테이블의 likes_count_cached 업데이트
+        const { error: updateError } = await supabase
             .from('resources')
-            .update({ likes_count: likesCount })
+            .update({ likes_count_cached: likesCount })
             .eq('id', resourceId);
+
+        if (updateError) {
+            console.error('좋아요 수 업데이트 오류:', updateError);
+            return NextResponse.json({ error: '좋아요 수를 업데이트할 수 없습니다.' }, { status: 500 });
+        }
 
         return NextResponse.json({
             success: true,
@@ -85,7 +100,8 @@ export async function POST(
             likesCount
         });
 
-    } catch {
+    } catch (error) {
+        console.error('좋아요 처리 중 오류:', error);
         return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
     }
 }
