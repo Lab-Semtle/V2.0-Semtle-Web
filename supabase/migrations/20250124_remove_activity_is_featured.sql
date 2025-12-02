@@ -13,3 +13,4 @@ DROP COLUMN IF EXISTS is_featured;
 
 
 
+

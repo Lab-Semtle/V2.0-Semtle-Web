@@ -36,3 +36,4 @@ WHERE tablename = 'activities' AND policyname = 'Only admins can create activiti
 
 
 
+

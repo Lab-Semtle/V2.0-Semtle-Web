@@ -40,6 +40,7 @@ function ResourcesPageContent() {
     const [selectedResources, setSelectedResources] = useState<Set<number>>(new Set());
     const [isDeleting, setIsDeleting] = useState(false);
     const [activeTab, setActiveTab] = useState<'all' | 'my'>('all');
+    const [totalResourcesCount, setTotalResourcesCount] = useState<number>(0);
 
     // 데이터 로드
     useEffect(() => {
@@ -48,7 +49,8 @@ function ResourcesPageContent() {
                 setLoading(true);
 
                 // activeTab에 따라 쿼리 파라미터 추가
-                let apiUrl = `/api/resources?t=${Date.now()}`;
+                // 전체 개수를 가져오기 위해 limit을 매우 큰 값으로 설정
+                let apiUrl = `/api/resources?t=${Date.now()}&limit=10000`;
                 if (activeTab === 'my' && user?.id) {
                     apiUrl += `&author_id=${user.id}`;
                 }
@@ -63,6 +65,15 @@ function ResourcesPageContent() {
                     // 데이터가 없어도 정상적으로 처리
                     setResources(data.resources || []);
                     setCategories(data.categories || []);
+                    
+                    // 전체 개수 설정 (공개된 게시물만)
+                    if (activeTab === 'all') {
+                        // 공개된 게시물의 전체 개수
+                        setTotalResourcesCount(data.resources?.length || 0);
+                    } else {
+                        // 내 자료의 경우 전체 개수
+                        setTotalResourcesCount(data.resources?.length || 0);
+                    }
 
                     // 실제 데이터에서 연도 추출 (버전 데이터가 평탄화되어 있음)
                     interface ResourceWithVersion extends Omit<ResourcePost, 'created_at'> {
@@ -555,7 +566,7 @@ function ResourcesPageContent() {
                                         {/* 자료 개수 */}
                                         {selectedResources.size === 0 ? (
                                             <div className="text-sm text-slate-500 font-medium whitespace-nowrap">
-                                                총 <span className="text-slate-700 font-semibold">{currentPosts.length}</span>개의 자료
+                                                총 <span className="text-slate-700 font-semibold">{activeTab === 'all' ? totalResourcesCount : currentPosts.length}</span>개의 자료
                                             </div>
                                         ) : (
                                             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 text-sm font-semibold text-blue-700 bg-blue-50/80 border border-blue-200/60 rounded-lg whitespace-nowrap">
@@ -642,7 +653,7 @@ function ResourcesPageContent() {
                                         )}
                                         {selectedResources.size === 0 ? (
                                             <div className="text-sm text-slate-500 font-medium whitespace-nowrap">
-                                                총 <span className="text-slate-700 font-semibold">{currentPosts.length}</span>개
+                                                총 <span className="text-slate-700 font-semibold">{activeTab === 'all' ? totalResourcesCount : currentPosts.length}</span>개
                                             </div>
                                         ) : (
                                             <div className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-blue-700 bg-blue-50/80 border border-blue-200/60 rounded-lg whitespace-nowrap">
@@ -731,7 +742,7 @@ function ResourcesPageContent() {
                                 <div className="flex items-center justify-between gap-3">
                                     {selectedResources.size === 0 ? (
                                         <div className="text-xs text-slate-500 font-medium whitespace-nowrap">
-                                            총 <span className="text-slate-700 font-semibold">{currentPosts.length}</span>개의 자료
+                                            총 <span className="text-slate-700 font-semibold">{activeTab === 'all' ? totalResourcesCount : currentPosts.length}</span>개의 자료
                                         </div>
                                     ) : (
                                         <div className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50/80 border border-blue-200/60 rounded-lg w-fit whitespace-nowrap">

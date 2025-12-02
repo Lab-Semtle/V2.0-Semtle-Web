@@ -105,3 +105,4 @@ COMMENT ON COLUMN public.activities.published_version_id IS 'ID of the currently
 
 
 
+
